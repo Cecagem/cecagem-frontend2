@@ -13,9 +13,9 @@ import {
   Users,
   CreditCard,
   BarChart3,
-  GraduationCap,
   TrendingUp,
   Upload,
+  Building2,
 } from "lucide-react";
 
 import {
@@ -76,19 +76,29 @@ const data = {
       items: [
         {
           title: "Proyectos",
-          url: "#",
+          url: "/project",
           icon: FolderOpen,
           collapsible: false,
         },
         {
           title: "Clientes",
           url: "#",
-          icon: GraduationCap,
-          collapsible: false,
+          icon: Building2,
+          collapsible: true,
+          items: [
+            {
+              title: "Contables",
+              url: "/client/contables",
+            },
+            {
+              title: "Investigación",
+              url: "/client/investigacion",
+            },
+          ],
         },
         {
           title: "Usuarios",
-          url: "#",
+          url: "/user",
           icon: Users,
           collapsible: false,
         },
