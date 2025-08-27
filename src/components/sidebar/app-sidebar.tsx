@@ -88,11 +88,11 @@ const data = {
           items: [
             {
               title: "Contables",
-              url: "/client/contables",
+              url: "/client/accounting",
             },
             {
               title: "Investigación",
-              url: "/client/investigacion",
+              url: "/client/research",
             },
           ],
         },
@@ -104,7 +104,7 @@ const data = {
         },
         {
           title: "Pagos",
-          url: "#",
+          url: "/payment",
           icon: CreditCard,
           collapsible: false,
         },

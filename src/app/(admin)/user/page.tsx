@@ -12,26 +12,25 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell, Plus } from "lucide-react";
-import { useUsers } from "./hooks/useUsers";
-import { User, UserStatus } from "./types";
 import {
+  useUsers,
+  User,
   UserStatsCards,
   UserFilters,
   UserTable,
   UserForm,
   DeleteConfirmation,
-} from "./components";
+} from "@/features/user";
 
 function UserPage() {
   const {
     users,
     stats,
     isLoading,
-    searchFilters,
+    filters,
     createUser,
     updateUser,
     deleteUser,
-    toggleUserStatus,
     applyFilters,
     clearFilters,
   } = useUsers();
@@ -51,13 +50,10 @@ function UserPage() {
     setIsFormOpen(true);
   }, []);
 
-  const handleDeleteUser = useCallback((userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    if (user) {
-      setUserToDelete(user);
-      setIsDeleteModalOpen(true);
-    }
-  }, [users]);
+  const handleDeleteUser = useCallback((user: User) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  }, []);
 
   const handleConfirmDelete = useCallback(async () => {
     if (userToDelete?.id) {
@@ -67,10 +63,10 @@ function UserPage() {
     }
   }, [userToDelete, deleteUser]);
 
-  const handleFormSubmit = useCallback(async (userData: User) => {
-    if (selectedUser) {
+  const handleFormSubmit = useCallback(async (userData: Omit<User, 'id'>) => {
+    if (selectedUser?.id) {
       // Actualizar usuario existente
-      await updateUser(selectedUser.id!, userData);
+      await updateUser(selectedUser.id, userData);
     } else {
       // Crear nuevo usuario
       await createUser(userData);
@@ -78,10 +74,6 @@ function UserPage() {
     setIsFormOpen(false);
     setSelectedUser(undefined);
   }, [selectedUser, updateUser, createUser]);
-
-  const handleToggleStatus = useCallback(async (userId: string, newStatus: UserStatus) => {
-    await toggleUserStatus(userId, newStatus);
-  }, [toggleUserStatus]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -116,7 +108,7 @@ function UserPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h1>
             <p className="text-muted-foreground">
-              Administra los usuarios del sistema, sus roles y permisos
+              Administra los usuarios del sistema, sus roles y datos de contrato
             </p>
           </div>
           <Button onClick={handleCreateUser} className="w-full sm:w-auto">
@@ -130,7 +122,7 @@ function UserPage() {
 
         {/* Filtros */}
         <UserFilters
-          filters={searchFilters}
+          filters={filters}
           onApplyFilters={applyFilters}
           onClearFilters={clearFilters}
         />
@@ -141,7 +133,6 @@ function UserPage() {
           isLoading={isLoading}
           onEdit={handleEditUser}
           onDelete={handleDeleteUser}
-          onToggleStatus={handleToggleStatus}
         />
       </main>
 
@@ -166,7 +157,7 @@ function UserPage() {
         }}
         onConfirm={handleConfirmDelete}
         isLoading={isLoading}
-        userName={userToDelete ? `${userToDelete.nombres} ${userToDelete.apellidos}` : undefined}
+        userName={userToDelete ? `${userToDelete.nombres} ${userToDelete.apellidos}` : ""}
       />
     </div>
   );

@@ -12,14 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell, Plus } from "lucide-react";
-import { ProyectoStatsCards } from "./components/ProyectoStatsCards";
-import { ProyectoFilters } from "./components/ProyectoFilters";
-import { ProyectoTable } from "./components/ProyectoTable";
-import { ProyectoForm } from "./components/ProyectoForm";
-import { DeleteConfirmation } from "./components/DeleteConfirmation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useProyectos } from "./hooks";
-import { Proyecto } from "./types";
+import { 
+  ProyectoStatsCards,
+  ProyectoFilters,
+  ProyectoTable,
+  ProyectoForm,
+  DeleteConfirmation,
+  useProyectos,
+  Proyecto
+} from "@/features/project";
 
 export default function ProyectoPage() {
   const {
