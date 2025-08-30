@@ -7,30 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Combobox } from "@/components/ui/combobox";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { ComboboxWithAdd } from "@/components/ui/combobox-with-add";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -41,8 +23,7 @@ import {
   Trash2,
   DollarSign,
   FileText,
-  Calendar,
-  ChevronsUpDown
+  Calendar
 } from "lucide-react";
 import {
   Proyecto,
@@ -104,113 +85,9 @@ const pasos = [
   },
 ];
 
-// Componente para el selector de entregables con buscador
-interface EntregableComboboxProps {
-  onSelect: (tipo: EntregablesPredefinidos) => void;
-  onAddCustom: (nombre: string) => void;
-  selectedEntregables: Entregable[];
-}
-
-function EntregableCombobox({ onSelect, onAddCustom, selectedEntregables }: EntregableComboboxProps) {
-  const [search, setSearch] = useState("");
-
-  const entregablesPredefinidos = Object.entries(entregablesLabels);
-  
-  const filteredEntregables = entregablesPredefinidos.filter(([value, label]) =>
-    label.toLowerCase().includes(search.toLowerCase()) &&
-    !selectedEntregables.some(e => e.esPredefinido && e.tipoPredefinido === value)
-  );
-
-  const handleSelect = (value: string) => {
-    if (value.startsWith("custom-")) {
-      // Es un entregable personalizado
-      onAddCustom(search);
-    } else {
-      // Es un entregable predefinido
-      onSelect(value as EntregablesPredefinidos);
-    }
-    setSearch("");
-  };
-
-  return (
-    <Command>
-      <CommandInput 
-        placeholder="Buscar entregable..." 
-        value={search}
-        onValueChange={setSearch}
-        className="h-9"
-      />
-      <CommandList>
-        <CommandEmpty>
-          <div className="text-center p-4">
-            <p className="text-sm text-muted-foreground mb-2">
-              No se encontró &quot;{search}&quot;
-            </p>
-            {search.trim() && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  onAddCustom(search);
-                  setSearch("");
-                }}
-                className="text-xs"
-              >
-                <Check className="mr-2 h-3 w-3" />
-                Agregar &quot;{search}&quot; como personalizado
-              </Button>
-            )}
-          </div>
-        </CommandEmpty>
-        
-        <CommandGroup heading="Entregables Predefinidos">
-          {filteredEntregables.map(([value, label]) => (
-            <CommandItem
-              key={value}
-              value={label}
-              onSelect={() => handleSelect(value)}
-              className="cursor-pointer"
-            >
-              <Check className="mr-2 h-4 w-4 opacity-0" />
-              <div className="flex flex-col">
-                <span className="font-medium text-sm">{label}</span>
-                <span className="text-xs text-muted-foreground">Predefinido</span>
-              </div>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        
-        {search.trim() && (
-          <CommandGroup heading="Agregar Personalizado">
-            <CommandItem
-              value={`custom-${search}`}
-              onSelect={() => {
-                onAddCustom(search);
-                setSearch("");
-              }}
-              className="cursor-pointer"
-            >
-              <Check className="mr-2 h-4 w-4 opacity-0" />
-              <div className="flex flex-col">
-                <span className="font-medium text-sm">&quot;{search}&quot;</span>
-                <span className="text-xs text-muted-foreground">Agregar como personalizado</span>
-              </div>
-            </CommandItem>
-          </CommandGroup>
-        )}
-      </CommandList>
-    </Command>
-  );
-}
-
 export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps) {
   const [pasoActual, setPasoActual] = useState(1);
   const [entregablesCustomizados, setEntregablesCustomizados] = useState<Entregable[]>([]);
-
-  // Estados para los combobox
-  const [openClienteCombo, setOpenClienteCombo] = useState(false);
-  const [openColaboradorCombo, setOpenColaboradorCombo] = useState(false);
-  const [searchCliente, setSearchCliente] = useState("");
-  const [searchColaborador, setSearchColaborador] = useState("");
 
   // Estado para las cuotas individuales
   const [cuotasIndividuales, setCuotasIndividuales] = useState<Array<{
@@ -248,7 +125,6 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
   });
 
   const watchTipoPago = watch("tipoPago");
-  const watchClienteIds = watch("clienteIds");
   const watchColaboradorId = watch("colaboradorId");
   const watchMontoTotal = watch("montoTotal");
   const watchNumeroCuotas = watch("numeroCuotas");
@@ -426,14 +302,6 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
     }
   };
 
-  const handleClienteToggle = (clienteId: string) => {
-    const clientesActuales = watchClienteIds || [];
-    const nuevosClientes = clientesActuales.includes(clienteId)
-      ? clientesActuales.filter(id => id !== clienteId)
-      : [...clientesActuales, clienteId];
-    setValue("clienteIds", nuevosClientes);
-  };
-
   const onFormSubmit = (data: ProyectoFormData) => {
     // Preparar entregables con fechas de entrega automáticas si no tienen
     const entregablesConFechas = entregablesCustomizados.map((entregable) => {
@@ -511,18 +379,17 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
               name="tipoProyecto"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className={cn("mt-1.5", errors.tipoProyecto ? "border-red-500" : "")}>
-                    <SelectValue placeholder="Seleccionar tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(tipoProyectoLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={Object.entries(tipoProyectoLabels).map(([value, label]) => ({
+                    value,
+                    label,
+                  }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Seleccionar tipo"
+                  searchPlaceholder="Buscar tipo de proyecto..."
+                  className={cn("mt-1.5", errors.tipoProyecto ? "border-red-500" : "")}
+                />
               )}
             />
             {errors.tipoProyecto && (
@@ -536,18 +403,17 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
               name="estado"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className={cn("mt-1.5", errors.estado ? "border-red-500" : "")}>
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(estadoProyectoLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={Object.entries(estadoProyectoLabels).map(([value, label]) => ({
+                    value,
+                    label,
+                  }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Seleccionar estado"
+                  searchPlaceholder="Buscar estado..."
+                  className={cn("mt-1.5", errors.estado ? "border-red-500" : "")}
+                />
               )}
             />
             {errors.estado && (
@@ -564,21 +430,14 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
               name="fechaInicio"
               control={control}
               render={({ field }) => (
-                <Input
-                  type="date"
-                  value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      // Crear fecha en zona horaria local para evitar el desfase de día
-                      const [year, month, day] = e.target.value.split('-').map(Number);
-                      const date = new Date(year, month - 1, day);
-                      field.onChange(date);
-                    } else {
-                      field.onChange(undefined);
-                    }
-                  }}
-                  className={cn("mt-1.5", errors.fechaInicio ? "border-red-500" : "")}
-                />
+                <div className="mt-1.5">
+                  <DatePicker
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Seleccionar fecha de inicio"
+                    className={cn(errors.fechaInicio ? "border-red-500" : "")}
+                  />
+                </div>
               )}
             />
             {errors.fechaInicio && (
@@ -592,21 +451,14 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
               name="fechaFin"
               control={control}
               render={({ field }) => (
-                <Input
-                  type="date"
-                  value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      // Crear fecha en zona horaria local para evitar el desfase de día
-                      const [year, month, day] = e.target.value.split('-').map(Number);
-                      const date = new Date(year, month - 1, day);
-                      field.onChange(date);
-                    } else {
-                      field.onChange(undefined);
-                    }
-                  }}
-                  className={cn("mt-1.5", errors.fechaFin ? "border-red-500" : "")}
-                />
+                <div className="mt-1.5">
+                  <DatePicker
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Seleccionar fecha de finalización"
+                    className={cn(errors.fechaFin ? "border-red-500" : "")}
+                  />
+                </div>
               )}
             />
             {errors.fechaFin && (
@@ -645,91 +497,24 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
           {/* Clientes */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Clientes * (Puede seleccionar varios)</Label>
-            <Popover open={openClienteCombo} onOpenChange={setOpenClienteCombo}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openClienteCombo}
-                  className={cn(
-                    "w-full justify-between h-auto min-h-[40px] py-2",
-                    errors.clienteIds && "border-red-500"
-                  )}
-                >
-                  <span className="text-left">
-                    {watchClienteIds && watchClienteIds.length > 0 
-                      ? `${watchClienteIds.length} cliente(s) seleccionado(s)`
-                      : "Seleccionar clientes..."
-                    }
-                  </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] max-w-[calc(100vw-2rem)] p-0">
-                <Command>
-                  <CommandInput 
-                    placeholder="Buscar cliente..." 
-                    value={searchCliente}
-                    onValueChange={setSearchCliente}
-                    className="h-9"
-                  />
-                  <CommandList>
-                    <CommandEmpty>No se encontraron clientes.</CommandEmpty>
-                    <CommandGroup>
-                      {clientesEjemplo
-                        .filter((cliente) => 
-                          cliente.label.toLowerCase().includes(searchCliente.toLowerCase())
-                        )
-                        .map((cliente) => (
-                        <CommandItem
-                          key={cliente.id}
-                          value={cliente.label}
-                          onSelect={() => handleClienteToggle(cliente.id)}
-                          className="cursor-pointer"
-                        >
-                          <div className="flex items-center space-x-3 w-full py-1">
-                            <Checkbox
-                              checked={watchClienteIds?.includes(cliente.id) || false}
-                              onCheckedChange={() => handleClienteToggle(cliente.id)}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm truncate">{cliente.label}</div>
-                              <Badge variant="outline" className="mt-1 text-xs">
-                                {cliente.tipo}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            
-            {/* Mostrar clientes seleccionados */}
-            {watchClienteIds && watchClienteIds.length > 0 && (
-              <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-md border max-w-full">
-                {watchClienteIds.map((clienteId) => {
-                  const cliente = clientesEjemplo.find(c => c.id === clienteId);
-                  return cliente ? (
-                    <Badge key={clienteId} variant="secondary" className="flex items-center gap-1 px-2 py-1 max-w-full">
-                      <span className="max-w-[150px] sm:max-w-[200px] truncate text-xs sm:text-sm">{cliente.label}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground ml-1"
-                        onClick={() => handleClienteToggle(clienteId)}
-                      >
-                        ×
-                      </Button>
-                    </Badge>
-                  ) : null;
-                })}
-              </div>
-            )}
-            
+            <Controller
+              name="clienteIds"
+              control={control}
+              render={({ field }) => (
+                <MultiSelect
+                  options={clientesEjemplo.map((cliente) => ({
+                    value: cliente.id,
+                    label: cliente.label,
+                  }))}
+                  value={field.value || []}
+                  onValueChange={field.onChange}
+                  placeholder="Seleccionar clientes..."
+                  searchPlaceholder="Buscar cliente..."
+                  emptyText="No se encontraron clientes."
+                  className={cn(errors.clienteIds && "border-red-500")}
+                />
+              )}
+            />
             {errors.clienteIds && (
               <p className="text-sm text-red-500">{errors.clienteIds.message}</p>
             )}
@@ -742,79 +527,18 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
               name="colaboradorId"
               control={control}
               render={({ field }) => (
-                <Popover open={openColaboradorCombo} onOpenChange={setOpenColaboradorCombo}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openColaboradorCombo}
-                      className={cn(
-                        "w-full justify-between h-auto min-h-[40px] py-2",
-                        errors.colaboradorId && "border-red-500"
-                      )}
-                    >
-                      <span className="text-left">
-                        {field.value
-                          ? colaboradoresEjemplo.find((colaborador) => colaborador.id === field.value)?.label
-                          : "Seleccionar colaborador responsable..."
-                        }
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                    <Command>
-                      <CommandInput 
-                        placeholder="Buscar colaborador..." 
-                        value={searchColaborador}
-                        onValueChange={setSearchColaborador}
-                        className="h-9"
-                      />
-                      <CommandList>
-                        <CommandEmpty>No se encontraron colaboradores.</CommandEmpty>
-                        <CommandGroup>
-                          {colaboradoresEjemplo
-                            .filter((colaborador) => 
-                              colaborador.label.toLowerCase().includes(searchColaborador.toLowerCase()) ||
-                              (colaborador.especialidad && colaborador.especialidad.toLowerCase().includes(searchColaborador.toLowerCase()))
-                            )
-                            .map((colaborador) => (
-                            <CommandItem
-                              key={colaborador.id}
-                              value={colaborador.label}
-                              onSelect={() => {
-                                field.onChange(colaborador.id);
-                                setOpenColaboradorCombo(false);
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-3 h-4 w-4",
-                                  field.value === colaborador.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex flex-col py-1">
-                                <span className="font-medium text-sm">{colaborador.label}</span>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground">
-                                    {colaborador.especialidad}
-                                  </span>
-                                  <Badge 
-                                    variant={colaborador.tipo === TipoColaborador.EXTERNO ? "secondary" : "outline"}
-                                    className="text-xs"
-                                  >
-                                    {colaborador.tipo === TipoColaborador.EXTERNO ? "Externo" : "Interno"}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Combobox
+                  options={colaboradoresEjemplo.map((colaborador) => ({
+                    value: colaborador.id,
+                    label: `${colaborador.label} - ${colaborador.especialidad}`,
+                  }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Seleccionar colaborador responsable..."
+                  searchPlaceholder="Buscar colaborador..."
+                  emptyText="No se encontraron colaboradores."
+                  className={cn(errors.colaboradorId && "border-red-500")}
+                />
               )}
             />
             
@@ -910,15 +634,18 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
               name="tipoPago"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className={cn("mt-1.5", errors.tipoPago ? "border-red-500" : "")}>
-                    <SelectValue placeholder="Seleccionar tipo de pago" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={TipoPago.CONTADO}>Al Contado</SelectItem>
-                    <SelectItem value={TipoPago.CUOTAS}>En Cuotas</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={[
+                    { value: TipoPago.CONTADO, label: "Al Contado" },
+                    { value: TipoPago.CUOTAS, label: "En Cuotas" }
+                  ]}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Seleccionar tipo de pago"
+                  searchPlaceholder="Buscar tipo de pago..."
+                  emptyText="No se encontró el tipo de pago"
+                  className={cn("mt-1.5", errors.tipoPago ? "border-red-500" : "")}
+                />
               )}
             />
             {errors.tipoPago && (
@@ -933,15 +660,18 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
               name="moneda"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className={cn("mt-1.5", errors.moneda ? "border-red-500" : "")}>
-                    <SelectValue placeholder="Seleccionar moneda" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={Moneda.SOLES}>Soles (PEN)</SelectItem>
-                    <SelectItem value={Moneda.DOLARES}>Dólares (USD)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={[
+                    { value: Moneda.SOLES, label: "Soles (PEN)" },
+                    { value: Moneda.DOLARES, label: "Dólares (USD)" }
+                  ]}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Seleccionar moneda"
+                  searchPlaceholder="Buscar moneda..."
+                  emptyText="No se encontró la moneda"
+                  className={cn("mt-1.5", errors.moneda ? "border-red-500" : "")}
+                />
               )}
             />
             {errors.moneda && (
@@ -984,18 +714,18 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
                 name="numeroCuotas"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className={cn("mt-1.5", errors.numeroCuotas ? "border-red-500" : "")}>
-                      <SelectValue placeholder="Seleccionar cuotas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[2, 3, 4, 5, 6, 8, 10, 12].map((num) => (
-                        <SelectItem key={num} value={num.toString()}>
-                          {num} cuotas
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={[2, 3, 4, 5, 6, 8, 10, 12].map((num) => ({
+                      value: num.toString(),
+                      label: `${num} cuotas`
+                    }))}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Seleccionar cuotas"
+                    searchPlaceholder="Buscar número de cuotas..."
+                    emptyText="No se encontró el número de cuotas"
+                    className={cn("mt-1.5", errors.numeroCuotas ? "border-red-500" : "")}
+                  />
                 )}
               />
               {errors.numeroCuotas && (
@@ -1123,27 +853,20 @@ export function ProyectoForm({ proyecto, onSubmit, onCancel }: ProyectoFormProps
             </p>
             
             {/* Selector con buscador */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  className="w-full justify-between h-auto min-h-[40px] py-2"
-                >
-                  <span className="text-left text-muted-foreground">
-                    Buscar entregable o agregar uno nuevo...
-                  </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[500px] max-w-[90vw] p-0">
-                <EntregableCombobox
-                  onSelect={handleAgregarEntregablePredefinido}
-                  onAddCustom={handleAgregarEntregable}
-                  selectedEntregables={entregablesCustomizados}
-                />
-              </PopoverContent>
-            </Popover>
+            <ComboboxWithAdd
+              options={Object.entries(entregablesLabels).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+              onValueChange={(value) => {
+                // Cuando se selecciona un entregable predefinido
+                handleAgregarEntregablePredefinido(value as EntregablesPredefinidos);
+              }}
+              onAddCustom={handleAgregarEntregable}
+              placeholder="Buscar entregable o agregar uno nuevo..."
+              searchPlaceholder="Buscar entregable..."
+              addText="Agregar como personalizado"
+            />
           </div>
 
           {/* Lista de entregables seleccionados */}

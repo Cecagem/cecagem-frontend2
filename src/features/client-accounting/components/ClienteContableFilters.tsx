@@ -21,7 +21,6 @@ export default function ClienteContableFilters({
       label: "Estado",
       placeholder: "Todos los estados",
       options: [
-        { value: "all", label: "Todos los estados" },
         { value: ClienteEstado.ACTIVO, label: "Activo" },
         { value: ClienteEstado.INACTIVO, label: "Inactivo" },
       ]

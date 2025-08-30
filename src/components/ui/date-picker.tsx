@@ -1,10 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-
+import { Calendar as CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -15,33 +14,71 @@ import {
 } from "@/components/ui/popover"
 
 interface DatePickerProps {
-  date: Date | undefined
-  setDate: (date: Date | undefined) => void
+  value?: Date
+  onValueChange?: (date: Date | undefined) => void
   placeholder?: string
   className?: string
+  disabled?: boolean
+  disablePast?: boolean
+  disableFuture?: boolean
 }
 
-export function DatePicker({ date, setDate, placeholder = "Seleccionar fecha", className }: DatePickerProps) {
+export function DatePicker({
+  value,
+  onValueChange,
+  placeholder = "Seleccionar fecha...",
+  className,
+  disabled = false,
+  disablePast = false,
+  disableFuture = false,
+}: DatePickerProps) {
+  const [open, setOpen] = React.useState(false)
+
+  const handleSelect = (date: Date | undefined) => {
+    onValueChange?.(date)
+    setOpen(false)
+  }
+
+  const getDisabledDates = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    if (disablePast && disableFuture) {
+      return { before: today, after: today }
+    } else if (disablePast) {
+      return { before: today }
+    } else if (disableFuture) {
+      return { after: today }
+    }
+    return undefined
+  }
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant={"outline"}
+          variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground",
+            !value && "text-muted-foreground",
             className
           )}
+          disabled={disabled}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP", { locale: es }) : <span>{placeholder}</span>}
+          {value ? (
+            format(value, "PPP", { locale: es })
+          ) : (
+            <span>{placeholder}</span>
+          )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
-          selected={date}
-          onSelect={setDate}
+          selected={value}
+          onSelect={handleSelect}
+          disabled={getDisabledDates()}
           initialFocus
           locale={es}
         />

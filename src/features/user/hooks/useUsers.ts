@@ -1,183 +1,146 @@
-import { useState, useEffect } from "react";
-import { User, UserStats, SearchFilters, UserEstado, UserRol } from "../types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { UserService } from "../services";
+import { 
+  User, 
+  UserStats, 
+  SearchFilters, 
+  UserFormData,
+  UserRole,
+} from "../types";
 
-// Datos de ejemplo para desarrollo
-const mockUsers: User[] = [
-  {
-    id: "1",
-    nombres: "Juan Carlos",
-    apellidos: "García López",
-    telefono: "987654321",
-    email: "juan.garcia@cecagem.com",
-    rol: UserRol.ADMINISTRADOR,
-    estado: UserEstado.ACTIVO,
-    fechaCreacion: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    nombres: "María Elena",
-    apellidos: "Rodríguez Pérez",
-    telefono: "987654322",
-    email: "maria.rodriguez@cecagem.com",
-    rol: UserRol.RRHH,
-    estado: UserEstado.ACTIVO,
-    fechaCreacion: new Date("2024-02-10"),
-    contrato: {
-      montoPago: 3500,
-      fechaContrato: new Date("2024-02-01"),
-    },
-  },
-  {
-    id: "3",
-    nombres: "Carlos Alberto",
-    apellidos: "Mendoza Silva",
-    telefono: "987654323",
-    email: "carlos.mendoza@cecagem.com",
-    rol: UserRol.COLABORADOR_INTERNO,
-    estado: UserEstado.ACTIVO,
-    fechaCreacion: new Date("2024-03-05"),
-    contrato: {
-      montoPago: 2800,
-      fechaContrato: new Date("2024-03-01"),
-    },
-  },
-  {
-    id: "4",
-    nombres: "Ana Patricia",
-    apellidos: "Vargas Torres",
-    telefono: "987654324",
-    email: "ana.vargas@freelance.com",
-    rol: UserRol.COLABORADOR_EXTERNO,
-    estado: UserEstado.ACTIVO,
-    fechaCreacion: new Date("2024-03-20"),
-  },
-];
+// Query keys
+const userQueryKeys = {
+  all: ["users"] as const,
+  lists: () => [...userQueryKeys.all, "list"] as const,
+  list: (filters: SearchFilters) => [...userQueryKeys.lists(), filters] as const,
+  details: () => [...userQueryKeys.all, "detail"] as const,
+  detail: (id: string) => [...userQueryKeys.details(), id] as const,
+};
 
 export function useUsers() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [stats, setStats] = useState<UserStats>({
-    total: 0,
-    activos: 0,
-    inactivos: 0,
-    nuevosEsteMes: 0,
-    porRol: {
-      administradores: 0,
-      rrhh: 0,
-      colaboradoresInternos: 0,
-      colaboradoresExternos: 0,
-    },
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<SearchFilters>({});
 
-  // Simular carga de datos
-  useEffect(() => {
-    const loadUsers = async () => {
-      setIsLoading(true);
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setUsers(mockUsers);
-      setIsLoading(false);
-    };
+  // Query principal para obtener usuarios
+  const { 
+    data: users = [], 
+    isLoading, 
+    error,
+    refetch
+  } = useQuery({
+    queryKey: userQueryKeys.list(filters),
+    queryFn: () => {
+      if (Object.keys(filters).length > 0) {
+        return UserService.searchUsers({
+          search: filters.search,
+          role: filters.role,
+          status: filters.status,
+        });
+      }
+      return UserService.getUsers();
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutos
+  });
 
-    loadUsers();
-  }, []);
+  // Mutation principal para crear usuario
+  const createUserMutation = useMutation({
+    mutationFn: (userData: UserFormData) => UserService.createUser(userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
+    },
+  });
 
-  // Calcular estadísticas
-  useEffect(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+  // Mutations preparadas para desarrollo futuro
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, userData }: { id: string; userData: Partial<UserFormData> }) => 
+      UserService.updateUser(id, userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
+    },
+  });
 
-    const newStats: UserStats = {
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: string) => UserService.deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
+    },
+  });
+
+  // Calcular estadísticas basadas en los nuevos roles
+  const calculateStats = (users: User[]): UserStats => {
+    const stats: UserStats = {
       total: users.length,
-      activos: users.filter(user => user.estado === UserEstado.ACTIVO).length,
-      inactivos: users.filter(user => user.estado === UserEstado.INACTIVO).length,
-      nuevosEsteMes: users.filter(user => {
-        if (!user.fechaCreacion) return false;
-        const creationDate = new Date(user.fechaCreacion);
-        return creationDate.getMonth() === currentMonth && 
-               creationDate.getFullYear() === currentYear;
-      }).length,
-      porRol: {
-        administradores: users.filter(user => user.rol === UserRol.ADMINISTRADOR).length,
-        rrhh: users.filter(user => user.rol === UserRol.RRHH).length,
-        colaboradoresInternos: users.filter(user => user.rol === UserRol.COLABORADOR_INTERNO).length,
-        colaboradoresExternos: users.filter(user => user.rol === UserRol.COLABORADOR_EXTERNO).length,
+      active: 0,
+      inactive: 0,
+      newThisMonth: 0,
+      byRole: {
+        superAdmin: 0,
+        admin: 0,
+        collaboratorExternal: 0,
+        collaboratorInternal: 0,
+        rrhh: 0,
       },
     };
 
-    setStats(newStats);
-  }, [users]);
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
 
-  // Aplicar filtros
-  useEffect(() => {
-    let filtered = users;
+    users.forEach((user) => {
+      // Contar por estado
+      if (user.isActive) {
+        stats.active++;
+      } else {
+        stats.inactive++;
+      }
 
-    if (filters.search) {
-      filtered = filtered.filter(user =>
-        user.nombres.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        user.apellidos.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        user.email.toLowerCase().includes(filters.search!.toLowerCase())
-      );
-    }
+      // Contar nuevos este mes
+      const createdDate = new Date(user.createdAt);
+      if (
+        createdDate.getMonth() === currentMonth &&
+        createdDate.getFullYear() === currentYear
+      ) {
+        stats.newThisMonth++;
+      }
 
-    if (filters.estado) {
-      filtered = filtered.filter(user => user.estado === filters.estado);
-    }
+      // Contar por rol
+      switch (user.role) {
+        case UserRole.SUPER_ADMIN:
+          stats.byRole.superAdmin++;
+          break;
+        case UserRole.ADMIN:
+          stats.byRole.admin++;
+          break;
+        case UserRole.COLLABORATOR_EXTERNAL:
+          stats.byRole.collaboratorExternal++;
+          break;
+        case UserRole.COLLABORATOR_INTERNAL:
+          stats.byRole.collaboratorInternal++;
+          break;
+        case UserRole.RRHH:
+          stats.byRole.rrhh++;
+          break;
+      }
+    });
 
-    if (filters.rol) {
-      filtered = filtered.filter(user => user.rol === filters.rol);
-    }
-
-    setFilteredUsers(filtered);
-  }, [users, filters]);
-
-  const createUser = async (userData: Omit<User, 'id'>): Promise<void> => {
-    setIsLoading(true);
-    try {
-      // Simular API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newUser: User = {
-        ...userData,
-        id: Date.now().toString(),
-        fechaCreacion: new Date(),
-      };
-
-      setUsers(prev => [...prev, newUser]);
-    } finally {
-      setIsLoading(false);
-    }
+    return stats;
   };
 
-  const updateUser = async (id: string, userData: Omit<User, 'id'>): Promise<void> => {
-    setIsLoading(true);
-    try {
-      // Simular API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUsers(prev => prev.map(user => 
-        user.id === id 
-          ? { ...userData, id, fechaActualizacion: new Date() }
-          : user
-      ));
-    } finally {
-      setIsLoading(false);
-    }
+  const stats = calculateStats(users);
+
+  // Función principal para crear usuario
+  const createUser = async (userData: UserFormData) => {
+    return createUserMutation.mutateAsync(userData);
   };
 
-  const deleteUser = async (id: string): Promise<void> => {
-    setIsLoading(true);
-    try {
-      // Simular API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUsers(prev => prev.filter(user => user.id !== id));
-    } finally {
-      setIsLoading(false);
-    }
+  // Funciones preparadas para desarrollo futuro
+  const updateUser = async (id: string, userData: Partial<UserFormData>) => {
+    return updateUserMutation.mutateAsync({ id, userData });
+  };
+
+  const deleteUser = async (id: string) => {
+    return deleteUserMutation.mutateAsync(id);
   };
 
   const applyFilters = (newFilters: SearchFilters) => {
@@ -189,14 +152,26 @@ export function useUsers() {
   };
 
   return {
-    users: filteredUsers,
+    // Datos principales
+    users,
     stats,
-    isLoading,
+    isLoading: isLoading || createUserMutation.isPending || updateUserMutation.isPending || deleteUserMutation.isPending,
+    error,
     filters,
+    
+    // Funciones principales
     createUser,
+    
+    // Funciones preparadas para futuro desarrollo
     updateUser,
     deleteUser,
     applyFilters,
     clearFilters,
+    refetch,
+    
+    // Estados de las mutaciones
+    isCreating: createUserMutation.isPending,
+    isUpdating: updateUserMutation.isPending,
+    isDeleting: deleteUserMutation.isPending,
   };
 }

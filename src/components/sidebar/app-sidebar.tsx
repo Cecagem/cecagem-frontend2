@@ -234,7 +234,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "Mis Proyectos",
-            url: "#",
+            url: "/my-project",
             icon: FolderOpen,
             collapsible: false,
           },

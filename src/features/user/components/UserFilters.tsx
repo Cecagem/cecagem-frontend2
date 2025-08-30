@@ -3,10 +3,10 @@
 import { SearchFilters } from "@/components/shared/filters";
 import { 
   SearchFilters as ISearchFilters, 
-  UserEstado, 
-  UserRol, 
-  getRolLabel, 
-  getEstadoLabel 
+  UserStatus, 
+  UserRole, 
+  getRoleLabel, 
+  getStatusLabel 
 } from "../types";
 
 interface UserFiltersProps {
@@ -23,23 +23,24 @@ export default function UserFilters({
   
   const selectFilters = [
     {
-      key: "estado",
+      key: "status",
       label: "Estado",
       placeholder: "Todos los estados",
       options: [
-        { value: UserEstado.ACTIVO, label: getEstadoLabel(UserEstado.ACTIVO) },
-        { value: UserEstado.INACTIVO, label: getEstadoLabel(UserEstado.INACTIVO) },
+        { value: UserStatus.ACTIVE, label: getStatusLabel(UserStatus.ACTIVE) },
+        { value: UserStatus.INACTIVE, label: getStatusLabel(UserStatus.INACTIVE) },
       ]
     },
     {
-      key: "rol",
+      key: "role",
       label: "Rol",
       placeholder: "Todos los roles",
       options: [
-        { value: UserRol.ADMINISTRADOR, label: getRolLabel(UserRol.ADMINISTRADOR) },
-        { value: UserRol.RRHH, label: getRolLabel(UserRol.RRHH) },
-        { value: UserRol.COLABORADOR_INTERNO, label: getRolLabel(UserRol.COLABORADOR_INTERNO) },
-        { value: UserRol.COLABORADOR_EXTERNO, label: getRolLabel(UserRol.COLABORADOR_EXTERNO) },
+        { value: UserRole.SUPER_ADMIN, label: getRoleLabel(UserRole.SUPER_ADMIN) },
+        { value: UserRole.ADMIN, label: getRoleLabel(UserRole.ADMIN) },
+        { value: UserRole.COLLABORATOR_EXTERNAL, label: getRoleLabel(UserRole.COLLABORATOR_EXTERNAL) },
+        { value: UserRole.COLLABORATOR_INTERNAL, label: getRoleLabel(UserRole.COLLABORATOR_INTERNAL) },
+        { value: UserRole.RRHH, label: getRoleLabel(UserRole.RRHH) },
       ]
     }
   ];
