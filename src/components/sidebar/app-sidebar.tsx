@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
       {
         label: "Gestión Administrativa",
-        roles: ["ADMIN", "SUPER_ADMIN"],
+        roles: ["ADMIN", "SUPER_ADMIN", "RRHH"],
         items: [
           {
             title: "Proyectos",
@@ -87,7 +87,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           {
             title: "Clientes",
-            url: "#",
+            url: "/clients",
             icon: Building2,
             collapsible: true,
             items: [
@@ -101,46 +101,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               },
             ],
           },
-          {
-            title: "Personal",
-            url: "/user",
-            icon: Users,
-            collapsible: false,
-          },
-          {
-            title: "Gestión de Pagos",
-            url: "/payment",
-            icon: CreditCard,
-            collapsible: false,
-          },
-        ],
-      },
-      {
-        label: "Gestión Administrativa",
-        roles: ["RRHH"],
-        items: [
-          {
-            title: "Proyectos",
-            url: "/project",
-            icon: FolderOpen,
-            collapsible: false,
-          },
-          {
-            title: "Clientes",
-            url: "#",
-            icon: Building2,
-            collapsible: true,
-            items: [
-              {
-                title: "Investigación",
-                url: "/client/research",
-              },
-              {
-                title: "Contables",
-                url: "/client/accounting",
-              },
-            ],
-          },
+          ...(["ADMIN", "SUPER_ADMIN"].includes(currentUserRole)
+            ? [
+                {
+                  title: "Usuarios del sistema",
+                  url: "/user",
+                  icon: Users,
+                  collapsible: false,
+                },
+              ]
+            : []),
           {
             title: "Gestión de Pagos",
             url: "/payment",
@@ -149,80 +119,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
         ],
       },
-      // {
-      //   label: "Recursos Humanos",
-      //   roles: ["RRHH", "SUPER_ADMIN"],
-      //   items: [
-      //     {
-      //       title: "Colaboradores",
-      //       url: "/user",
-      //       icon: Users,
-      //       collapsible: false,
-      //     },
-      //     {
-      //       title: "Asignación de Proyectos",
-      //       url: "/project",
-      //       icon: FolderOpen,
-      //       collapsible: false,
-      //     },
-      //     {
-      //       title: "Pagos a Colaboradores",
-      //       url: "/payment",
-      //       icon: CreditCard,
-      //       collapsible: false,
-      //     },
-      //     {
-      //       title: "Reportes de Productividad",
-      //       url: "#",
-      //       icon: BarChart3,
-      //       collapsible: false,
-      //     },
-      //   ],
-      // },
       // Herramientas y Configuración - Admins y Super Admins
       {
         label: "Herramientas",
-        roles: ["ADMIN", "SUPER_ADMIN"],
+        roles: ["ADMIN", "SUPER_ADMIN", "RRHH"],
         items: [
           {
             title: "Calendario",
-            url: "#",
+            url: "/calendar",
             icon: Calendar,
             collapsible: false,
           },
           {
             title: "Reportes",
-            url: "#",
+            url: "/reports",
             icon: BarChart3,
             collapsible: false,
           },
           {
             title: "Configuración",
-            url: "#",
-            icon: Settings,
-            collapsible: false,
-          },
-        ],
-      },
-      {
-        label: "Herramientas",
-        roles: ["RRHH"],
-        items: [
-          {
-            title: "Calendario",
-            url: "#",
-            icon: Calendar,
-            collapsible: false,
-          },
-          {
-            title: "Reportes",
-            url: "#",
-            icon: BarChart3,
-            collapsible: false,
-          },
-          {
-            title: "Configuración",
-            url: "#",
+            url: "/settings",
             icon: Settings,
             collapsible: false,
           },
@@ -240,7 +156,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           {
             title: "Mis Pagos",
-            url: "#",
+            url: "/my-payments",
             icon: CreditCard,
             collapsible: false,
           },
