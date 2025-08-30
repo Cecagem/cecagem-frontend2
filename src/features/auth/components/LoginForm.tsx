@@ -40,7 +40,22 @@ export function LoginForm({
   const userAccount = {
     admin: {
       name: "admin",
-      email: "super_admin@ejemplo.com",
+      email: "juan.garcia@cecagem.com",
+      password: "12345678",
+    },
+    rrhh: {
+      name: "rrhh",
+      email: "maria.rodriguez@cecagem.com",
+      password: "12345678",
+    },
+    colaborador_interno: {
+      name: "colaborador_interno",
+      email: "usuario@ejemplo.com",
+      password: "12345678",
+    },
+    colaborador_externo: {
+      name: "colaborador_externo",
+      email: "colaborador_externo@ejemplo.com",
       password: "12345678",
     },
   };

@@ -97,6 +97,8 @@ class ApiClient {
   }
 }
 
-export const cecagemApi = new ApiClient(process.env.NEXT_PUBLIC_API_URL);
+export const cecagemApi = new ApiClient(
+  process.env.NEXT_PUBLIC_API_CECAGEM_URL
+);
 
 export type { ApiError, RequestData };

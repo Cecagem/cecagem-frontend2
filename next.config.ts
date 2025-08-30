@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: "/api/cecagem/:path*",
+        destination: "https://back.ecomassystems.com/api/v1/:path*",
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

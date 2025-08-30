@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
       };
 
       const authResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+        `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/me`,
         {
           method: "GET",
           headers,
@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
         isAuthenticated = true;
       } else if (authResponse.status === 401) {
         const refreshResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/refresh`,
           {
             method: "POST",
             headers,
@@ -72,7 +72,7 @@ export async function middleware(request: NextRequest) {
             };
 
             const retryAuthResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+              `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/me`,
               {
                 method: "GET",
                 headers: newHeaders,

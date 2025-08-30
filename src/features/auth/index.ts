@@ -8,8 +8,8 @@ export * from "./hooks/use-login";
 export * from "./hooks/use-logout";
 
 // services
-export * from "./services/auth.service";
-export * from "./services/server-auth.service";
+export * from "./services-fix/auth.service";
+export * from "./services-fix/server-auth.service";
 
 // stores
 export * from "./stores/auth.store";

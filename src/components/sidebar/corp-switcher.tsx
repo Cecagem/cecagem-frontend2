@@ -36,9 +36,17 @@ export function TeamSwitcher({
                 src="/image/logos/logocecagem.png"
                 alt="CECAGEM logo"
                 width={150}
-                height={10}
+                height={150}
                 className="block dark:hidden"
               />
+              <Image
+                src="/image/logos/logocecagem.png"
+                alt="CECAGEM logo"
+                width={150}
+                height={150}
+                className="hidden dark:block"
+              />
+
               {/* <span className="truncate text-sm text-muted-foreground font-medium">
                 {currentRole.name}
               </span> */}

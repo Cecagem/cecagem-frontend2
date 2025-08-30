@@ -42,7 +42,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const data = {
     user: {
-      name: user?.profile.firstName + " " + user?.profile.lastName,
+      name:
+        user?.profile?.firstName && user?.profile?.lastName
+          ? `${user.profile.firstName} ${user.profile.lastName}`
+          : user?.email ?? "Usuario",
       email: user?.email ?? "",
       avatar: "/avatars/admin.jpg",
     },
@@ -112,6 +115,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
         ],
       },
+      {
+        label: "Gestión Administrativa",
+        roles: ["RRHH"],
+        items: [
+          {
+            title: "Proyectos",
+            url: "/project",
+            icon: FolderOpen,
+            collapsible: false,
+          },
+          {
+            title: "Clientes",
+            url: "#",
+            icon: Building2,
+            collapsible: true,
+            items: [
+              {
+                title: "Investigación",
+                url: "/client/research",
+              },
+              {
+                title: "Contables",
+                url: "/client/accounting",
+              },
+            ],
+          },
+          {
+            title: "Gestión de Pagos",
+            url: "/payment",
+            icon: CreditCard,
+            collapsible: false,
+          },
+        ],
+      },
       // {
       //   label: "Recursos Humanos",
       //   roles: ["RRHH", "SUPER_ADMIN"],
@@ -168,8 +205,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ],
       },
       {
+        label: "Herramientas",
+        roles: ["RRHH"],
+        items: [
+          {
+            title: "Calendario",
+            url: "#",
+            icon: Calendar,
+            collapsible: false,
+          },
+          {
+            title: "Reportes",
+            url: "#",
+            icon: BarChart3,
+            collapsible: false,
+          },
+          {
+            title: "Configuración",
+            url: "#",
+            icon: Settings,
+            collapsible: false,
+          },
+        ],
+      },
+      {
         label: "Mi Área de Trabajo",
-        roles: ["COLLABRATOR_INTERNAL", "COLLABRATOR_EXTERNAL"],
+        roles: ["COLLABORATOR_INTERNAL", "COLLABORATOR_EXTERNAL"],
         items: [
           {
             title: "Mis Proyectos",
