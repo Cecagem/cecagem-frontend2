@@ -21,7 +21,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useRouter } from "next/navigation";
+import { useLogout } from "@/features/auth";
 
 export function NavUser({
   user,
@@ -33,7 +33,9 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  const router = useRouter();
+
+  const logout = useLogout();
+  // const { user } = useAuthStore();
 
   return (
     <SidebarMenu>
@@ -91,9 +93,17 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/")}>
-              <LogOut />
-              Salir
+            <DropdownMenuItem
+              className="gap-2 p-2 cursor-pointer"
+              onClick={() => logout.mutate()}
+              aria-disabled={logout.isPending}
+            >
+              <div className="flex size-6 items-center justify-center rounded-md border bg-primary">
+                <LogOut className="size-3.5 shrink-0 text-white" />
+              </div>
+              <span className="font-medium">
+                {logout.isPending ? "Cerrando..." : "Cerrar Sesión"}
+              </span>{" "}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

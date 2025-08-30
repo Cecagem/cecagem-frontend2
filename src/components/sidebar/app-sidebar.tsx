@@ -2,9 +2,7 @@
 
 import * as React from "react";
 import {
-  AudioWaveform,
   Calendar,
-  Command,
   FolderOpen,
   GalleryVerticalEnd,
   Settings,
@@ -13,8 +11,6 @@ import {
   Users,
   CreditCard,
   BarChart3,
-  TrendingUp,
-  Upload,
   Building2,
 } from "lucide-react";
 
@@ -28,148 +24,180 @@ import {
 import { TeamSwitcher } from "./corp-switcher";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
-
-const data = {
-  user: {
-    name: "Admin",
-    email: "admin@empresa.com",
-    avatar: "/avatars/admin.jpg",
-  },
-  teams: [
-    {
-      name: "Administración",
-      logo: GalleryVerticalEnd,
-      plan: "Empresa principal",
-    },
-    {
-      name: "RRHH",
-      logo: AudioWaveform,
-      plan: "Recursos Humanos",
-    },
-    {
-      name: "Colaborador",
-      logo: Command,
-      plan: "Equipo colaborador",
-    },
-  ],
-
-  navGroups: [
-    {
-      label: "General",
-      items: [
-        {
-          title: "Dashboard",
-          url: "/dashboard",
-          icon: LayoutDashboard,
-          collapsible: false,
-        },
-        // {
-        //   title: "Notificaciones",
-        //   url: "/dashboard/notifications",
-        //   icon: Bell,
-        //   collapsible: false,
-        // },
-      ],
-    },
-    {
-      label: "Gestión",
-      items: [
-        {
-          title: "Proyectos",
-          url: "/project",
-          icon: FolderOpen,
-          collapsible: false,
-        },
-        {
-          title: "Clientes",
-          url: "#",
-          icon: Building2,
-          collapsible: true,
-          items: [
-            {
-              title: "Contables",
-              url: "/client/accounting",
-            },
-            {
-              title: "Investigación",
-              url: "/client/research",
-            },
-          ],
-        },
-        {
-          title: "Usuarios",
-          url: "/user",
-          icon: Users,
-          collapsible: false,
-        },
-        {
-          title: "Pagos",
-          url: "/payment",
-          icon: CreditCard,
-          collapsible: false,
-        },
-      ],
-    },
-    {
-      label: "Herramientas",
-      items: [
-        {
-          title: "Calendario",
-          url: "#",
-          icon: Calendar,
-          collapsible: false,
-        },
-        {
-          title: "Reportes",
-          url: "#",
-          icon: BarChart3,
-          collapsible: false,
-        },
-        {
-          title: "Configuración",
-          url: "#",
-          icon: Settings,
-          collapsible: false,
-        },
-      ],
-    },
-    {
-      label: "Colaboradores",
-      items: [
-        {
-          title: "Mis Proyectos",
-          url: "#",
-          icon: FolderOpen,
-          collapsible: false,
-        },
-        {
-          title: "Reportar Avances",
-          url: "#",
-          icon: TrendingUp,
-          collapsible: false,
-        },
-        {
-          title: "Reportes Finales",
-          url: "#",
-          icon: Upload,
-          collapsible: false,
-        },
-        {
-          title: "Mis Pagos",
-          url: "#",
-          icon: CreditCard,
-          collapsible: false,
-        },
-      ],
-    },
-  ],
-};
+import { useAuthStore } from "@/features/auth";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuthStore();
+
+  const rolesMap = {
+    ADMIN: "Administrador",
+    RRHH: "Recursos Humanos",
+    SUPER_ADMIN: "Super Administrador",
+    COLLABRATOR_INTERNAL: "Colaborador Interno",
+  };
+
+  const currentUserRole = user?.role || "";
+  const currentRoleName =
+    rolesMap[currentUserRole as keyof typeof rolesMap] || "Administrador";
+
+  const data = {
+    user: {
+      name: user?.profile.firstName + " " + user?.profile.lastName,
+      email: user?.email ?? "",
+      avatar: "/avatars/admin.jpg",
+    },
+    currentRole: {
+      name: currentRoleName,
+      company: "CECAGEM",
+      logo: GalleryVerticalEnd,
+      image: "/image/logos/logocecagem.png",
+    },
+
+    navGroups: [
+      {
+        label: "General",
+        roles: ["ADMIN", "SUPER_ADMIN"],
+        items: [
+          {
+            title: "Dashboard",
+            url: "/dashboard",
+            icon: LayoutDashboard,
+            collapsible: false,
+          },
+          // {
+          //   title: "Notificaciones",
+          //   url: "/dashboard/notifications",
+          //   icon: Bell,
+          //   collapsible: false,
+          // },
+        ],
+      },
+      {
+        label: "Gestión Administrativa",
+        roles: ["ADMIN", "SUPER_ADMIN"],
+        items: [
+          {
+            title: "Proyectos",
+            url: "/project",
+            icon: FolderOpen,
+            collapsible: false,
+          },
+          {
+            title: "Clientes",
+            url: "#",
+            icon: Building2,
+            collapsible: true,
+            items: [
+              {
+                title: "Investigación",
+                url: "/client/research",
+              },
+              {
+                title: "Contables",
+                url: "/client/accounting",
+              },
+            ],
+          },
+          {
+            title: "Personal",
+            url: "/user",
+            icon: Users,
+            collapsible: false,
+          },
+          {
+            title: "Gestión de Pagos",
+            url: "/payment",
+            icon: CreditCard,
+            collapsible: false,
+          },
+        ],
+      },
+      // {
+      //   label: "Recursos Humanos",
+      //   roles: ["RRHH", "SUPER_ADMIN"],
+      //   items: [
+      //     {
+      //       title: "Colaboradores",
+      //       url: "/user",
+      //       icon: Users,
+      //       collapsible: false,
+      //     },
+      //     {
+      //       title: "Asignación de Proyectos",
+      //       url: "/project",
+      //       icon: FolderOpen,
+      //       collapsible: false,
+      //     },
+      //     {
+      //       title: "Pagos a Colaboradores",
+      //       url: "/payment",
+      //       icon: CreditCard,
+      //       collapsible: false,
+      //     },
+      //     {
+      //       title: "Reportes de Productividad",
+      //       url: "#",
+      //       icon: BarChart3,
+      //       collapsible: false,
+      //     },
+      //   ],
+      // },
+      // Herramientas y Configuración - Admins y Super Admins
+      {
+        label: "Herramientas",
+        roles: ["ADMIN", "SUPER_ADMIN"],
+        items: [
+          {
+            title: "Calendario",
+            url: "#",
+            icon: Calendar,
+            collapsible: false,
+          },
+          {
+            title: "Reportes",
+            url: "#",
+            icon: BarChart3,
+            collapsible: false,
+          },
+          {
+            title: "Configuración",
+            url: "#",
+            icon: Settings,
+            collapsible: false,
+          },
+        ],
+      },
+      {
+        label: "Mi Área de Trabajo",
+        roles: ["COLLABRATOR_INTERNAL", "COLLABRATOR_EXTERNAL"],
+        items: [
+          {
+            title: "Mis Proyectos",
+            url: "#",
+            icon: FolderOpen,
+            collapsible: false,
+          },
+          {
+            title: "Mis Pagos",
+            url: "#",
+            icon: CreditCard,
+            collapsible: false,
+          },
+          // {
+          //   title: "Calendario Personal",
+          //   url: "#",
+          //   icon: Calendar,
+          //   collapsible: false,
+          // },
+        ],
+      },
+    ].filter((group) => group.roles.includes(currentUserRole)),
+  };
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher currentRole={data.currentRole} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain groups={data.navGroups} />

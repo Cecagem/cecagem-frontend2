@@ -1,9 +1,11 @@
-import React from "react";
+import { LoginForm } from "@/features/auth";
 
 export default function LoginPage() {
   return (
-    <div className="flex items-center justify-center min-h-screen w-screen">
-      <span className="text-lg text-gray-600">Login</span>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-5xl">
+        <LoginForm />
+      </div>
     </div>
   );
 }

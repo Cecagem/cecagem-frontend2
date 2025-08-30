@@ -1,8 +1,5 @@
-export default function Home() {
-  return (
-    <div className="w-full max-w-5xl">
-      {/* <LoginForm /> */}
-      <h1>Login</h1>
-    </div>
-  );
+import { redirect } from "next/navigation";
+
+export default async function HomePage() {
+  redirect("/dashboard");
 }
