@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { User, getRoleLabel, requiresSalary } from "../types";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   DropdownMenu,
@@ -21,7 +22,6 @@ import {
   Phone,
 } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
-import { User, UserEstado, getRolLabel, getEstadoLabel, requiresContract } from "../types";
 
 interface UserTableProps {
   users: User[];
@@ -39,7 +39,7 @@ export default function UserTable({
   
   const columns: ColumnDef<User>[] = [
     {
-      accessorKey: "nombres",
+      accessorKey: "profile.firstName",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -54,7 +54,9 @@ export default function UserTable({
         const user = row.original;
         return (
           <div className="space-y-1">
-            <div className="font-medium">{user.nombres} {user.apellidos}</div>
+            <div className="font-medium">
+              {user.profile?.firstName || ''} {user.profile?.lastName || ''}
+            </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Mail className="h-3 w-3" />
               {user.email}
@@ -64,20 +66,20 @@ export default function UserTable({
       },
     },
     {
-      accessorKey: "telefono",
+      accessorKey: "profile.phone",
       header: "Contacto",
       cell: ({ row }) => {
         const user = row.original;
         return (
           <div className="flex items-center gap-1 text-sm">
             <Phone className="h-3 w-3" />
-            {user.telefono}
+            {user.profile?.phone || 'N/A'}
           </div>
         );
       },
     },
     {
-      accessorKey: "rol",
+      accessorKey: "role",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -92,42 +94,42 @@ export default function UserTable({
         const user = row.original;
         return (
           <Badge variant="outline" className="font-medium">
-            {getRolLabel(user.rol)}
+            {getRoleLabel(user.role)}
           </Badge>
         );
       },
     },
     {
-      accessorKey: "contrato",
+      accessorKey: "profile.salaryMonth",
       header: "Contrato",
       cell: ({ row }) => {
         const user = row.original;
-        if (!requiresContract(user.rol)) {
+        if (!requiresSalary(user.role)) {
           return <span className="text-muted-foreground text-sm">No aplica</span>;
         }
         
-        if (!user.contrato) {
+        if (!user.profile?.salaryMonth) {
           return <Badge variant="destructive">Sin contrato</Badge>;
         }
 
         return (
           <div className="space-y-1 text-sm">
-            <div className="font-medium">S/ {user.contrato.montoPago.toLocaleString()}</div>
+            <div className="font-medium">S/ {user.profile.salaryMonth.toLocaleString()}</div>
             <div className="text-muted-foreground">
-              {(() => {
-                const date = new Date(user.contrato.fechaContrato);
+              {user.profile.paymentDate ? (() => {
+                const date = new Date(user.profile.paymentDate);
                 const day = String(date.getDate()).padStart(2, '0');
                 const month = String(date.getMonth() + 1).padStart(2, '0');
                 const year = date.getFullYear();
                 return `${day}/${month}/${year}`;
-              })()}
+              })() : 'Sin fecha'}
             </div>
           </div>
         );
       },
     },
     {
-      accessorKey: "estado",
+      accessorKey: "isActive",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -141,14 +143,14 @@ export default function UserTable({
       cell: ({ row }) => {
         const user = row.original;
         return (
-          <Badge variant={user.estado === UserEstado.ACTIVO ? "default" : "secondary"}>
-            {getEstadoLabel(user.estado)}
+          <Badge variant={user.isActive ? "default" : "secondary"}>
+            {user.isActive ? "Activo" : "Inactivo"}
           </Badge>
         );
       },
     },
     {
-      accessorKey: "fechaCreacion",
+      accessorKey: "createdAt",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -163,8 +165,8 @@ export default function UserTable({
         const user = row.original;
         return (
           <div className="text-sm">
-            {user.fechaCreacion 
-              ? format(new Date(user.fechaCreacion), "dd/MM/yyyy", { locale: es })
+            {user.createdAt 
+              ? format(new Date(user.createdAt), "dd/MM/yyyy", { locale: es })
               : "N/A"
             }
           </div>

@@ -8,5 +8,8 @@ export { default as DeleteConfirmation } from "./components/DeleteConfirmation";
 // Export hooks
 export { useUsers } from "./hooks/useUsers";
 
+// Export services
+export * from "./services";
+
 // Export types
 export * from "./types";

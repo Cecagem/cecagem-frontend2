@@ -15,11 +15,12 @@ import { Bell, Plus } from "lucide-react";
 import {
   useUsers,
   User,
+  UserFormData,
   UserStatsCards,
   UserFilters,
   UserTable,
   UserForm,
-  DeleteConfirmation,
+  // DeleteConfirmation, // Preparado para desarrollo futuro
 } from "@/features/user";
 
 function UserPage() {
@@ -29,51 +30,46 @@ function UserPage() {
     isLoading,
     filters,
     createUser,
-    updateUser,
-    deleteUser,
+    // updateUser,
+    // deleteUser,
     applyFilters,
     clearFilters,
+    // isUpdating,
+    // isDeleting,
   } = useUsers();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<User | undefined>(undefined);
+  // const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
+  // const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  // const [userToDelete, setUserToDelete] = useState<User | undefined>(undefined);
 
   const handleCreateUser = useCallback(() => {
-    setSelectedUser(undefined);
+    // setSelectedUser(undefined);
     setIsFormOpen(true);
   }, []);
 
+  // Métodos preparados para desarrollo futuro
   const handleEditUser = useCallback((user: User) => {
-    setSelectedUser(user);
-    setIsFormOpen(true);
+    console.log("Editar usuario:", user);
+    // setSelectedUser(user);
+    // setIsFormOpen(true);
   }, []);
 
   const handleDeleteUser = useCallback((user: User) => {
-    setUserToDelete(user);
-    setIsDeleteModalOpen(true);
+    console.log("Eliminar usuario:", user);
+    // setUserToDelete(user);
+    // setIsDeleteModalOpen(true);
   }, []);
 
-  const handleConfirmDelete = useCallback(async () => {
-    if (userToDelete?.id) {
-      await deleteUser(userToDelete.id);
-      setIsDeleteModalOpen(false);
-      setUserToDelete(undefined);
-    }
-  }, [userToDelete, deleteUser]);
-
-  const handleFormSubmit = useCallback(async (userData: Omit<User, 'id'>) => {
-    if (selectedUser?.id) {
-      // Actualizar usuario existente
-      await updateUser(selectedUser.id, userData);
-    } else {
-      // Crear nuevo usuario
+  const handleFormSubmit = useCallback(async (userData: UserFormData) => {
+    try {
+      // Solo crear usuarios por ahora
       await createUser(userData);
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error al crear usuario:", error);
     }
-    setIsFormOpen(false);
-    setSelectedUser(undefined);
-  }, [selectedUser, updateUser, createUser]);
+  }, [createUser]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -138,17 +134,16 @@ function UserPage() {
 
       {/* Modal de formulario */}
       <UserForm
-        user={selectedUser}
         isOpen={isFormOpen}
         onClose={() => {
           setIsFormOpen(false);
-          setSelectedUser(undefined);
         }}
         onSubmit={handleFormSubmit}
         isLoading={isLoading}
       />
 
-      {/* Modal de confirmación de eliminación */}
+      {/* Modal de confirmación de eliminación - Preparado para desarrollo futuro */}
+      {/* 
       <DeleteConfirmation
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -157,8 +152,9 @@ function UserPage() {
         }}
         onConfirm={handleConfirmDelete}
         isLoading={isLoading}
-        userName={userToDelete ? `${userToDelete.nombres} ${userToDelete.apellidos}` : ""}
+        userName={userToDelete ? `${userToDelete.profile?.firstName || ''} ${userToDelete.profile?.lastName || ''}` : ""}
       />
+      */}
     </div>
   );
 }
