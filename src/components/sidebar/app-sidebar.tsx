@@ -138,7 +138,7 @@ const data = {
       items: [
         {
           title: "Mis Proyectos",
-          url: "#",
+          url: "/my-project",
           icon: FolderOpen,
           collapsible: false,
         },
