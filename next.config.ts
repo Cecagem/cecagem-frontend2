@@ -5,7 +5,8 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/cecagem/:path*",
-        destination: "https://back.ecomassystems.com/api/v1/:path*",
+        // destination: "https://back.ecomassystems.com/api/v1/:path*",
+        destination: "http://localhost:5000/api/v1/:path*",
       },
     ];
   },

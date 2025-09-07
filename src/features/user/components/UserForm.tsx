@@ -1,163 +1,133 @@
 "use client";
 
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
-import { z } from "zod";
+import { useForm } from "@tanstack/react-form";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Combobox } from "@/components/ui/combobox";
 import { DatePicker } from "@/components/ui/date-picker";
-import { 
-  User, 
-  UserFormData,
-  UserRole, 
+import {
+  User,
+  UserRole,
   DocumentType,
-  requiresSalary, 
+  CreateCompleteUserRequest,
+} from "../types/user.type";
+import { createUserData } from "../hooks/use-users";
+import {
   availableRoles,
   documentTypes,
-} from "../types";
-
-// Schema para el formulario con validación condicional
-const FormSchema = z.object({
-  email: z.string().email("Email inválido"),
-  role: z.nativeEnum(UserRole),
-  firstName: z.string().min(2, "Nombres son requeridos"),
-  lastName: z.string().min(2, "Apellidos son requeridos"),
-  documentType: z.nativeEnum(DocumentType),
-  documentNumber: z.string().min(8, "Número de documento inválido"),
-  phone: z.string().min(9, "Teléfono debe tener al menos 9 dígitos"),
-  salaryMonth: z.number().min(0, "El salario debe ser mayor a 0").optional(),
-  paymentDate: z.date().optional(),
-}).refine((data) => {
-  // Validar que si el rol requiere salario, estos campos sean obligatorios
-  if (requiresSalary(data.role)) {
-    return data.salaryMonth !== undefined && data.paymentDate !== undefined;
-  }
-  return true;
-}, {
-  message: "El salario y fecha de pago son requeridos para este rol",
-  path: ["salaryMonth"],
-});
-
-type FormData = z.infer<typeof FormSchema>;
+  requiresSalary,
+} from "../utils/user.validation";
 
 interface UserFormProps {
   user?: User;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (user: UserFormData) => Promise<void>;
+  onSubmit: (user: CreateCompleteUserRequest) => Promise<void>;
   isLoading?: boolean;
 }
 
-export default function UserForm({ user, isOpen, onClose, onSubmit, isLoading }: UserFormProps) {
+const RequiredLabel = ({ children }: { children: React.ReactNode }) => (
+  <Label className="text-sm font-medium">
+    {children} <span className="text-red-500">*</span>
+  </Label>
+);
+
+export default function UserForm({
+  user,
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+}: UserFormProps) {
   const isEditing = !!user;
-  
-  const form = useForm<FormData>({
-    resolver: zodResolver(FormSchema),
+
+  const form = useForm({
     defaultValues: {
-      email: "",
-      role: UserRole.COLLABORATOR_EXTERNAL,
-      firstName: "",
-      lastName: "",
-      documentType: DocumentType.DNI,
-      documentNumber: "",
-      phone: "",
-      salaryMonth: undefined,
-      paymentDate: undefined,
+      email: user?.email || "",
+      role: user?.role || "COLLABORATOR_EXTERNAL",
+      firstName: user?.profile?.firstName || "",
+      lastName: user?.profile?.lastName || "",
+      documentType: user?.profile?.documentType || "DNI",
+      documentNumber: user?.profile?.documentNumber || "",
+      phone: user?.profile?.phone || "",
+      salaryMonth: user?.profile?.salaryMonth || undefined,
+      paymentDate: user?.profile?.paymentDate
+        ? new Date(user.profile.paymentDate)
+        : undefined,
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        let userData;
+        const role = value.role as UserRole;
+
+        switch (role) {
+          case "RRHH":
+            userData = createUserData.rrhh(value.email, {
+              firstName: value.firstName,
+              lastName: value.lastName,
+              documentType: value.documentType as DocumentType,
+              documentNumber: value.documentNumber,
+              phone: value.phone,
+              salaryMonth: value.salaryMonth!,
+              paymentDate: value.paymentDate!.toISOString(),
+            });
+            break;
+
+          case "COLLABORATOR_INTERNAL":
+            userData = createUserData.collaboratorInternal(value.email, {
+              firstName: value.firstName,
+              lastName: value.lastName,
+              documentType: value.documentType as DocumentType,
+              documentNumber: value.documentNumber,
+              phone: value.phone,
+              salaryMonth: value.salaryMonth!,
+              paymentDate: value.paymentDate!.toISOString(),
+            });
+            break;
+
+          case "COLLABORATOR_EXTERNAL":
+            userData = createUserData.collaboratorExternal(value.email, {
+              firstName: value.firstName,
+              lastName: value.lastName,
+              documentType: value.documentType as DocumentType,
+              documentNumber: value.documentNumber,
+              phone: value.phone,
+            });
+            break;
+
+          case "ADMIN":
+          default:
+            userData = createUserData.admin(value.email, {
+              firstName: value.firstName,
+              lastName: value.lastName,
+              documentType: value.documentType as DocumentType,
+              documentNumber: value.documentNumber,
+              phone: value.phone,
+            });
+            break;
+        }
+
+        await onSubmit(userData);
+        form.reset();
+        onClose();
+      } catch (error) {
+        console.error("Error al crear usuario:", error);
+      }
     },
   });
-
-  const watchedRole = useWatch({
-    control: form.control,
-    name: "role",
-  });
-
-  const showSalaryFields = requiresSalary(watchedRole);
-
-  // Reset form cuando se abre/cierra el modal
-  useEffect(() => {
-    if (isOpen) {
-      if (user) {
-        // Modo edición (si llegara a implementarse)
-        form.reset({
-          email: user.email,
-          role: user.role,
-          firstName: user.profile?.firstName || "",
-          lastName: user.profile?.lastName || "",
-          documentType: user.profile?.documentType || DocumentType.DNI,
-          documentNumber: user.profile?.documentNumber || "",
-          phone: user.profile?.phone || "",
-          salaryMonth: user.profile?.salaryMonth,
-          paymentDate: user.profile?.paymentDate ? new Date(user.profile.paymentDate) : undefined,
-        });
-      } else {
-        // Modo creación
-        form.reset({
-          email: "",
-          role: UserRole.COLLABORATOR_EXTERNAL,
-          firstName: "",
-          lastName: "",
-          documentType: DocumentType.DNI,
-          documentNumber: "",
-          phone: "",
-          salaryMonth: undefined,
-          paymentDate: undefined,
-        });
-      }
-    }
-  }, [isOpen, user, form]);
-
-  // Limpiar campos de salario cuando no son necesarios
-  useEffect(() => {
-    if (!showSalaryFields) {
-      form.setValue("salaryMonth", undefined);
-      form.setValue("paymentDate", undefined);
-    }
-  }, [showSalaryFields, form]);
-
-  const handleSubmit = async (data: FormData) => {
-    try {
-      // Construir el payload según la estructura requerida
-      const userFormData: UserFormData = {
-        user: {
-          email: data.email,
-          role: data.role,
-        },
-        profile: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          documentType: data.documentType,
-          documentNumber: data.documentNumber,
-          phone: data.phone,
-          // Solo incluir campos de salario si el rol los requiere
-          ...(showSalaryFields && {
-            salaryMonth: data.salaryMonth!,
-            paymentDate: data.paymentDate!.toISOString(),
-          }),
-        },
-      };
-
-      await onSubmit(userFormData);
-      onClose();
-    } catch (error) {
-      console.error("Error al crear usuario:", error);
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -168,206 +138,351 @@ export default function UserForm({ user, isOpen, onClose, onSubmit, isLoading }:
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* Información de Usuario */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Información de Usuario</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="admin@ejemplo.com" 
-                          {...field} 
-                          disabled={isEditing}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          className="space-y-6"
+        >
+          {/* info del user */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Información de Usuario</h3>
 
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rol *</FormLabel>
-                      <FormControl>
-                        <Combobox
-                          options={availableRoles}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder="Seleccionar rol"
-                          searchPlaceholder="Buscar rol..."
-                          emptyText="No se encontró el rol"
-                          disabled={isEditing}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Información Personal */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Información Personal</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombres *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Juan" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Apellidos *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Pérez" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="documentType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Documento *</FormLabel>
-                      <FormControl>
-                        <Combobox
-                          options={documentTypes}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder="Seleccionar tipo"
-                          searchPlaceholder="Buscar tipo de documento..."
-                          emptyText="No se encontró el tipo de documento"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="documentNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número de Documento *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="12345678" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Teléfono *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+51987654321" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Información de Contrato (solo para COLABORADOR_INTERNO y RRHH) */}
-            {showSalaryFields && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Información de Contrato</h3>
-                <p className="text-sm text-muted-foreground">
-                  Requerido para {watchedRole === UserRole.RRHH ? "RR.HH" : "Colaborador Interno"}
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="salaryMonth"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Salario Mensual *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            placeholder="2500.5" 
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form.Field
+                name="email"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value) return "El email es requerido";
+                    if (!/\S+@\S+\.\S+/.test(value)) return "Email inválido";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Email</RequiredLabel>
+                    <Input
+                      placeholder="admin@ejemplo.com"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      disabled={isEditing}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
                     )}
-                  />
+                  </div>
+                )}
+              </form.Field>
 
-                  <FormField
-                    control={form.control}
-                    name="paymentDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fecha de Pago *</FormLabel>
-                        <FormControl>
+              <form.Field
+                name="role"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value) return "El rol es requerido";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Rol</RequiredLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(value) =>
+                        field.handleChange(value as UserRole)
+                      }
+                      disabled={isEditing}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar rol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableRoles.map((role) => (
+                          <SelectItem key={role.value} value={role.value}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+            </div>
+          </div>
+
+          {/* info personl */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Información Personal</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form.Field
+                name="firstName"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value) return "Los nombres son requeridos";
+                    if (value.length < 2)
+                      return "Los nombres deben tener al menos 2 caracteres";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Nombres</RequiredLabel>
+                    <Input
+                      placeholder="Juan"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field
+                name="lastName"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value) return "Los apellidos son requeridos";
+                    if (value.length < 2)
+                      return "Los apellidos deben tener al menos 2 caracteres";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Apellidos</RequiredLabel>
+                    <Input
+                      placeholder="Pérez"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field
+                name="documentType"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value) return "El tipo de documento es requerido";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Tipo de Documento</RequiredLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(value) =>
+                        field.handleChange(value as DocumentType)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {documentTypes.map((docType) => (
+                          <SelectItem key={docType.value} value={docType.value}>
+                            {docType.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field
+                name="documentNumber"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value) return "El número de documento es requerido";
+                    if (value.length < 8) return "Número de documento inválido";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Número de Documento</RequiredLabel>
+                    <Input
+                      placeholder="12345678"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field
+                name="phone"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value) return "El teléfono es requerido";
+                    if (value.length < 9)
+                      return "Teléfono debe tener al menos 9 dígitos";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Teléfono</RequiredLabel>
+                    <Input
+                      placeholder="+51987654321"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+            </div>
+          </div>
+
+          {/* info de contrato */}
+          <form.Field name="role">
+            {(roleField) => {
+              const showSalaryFields = requiresSalary(
+                roleField.state.value as UserRole
+              );
+
+              return showSalaryFields ? (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">
+                    Información de Contrato
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Requerido para{" "}
+                    {roleField.state.value === "RRHH"
+                      ? "RR.HH"
+                      : "Colaborador Interno"}
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form.Field
+                      name="salaryMonth"
+                      validators={{
+                        onChange: ({ value }) => {
+                          if (
+                            showSalaryFields &&
+                            (value === undefined || value <= 0)
+                          ) {
+                            return "El salario debe ser mayor a 0";
+                          }
+                          return undefined;
+                        },
+                      }}
+                    >
+                      {(field) => (
+                        <div className="space-y-2">
+                          <RequiredLabel>Salario Mensual</RequiredLabel>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="2500.5"
+                            value={field.state.value || ""}
+                            onChange={(e) =>
+                              field.handleChange(
+                                e.target.value
+                                  ? parseFloat(e.target.value)
+                                  : undefined
+                              )
+                            }
+                          />
+                          {field.state.meta.errors.length > 0 && (
+                            <p className="text-sm text-red-500">
+                              {field.state.meta.errors[0]}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </form.Field>
+
+                    <form.Field
+                      name="paymentDate"
+                      validators={{
+                        onChange: ({ value }) => {
+                          if (showSalaryFields && !value) {
+                            return "La fecha de pago es requerida";
+                          }
+                          return undefined;
+                        },
+                      }}
+                    >
+                      {(field) => (
+                        <div className="space-y-2">
+                          <RequiredLabel>Fecha de Pago</RequiredLabel>
                           <DatePicker
-                            value={field.value}
-                            onValueChange={field.onChange}
+                            value={field.state.value}
+                            onValueChange={(date) => field.handleChange(date)}
                             placeholder="Seleccionar fecha"
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          {field.state.meta.errors.length > 0 && (
+                            <p className="text-sm text-red-500">
+                              {field.state.meta.errors[0]}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </form.Field>
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null;
+            }}
+          </form.Field>
 
-            {/* Botones */}
-            <div className="flex justify-end space-x-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isLoading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creando..." : "Crear Usuario"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+          {/* Botones */}
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Creando..." : "Crear Usuario"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

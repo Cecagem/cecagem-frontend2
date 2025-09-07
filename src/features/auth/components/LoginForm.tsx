@@ -40,8 +40,8 @@ export function LoginForm({
   const userAccount = {
     admin: {
       name: "admin",
-      email: "juan.garcia@cecagem.com",
-      password: "12345678",
+      email: "admin@admin.com",
+      password: "123456781",
     },
     rrhh: {
       name: "rrhh",
