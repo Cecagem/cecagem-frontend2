@@ -1,25 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useForm } from "@tanstack/react-form";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -27,298 +15,423 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  User,
-  CreateCompleteUserRequest,
-  createUserData,
-} from "@/features/user";
-
-const companyFormSchema = z.object({
-  email: z.string().email("Email debe ser válido"),
-  ruc: z
-    .string()
-    .min(11, "RUC debe tener 11 dígitos")
-    .max(11, "RUC debe tener 11 dígitos"),
-  businessName: z.string().min(1, "Razón social es requerida"),
-  tradeName: z.string().optional(),
-  address: z.string().min(1, "Dirección es requerida"),
-  contactName: z.string().min(1, "Nombre de contacto es requerido"),
-  contactPhone: z.string().min(9, "Teléfono debe tener al menos 9 dígitos"),
-  contactEmail: z.string().email("Email de contacto debe ser válido"),
-  isActive: z.boolean().optional(),
-});
-
-type CompanyFormValues = z.infer<typeof companyFormSchema>;
+import { User, CreateCompleteUserRequest } from "../../types/user.type";
+import { createUserData } from "../../hooks/use-users";
+import { useEffect } from "react";
 
 interface CompanyFormProps {
   company?: User;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (companyData: CreateCompleteUserRequest) => Promise<void>;
-  isLoading: boolean;
+  onSubmit: (company: CreateCompleteUserRequest) => Promise<void>;
+  isLoading?: boolean;
 }
 
-export default function CompanyForm({
+const RequiredLabel = ({ children }: { children: React.ReactNode }) => (
+  <Label className="text-sm font-medium">
+    {children} <span className="text-red-500">*</span>
+  </Label>
+);
+
+export const CompanyForm = ({
   company,
   isOpen,
   onClose,
   onSubmit,
   isLoading,
-}: CompanyFormProps) {
-  const form = useForm<CompanyFormValues>({
-    resolver: zodResolver(companyFormSchema),
+}: CompanyFormProps) => {
+  const isEditing = !!company;
+
+  const form = useForm({
     defaultValues: {
-      email: "",
-      ruc: "",
-      businessName: "",
-      tradeName: "",
-      address: "",
-      contactName: "",
-      contactPhone: "",
-      contactEmail: "",
-      isActive: true,
+      email: company?.email || "",
+      ruc: company?.company?.ruc || "",
+      businessName: company?.company?.businessName || "",
+      tradeName: company?.company?.tradeName || "",
+      address: company?.company?.address || "",
+      contactName: company?.company?.contactName || "",
+      contactPhone: company?.company?.contactPhone || "",
+      contactEmail: company?.company?.contactEmail || "",
+      isActive: company?.isActive ?? true,
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        const companyData = createUserData.company(value.email, {
+          ruc: value.ruc,
+          businessName: value.businessName,
+          tradeName: value.tradeName || undefined,
+          address: value.address,
+          contactName: value.contactName,
+          contactPhone: value.contactPhone,
+          contactEmail: value.contactEmail || value.email,
+        });
+
+        if (isEditing && companyData.user) {
+          companyData.user.isActive = value.isActive;
+        }
+
+        await onSubmit(companyData);
+      } catch (error) {
+        console.error("Error en formulario de empresa:", error);
+      }
     },
   });
 
   useEffect(() => {
-    if (company) {
-      form.reset({
-        email: company.email,
-        ruc: company.company?.ruc || "",
-        businessName: company.company?.businessName || "",
-        tradeName: company.company?.tradeName || "",
-        address: company.company?.address || "",
-        contactName: company.company?.contactName || "",
-        contactPhone: company.company?.contactPhone || "",
-        contactEmail: company.company?.contactEmail || company.email,
-        isActive: company.isActive,
-      });
-    } else {
-      form.reset({
-        email: "",
-        ruc: "",
-        businessName: "",
-        tradeName: "",
-        address: "",
-        contactName: "",
-        contactPhone: "",
-        contactEmail: "",
-        isActive: true,
-      });
-    }
-  }, [company, form]);
-
-  const handleSubmit = async (data: CompanyFormValues) => {
-    try {
-      const companyData = createUserData.company(data.email, {
-        ruc: data.ruc,
-        businessName: data.businessName,
-        tradeName: data.tradeName,
-        address: data.address,
-        contactName: data.contactName,
-        contactPhone: data.contactPhone,
-        contactEmail: data.contactEmail,
-      });
-
-      if (company) {
-        companyData.user.isActive = data.isActive;
-      }
-
-      await onSubmit(companyData);
+    if (isOpen) {
       form.reset();
-    } catch (error) {
-      console.error("Error al enviar formulario:", error);
     }
-  };
+  }, [isOpen, company, form]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {company ? "Editar Empresa" : "Nueva Empresa"}
+            {isEditing ? "Editar Empresa" : "Crear Nueva Empresa"}
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          className="space-y-6"
+        >
+          {/* Información de Usuario */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium border-b pb-2">
+              Información de Usuario
+            </h3>
+
+            <form.Field
+              name="email"
+              validators={{
+                onChange: ({ value }) => {
+                  if (!value?.trim())
+                    return "El correo electrónico es obligatorio";
+                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                    return "Ingrese un correo electrónico válido";
+                  }
+                  return undefined;
+                },
+              }}
+            >
+              {(field) => (
+                <div className="space-y-2">
+                  <RequiredLabel>Correo Electrónico</RequiredLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="empresa@ejemplo.com"
+                    disabled={isLoading || isEditing}
+                  />
+                  {field.state.meta.errors && (
+                    <p className="text-sm text-red-500">
+                      {field.state.meta.errors[0]}
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+          </div>
+
+          {/* Información de la Empresa */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium border-b pb-2">
+              Información de la Empresa
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form.Field
                 name="ruc"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>RUC</FormLabel>
-                    <FormControl>
-                      <Input placeholder="20123456789" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="empresa@ejemplo.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="businessName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Razón Social</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Empresa S.A.C." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="tradeName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre Comercial</FormLabel>
-                  <FormControl>
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value?.trim()) return "El RUC es obligatorio";
+                    if (!/^\d{11}$/.test(value.replace(/\s/g, ""))) {
+                      return "El RUC debe tener 11 dígitos";
+                    }
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>RUC</RequiredLabel>
                     <Input
-                      placeholder="Nombre comercial (opcional)"
-                      {...field}
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="20123456789"
+                      maxLength={11}
+                      disabled={isLoading}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    {field.state.meta.errors && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
 
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dirección</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Dirección completa de la empresa"
-                      {...field}
+              <form.Field
+                name="businessName"
+                validators={{
+                  onChange: ({ value }) =>
+                    !value?.trim()
+                      ? "La razón social es obligatoria"
+                      : undefined,
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Razón Social</RequiredLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="EMPRESA EJEMPLO S.A.C."
+                      disabled={isLoading}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="contactName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre de Contacto</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Juan Pérez" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                    {field.state.meta.errors && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
                 )}
-              />
-
-              <FormField
-                control={form.control}
-                name="contactPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Teléfono</FormLabel>
-                    <FormControl>
-                      <Input placeholder="987654321" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              </form.Field>
             </div>
 
-            <FormField
-              control={form.control}
-              name="contactEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Correo Electrónico de Contacto</FormLabel>
-                  <FormControl>
-                    <Input placeholder="contacto@empresa.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            <form.Field name="tradeName">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label>Nombre Comercial</Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Empresa Ejemplo (opcional)"
+                    disabled={isLoading}
+                  />
+                </div>
               )}
-            />
+            </form.Field>
 
-            {company && (
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estado</FormLabel>
+            <form.Field
+              name="address"
+              validators={{
+                onChange: ({ value }) =>
+                  !value?.trim() ? "La dirección es obligatoria" : undefined,
+              }}
+            >
+              {(field) => (
+                <div className="space-y-2">
+                  <RequiredLabel>Dirección</RequiredLabel>
+                  <Textarea
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Av. Ejemplo 123, Distrito, Lima, Perú"
+                    disabled={isLoading}
+                    rows={3}
+                  />
+                  {field.state.meta.errors && (
+                    <p className="text-sm text-red-500">
+                      {field.state.meta.errors[0]}
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+          </div>
+
+          {/* Información de Contacto */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium border-b pb-2">
+              Información de Contacto
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form.Field
+                name="contactName"
+                validators={{
+                  onChange: ({ value }) =>
+                    !value?.trim()
+                      ? "El nombre de contacto es obligatorio"
+                      : undefined,
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Nombre de Contacto</RequiredLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Juan Pérez"
+                      disabled={isLoading}
+                    />
+                    {field.state.meta.errors && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field
+                name="contactPhone"
+                validators={{
+                  onChange: ({ value }) => {
+                    if (!value?.trim())
+                      return "El teléfono de contacto es obligatorio";
+                    if (!/^\d{9,15}$/.test(value.replace(/\s/g, ""))) {
+                      return "El teléfono debe tener entre 9 y 15 dígitos";
+                    }
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <RequiredLabel>Teléfono de Contacto</RequiredLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="999 999 999"
+                      disabled={isLoading}
+                    />
+                    {field.state.meta.errors && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+            </div>
+
+            <form.Field
+              name="contactEmail"
+              validators={{
+                onChange: ({ value }) => {
+                  if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                    return "Ingrese un correo electrónico válido";
+                  }
+                  return undefined;
+                },
+              }}
+            >
+              {(field) => (
+                <div className="space-y-2">
+                  <Label>Correo de Contacto</Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="contacto@empresa.com (opcional)"
+                    disabled={isLoading}
+                  />
+                  {field.state.meta.errors && (
+                    <p className="text-sm text-red-500">
+                      {field.state.meta.errors[0]}
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+          </div>
+
+          {/* Estado */}
+          {isEditing && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium border-b pb-2">Estado</h3>
+
+              <form.Field name="isActive">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label>Estado de la Empresa</Label>
                     <Select
+                      value={field.state.value ? "true" : "false"}
                       onValueChange={(value) =>
-                        field.onChange(value === "true")
+                        field.handleChange(value === "true")
                       }
-                      value={field.value ? "true" : "false"}
+                      disabled={isLoading}
                     >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar estado" />
-                        </SelectTrigger>
-                      </FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="true">Activa</SelectItem>
                         <SelectItem value="false">Inactiva</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
+                  </div>
                 )}
-              />
-            )}
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isLoading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading
-                  ? company
-                    ? "Actualizando..."
-                    : "Creando..."
-                  : company
-                  ? "Actualizar Empresa"
-                  : "Crear Empresa"}
-              </Button>
+              </form.Field>
             </div>
-          </form>
-        </Form>
+          )}
+
+          {/* Botones de acción */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <form.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+            >
+              {([canSubmit, isSubmitting]) => (
+                <Button
+                  type="submit"
+                  disabled={!canSubmit || isLoading || isSubmitting}
+                  className="min-w-[120px]"
+                >
+                  {isSubmitting || isLoading
+                    ? isEditing
+                      ? "Actualizando..."
+                      : "Creando..."
+                    : isEditing
+                    ? "Actualizar Empresa"
+                    : "Crear Empresa"}
+                </Button>
+              )}
+            </form.Subscribe>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
-}
+};

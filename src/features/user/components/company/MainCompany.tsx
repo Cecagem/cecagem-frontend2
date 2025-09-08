@@ -5,10 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-import CompanyFilters from "./CompanyFilters";
-import CompanyTable from "./CompanyTable";
-import CompanyForm from "./CompanyForm";
-import CompanyStatsCards from "./CompanyStatsCards";
 import {
   User,
   UserFilters,
@@ -19,6 +15,10 @@ import {
   useUpdateUser,
   useDeleteUser,
 } from "@/features/user";
+import CompanyFilters from "./CompanyFilters";
+import { CompanyTable } from "./CompanyTable";
+import { CompanyForm } from "./CompanyForm";
+import { CompanyStatsCards } from "./CompanyStatsCards";
 
 export const MainCompany = () => {
   const [filters, setFilters] = useState<Partial<UserFilters>>({

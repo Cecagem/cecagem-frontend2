@@ -1,8 +1,12 @@
 "use client";
 
-import { DataTable } from "@/components/shared/data-table";
-import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { useMemo, useCallback } from "react";
+import { User, UsersResponse, UserFilters } from "@/features/user";
+import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -11,16 +15,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Pencil,
+  Edit,
   Trash2,
-  Building,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { type ColumnDef } from "@tanstack/react-table";
-import { User, UsersResponse, UserFilters } from "@/features/user";
+import { DataTable } from "@/components/shared/data-table";
 
 interface CompanyTableProps {
   companiesResponse: UsersResponse | undefined;
@@ -31,202 +34,290 @@ interface CompanyTableProps {
   onFiltersChange: (filters: Partial<UserFilters>) => void;
 }
 
-export default function CompanyTable({
+export const CompanyTable = ({
   companiesResponse,
   isLoading,
   onEdit,
   onDelete,
   onFiltersChange,
-}: CompanyTableProps) {
-  const columns: ColumnDef<User>[] = [
-    {
-      accessorKey: "company.ruc",
-      header: "RUC",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.company?.ruc}</div>
-      ),
+}: CompanyTableProps) => {
+  const companies = companiesResponse?.data || [];
+  const meta = companiesResponse?.meta;
+
+  const handleEdit = useCallback(
+    (company: User) => {
+      onEdit(company);
     },
-    {
-      accessorKey: "company.businessName",
-      header: "Razón Social",
-      cell: ({ row }) => (
-        <div
-          className="max-w-[200px] truncate"
-          title={row.original.company?.businessName}
-        >
-          {row.original.company?.businessName}
+    [onEdit]
+  );
+
+  const handleDelete = useCallback(
+    (company: User) => {
+      onDelete(company);
+    },
+    [onDelete]
+  );
+
+  const handleFiltersChange = useCallback(
+    (filters: Partial<UserFilters>) => {
+      onFiltersChange(filters);
+    },
+    [onFiltersChange]
+  );
+
+  const columns: ColumnDef<User>[] = useMemo(
+    () => [
+      {
+        accessorKey: "company.ruc",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-8 px-2"
+          >
+            RUC
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        ),
+        cell: ({ row }) => {
+          const ruc = row.original.company?.ruc;
+          return ruc ? (
+            <span className="font-mono font-medium">{ruc}</span>
+          ) : (
+            <span className="text-muted-foreground">N/A</span>
+          );
+        },
+      },
+      {
+        accessorKey: "company.businessName",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-8 px-2"
+          >
+            Razón Social
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        ),
+        cell: ({ row }) => {
+          const company = row.original.company;
+          if (!company) return "N/A";
+          return (
+            <div className="flex flex-col">
+              <span className="font-medium">{company.businessName}</span>
+              {company.tradeName && (
+                <span className="text-xs text-muted-foreground">
+                  {company.tradeName}
+                </span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "email",
+        header: "Email",
+        cell: ({ row }) => {
+          const email = row.original.email;
+          return <span className="text-sm font-mono">{email}</span>;
+        },
+      },
+      {
+        accessorKey: "company.contactName",
+        header: "Contacto",
+        cell: ({ row }) => {
+          const company = row.original.company;
+          if (!company?.contactName) return "N/A";
+          return (
+            <div className="flex flex-col">
+              <span className="font-medium">{company.contactName}</span>
+              {company.contactPhone && (
+                <span className="text-xs text-muted-foreground">
+                  {company.contactPhone}
+                </span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "company.address",
+        header: "Dirección",
+        cell: ({ row }) => {
+          const address = row.original.company?.address;
+          return address ? (
+            <span
+              className="text-sm max-w-[200px] truncate block"
+              title={address}
+            >
+              {address}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">N/A</span>
+          );
+        },
+      },
+      {
+        accessorKey: "isActive",
+        header: "Estado",
+        cell: ({ row }) => {
+          const isActive = row.original.isActive;
+          return (
+            <Badge variant={isActive ? "default" : "destructive"}>
+              {isActive ? "Activa" : "Inactiva"}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "createdAt",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-8 px-2"
+          >
+            Fecha Registro
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        ),
+        cell: ({ row }) => {
+          const date = new Date(row.original.createdAt);
+          return (
+            <div className="text-sm">
+              {format(date, "dd/MM/yyyy", { locale: es })}
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Acciones",
+        cell: ({ row }) => {
+          const company = row.original;
+          return (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEdit(company)}
+                className="h-8 w-8 p-0"
+                title="Editar empresa"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDelete(company)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                title="Eliminar empresa"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [handleEdit, handleDelete]
+  );
+
+  const pagination = useMemo(() => {
+    if (!meta) return null;
+
+    return (
+      <div className="flex items-center justify-between px-2">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {(meta.page - 1) * meta.limit + 1} a{" "}
+            {Math.min(meta.page * meta.limit, meta.total)} de {meta.total}{" "}
+            empresas
+          </p>
         </div>
-      ),
-    },
-    {
-      accessorKey: "company.contactName",
-      header: "Contacto",
-      cell: ({ row }) => (
-        <div className="space-y-1">
-          <div className="font-medium">{row.original.company?.contactName}</div>
-          <div className="text-sm text-muted-foreground">
-            {row.original.company?.contactPhone}
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <p className="text-sm text-muted-foreground">Filas por página:</p>
+            <Select
+              value={meta.limit.toString()}
+              onValueChange={(value) =>
+                handleFiltersChange({ limit: parseInt(value) })
+              }
+            >
+              <SelectTrigger className="h-8 w-16">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleFiltersChange({ page: 1 })}
+              disabled={meta.page <= 1}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleFiltersChange({ page: meta.page - 1 })}
+              disabled={meta.page <= 1}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <div className="flex items-center gap-1">
+              <span className="text-sm text-muted-foreground">Página</span>
+              <span className="text-sm font-medium">
+                {meta.page} de {meta.totalPages}
+              </span>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleFiltersChange({ page: meta.page + 1 })}
+              disabled={meta.page >= meta.totalPages}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleFiltersChange({ page: meta.totalPages })}
+              disabled={meta.page >= meta.totalPages}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-      ),
-    },
-    {
-      accessorKey: "email",
-      header: "Email",
-      cell: ({ row }) => (
-        <div className="max-w-[180px] truncate" title={row.original.email}>
-          {row.original.email}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "company.address",
-      header: "Dirección",
-      cell: ({ row }) => (
-        <div
-          className="max-w-[200px] truncate"
-          title={row.original.company?.address || undefined}
-        >
-          {row.original.company?.address}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "isActive",
-      header: "Estado",
-      cell: ({ row }) => (
-        <Badge variant={row.original.isActive ? "default" : "destructive"}>
-          {row.original.isActive ? "Activa" : "Inactiva"}
-        </Badge>
-      ),
-    },
-    {
-      id: "actions",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onEdit(row.original)}
-            className="h-8 w-8 p-0"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(row.original)}
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+      </div>
+    );
+  }, [meta, handleFiltersChange]);
 
   return (
     <div className="space-y-4">
       <DataTable
         columns={columns}
-        data={companiesResponse?.data || []}
+        data={companies}
         isLoading={isLoading}
-        title="Lista de Empresas"
-        icon={Building}
         noDataMessage="No se encontraron empresas"
-        enablePagination={false}
-        enableSorting={true}
-        enableColumnFilters={false}
       />
-      {companiesResponse?.meta && (
-        <div className="flex items-center justify-between px-2">
-          <div className="flex-1 text-sm text-muted-foreground">
-            Mostrando{" "}
-            {(companiesResponse.meta.page - 1) * companiesResponse.meta.limit +
-              1}{" "}
-            a{" "}
-            {Math.min(
-              companiesResponse.meta.page * companiesResponse.meta.limit,
-              companiesResponse.meta.total
-            )}{" "}
-            de {companiesResponse.meta.total} resultados
-          </div>
-          <div className="flex items-center space-x-6 lg:space-x-8">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium">Filas por página</p>
-              <Select
-                value={`${companiesResponse.meta.limit}`}
-                onValueChange={(value) => {
-                  onFiltersChange({
-                    page: 1,
-                    limit: Number(value),
-                  });
-                }}
-              >
-                <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue placeholder={companiesResponse.meta.limit} />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[5, 10, 20, 30, 40].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                      {pageSize}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Página {companiesResponse.meta.page} de{" "}
-              {companiesResponse.meta.totalPages}
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
-                onClick={() => onFiltersChange({ page: 1 })}
-                disabled={!companiesResponse.meta.hasPrevious}
-              >
-                <span className="sr-only">Ir a la primera página</span>
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={() =>
-                  onFiltersChange({ page: companiesResponse.meta.page - 1 })
-                }
-                disabled={!companiesResponse.meta.hasPrevious}
-              >
-                <span className="sr-only">Ir a la página anterior</span>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={() =>
-                  onFiltersChange({ page: companiesResponse.meta.page + 1 })
-                }
-                disabled={!companiesResponse.meta.hasNext}
-              >
-                <span className="sr-only">Ir a la página siguiente</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
-                onClick={() =>
-                  onFiltersChange({ page: companiesResponse.meta.totalPages })
-                }
-                disabled={!companiesResponse.meta.hasNext}
-              >
-                <span className="sr-only">Ir a la última página</span>
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {pagination}
     </div>
   );
-}
+};
