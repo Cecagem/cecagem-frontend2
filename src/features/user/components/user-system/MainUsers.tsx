@@ -4,21 +4,21 @@ import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+import UserFilters from "./UserFilters";
+import { UserTable } from "./UserTable";
+import { UserForm } from "./UserForm";
 import {
-  useUsers,
-  useCreateUser,
-  useUpdateUser,
-  useDeleteUser,
-} from "../hooks/use-users";
-import type {
+  UserStatsCards,
   User,
   UserFilters as UserFiltersType,
   CreateCompleteUserRequest,
   UpdateCompleteUserRequest,
-} from "../types/user.type";
-import UserFilters from "./UserFilters";
-import UserTable from "./UserTable";
-import UserForm from "./UserForm";
+  useUsers,
+  useCreateUser,
+  useUpdateUser,
+  useDeleteUser,
+} from "@/features/user";
 
 export const MainUsers = () => {
   const [filters, setFilters] = useState<Partial<UserFiltersType>>({
@@ -26,6 +26,14 @@ export const MainUsers = () => {
     limit: 5,
     type: "users_system",
   });
+
+  const userStats = {
+    total: 100,
+    active: 12,
+    inactive: 2,
+    newThisMonth: 5,
+  };
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [userToDelete, setUserToDelete] = useState<User | undefined>(undefined);
@@ -94,15 +102,11 @@ export const MainUsers = () => {
           });
           showSuccess("updated", {
             title: "¡Usuario actualizado exitosamente!",
-            description:
-              "Los cambios del usuario han sido guardados correctamente.",
           });
         } else {
           await createUserMutation.mutateAsync(userData);
           showSuccess("created", {
             title: "¡Usuario creado exitosamente!",
-            description:
-              "El nuevo usuario ha sido agregado al sistema correctamente.",
           });
         }
         setIsFormOpen(false);
@@ -136,13 +140,11 @@ export const MainUsers = () => {
       setUserToDelete(undefined);
       showSuccess("deleted", {
         title: "¡Usuario eliminado exitosamente!",
-        description: "El usuario ha sido removido del sistema correctamente.",
       });
     } catch (error) {
       console.error("Error al eliminar usuario:", error);
       showError("deleted", {
         title: "Error al eliminar usuario",
-        description: "No se pudo eliminar el usuario. Intenta nuevamente.",
       });
     }
   }, [userToDelete, deleteUserMutation, showSuccess, showError]);
@@ -169,7 +171,7 @@ export const MainUsers = () => {
         </Button>
       </div>
 
-      {/* <UserStatsCards isLoading={isLoading} /> */}
+      <UserStatsCards isLoading={isLoading} stats={userStats} />
 
       <UserFilters
         filters={filters}

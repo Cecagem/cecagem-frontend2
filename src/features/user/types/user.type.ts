@@ -1,3 +1,5 @@
+import { type UserFilters as IUserFilters } from "@/features/user";
+
 //  ENTITIES
 
 export const UserRole = {
@@ -169,4 +171,12 @@ export interface UserCompleteResponse extends User {
 
 export interface DeleteUserResponse {
   message: string;
+}
+
+// filtros
+
+export interface UserFiltersProps {
+  filters: Partial<IUserFilters>;
+  onApplyFilters: (filters: Partial<IUserFilters>) => void;
+  onClearFilters: () => void;
 }

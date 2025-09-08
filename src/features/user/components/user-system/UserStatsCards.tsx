@@ -2,14 +2,21 @@
 
 import { Users, UserCheck, UserX, UserPlus } from "lucide-react";
 import { StatsGrid, StatCard } from "@/components/shared/stats-cards";
-import { UserStats } from "../types";
+// import { UserStats } from "@/features/user";
 
 interface UserStatsCardsProps {
   stats: UserStats;
   isLoading: boolean;
 }
 
-export default function UserStatsCards({ stats, isLoading }: UserStatsCardsProps) {
+interface UserStats {
+  total: number;
+  active: number;
+  inactive: number;
+  newThisMonth: number;
+}
+
+export const UserStatsCards = ({ stats, isLoading }: UserStatsCardsProps) => {
   const statsData = [
     {
       title: "Total Usuarios",
@@ -21,7 +28,9 @@ export default function UserStatsCards({ stats, isLoading }: UserStatsCardsProps
       title: "Usuarios Activos",
       value: stats.active,
       icon: UserCheck,
-      subtitle: `${stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% del total`,
+      subtitle: `${
+        stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0
+      }% del total`,
     },
     {
       title: "Usuarios Inactivos",
@@ -51,4 +60,4 @@ export default function UserStatsCards({ stats, isLoading }: UserStatsCardsProps
       ))}
     </StatsGrid>
   );
-}
+};

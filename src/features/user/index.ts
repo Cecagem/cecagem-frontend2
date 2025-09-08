@@ -1,15 +1,16 @@
-// Export all components
-export { default as UserStatsCards } from "./components/UserStatsCards";
-export { default as UserFilters } from "./components/UserFilters";
-export { default as UserTable } from "./components/UserTable";
-export { default as UserForm } from "./components/UserForm";
-export { default as DeleteConfirmation } from "./components/DeleteConfirmation";
+// components
+export * from "./components/user-system";
+export * from "./components/client";
+export * from "./components/company";
 
-// Export hooks
-export { useUsers } from "./hooks/useUsers";
+// hooks
+export * from "./hooks/use-users";
 
-// Export services
-export * from "./services";
+// services
+export * from "./services/user.service";
 
-// Export types
-export * from "./types";
+// types
+export * from "./types/user.type";
+
+// utils
+export * from "./utils/user.utils";

@@ -23,13 +23,14 @@ import {
   UserRole,
   DocumentType,
   CreateCompleteUserRequest,
-} from "../types/user.type";
-import { createUserData } from "../hooks/use-users";
+} from "../../types/user.type";
+import { createUserData } from "../../hooks/use-users";
 import {
   availableRoles,
   documentTypes,
   requiresSalary,
-} from "../utils/user.validation";
+} from "../../utils/user.utils";
+import { useEffect } from "react";
 
 interface UserFormProps {
   user?: User;
@@ -45,13 +46,13 @@ const RequiredLabel = ({ children }: { children: React.ReactNode }) => (
   </Label>
 );
 
-export default function UserForm({
+export const UserForm = ({
   user,
   isOpen,
   onClose,
   onSubmit,
   isLoading,
-}: UserFormProps) {
+}: UserFormProps) => {
   const isEditing = !!user;
 
   const form = useForm({
@@ -129,6 +130,12 @@ export default function UserForm({
     },
   });
 
+  useEffect(() => {
+    if (!isOpen) {
+      form.reset();
+    }
+  }, [isOpen, form]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -168,7 +175,7 @@ export default function UserForm({
                       placeholder="admin@ejemplo.com"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      disabled={isEditing}
+                      // disabled={isEditing}
                     />
                     {field.state.meta.errors.length > 0 && (
                       <p className="text-sm text-red-500">
@@ -196,7 +203,7 @@ export default function UserForm({
                       onValueChange={(value) =>
                         field.handleChange(value as UserRole)
                       }
-                      disabled={isEditing}
+                      // disabled={isEditing}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar rol" />
@@ -479,11 +486,17 @@ export default function UserForm({
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creando..." : "Crear Usuario"}
+              {isLoading
+                ? isEditing
+                  ? "Guardando..."
+                  : "Creando..."
+                : isEditing
+                ? "Guardar Cambios"
+                : "Crear Usuario"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
+};

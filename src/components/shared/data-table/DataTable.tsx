@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -73,9 +73,13 @@ export function DataTable<TData>({
     columns,
     onSortingChange: enableSorting ? setSorting : undefined,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
+    getPaginationRowModel: enablePagination
+      ? getPaginationRowModel()
+      : undefined,
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
-    getFilteredRowModel: enableColumnFilters ? getFilteredRowModel() : undefined,
+    getFilteredRowModel: enableColumnFilters
+      ? getFilteredRowModel()
+      : undefined,
     onPaginationChange: enablePagination ? setPagination : undefined,
     state: {
       ...(enableSorting && { sorting }),
@@ -88,8 +92,8 @@ export function DataTable<TData>({
       {Array.from({ length: pageSize }).map((_, i) => (
         <div key={i} className="flex items-center space-x-4">
           {columns.map((_, colIndex) => (
-            <div 
-              key={colIndex} 
+            <div
+              key={colIndex}
               className="h-4 bg-muted rounded animate-pulse"
               style={{ width: `${Math.random() * 100 + 50}px` }}
             />
@@ -103,14 +107,14 @@ export function DataTable<TData>({
     return (
       <Card>
         {title && (
-          <CardHeader className="border-b">
+          <CardHeader>
             <CardTitle className="flex items-center gap-2">
               {Icon && <Icon className="h-5 w-5" />}
               {title}
             </CardTitle>
           </CardHeader>
         )}
-        <CardContent className="p-6">
+        <CardContent>
           <LoadingSkeleton />
         </CardContent>
       </Card>
@@ -119,15 +123,15 @@ export function DataTable<TData>({
 
   return (
     <Card>
-      {title && (
+      {/* {title && (
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             {Icon && <Icon className="h-5 w-5" />}
             {title}
           </CardTitle>
         </CardHeader>
-      )}
-      <CardContent className="p-6">
+      )} */}
+      <CardContent className="px-5">
         {/* Table Container - Responsive */}
         <div className="border rounded-md overflow-hidden">
           <div className="overflow-x-auto">
@@ -137,8 +141,8 @@ export function DataTable<TData>({
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       return (
-                        <TableHead 
-                          key={header.id} 
+                        <TableHead
+                          key={header.id}
                           className="h-10 px-4 sm:px-6 whitespace-nowrap"
                         >
                           {header.isPlaceholder
@@ -162,19 +166,22 @@ export function DataTable<TData>({
                       className="hover:bg-muted/50"
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell 
-                          key={cell.id} 
+                        <TableCell
+                          key={cell.id}
                           className="px-4 sm:px-6 py-3 sm:py-4"
                         >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell 
-                      colSpan={columns.length} 
+                    <TableCell
+                      colSpan={columns.length}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {noDataMessage}
@@ -185,7 +192,7 @@ export function DataTable<TData>({
             </Table>
           </div>
         </div>
-        
+
         {/* Paginación */}
         {enablePagination && data.length > 0 && (
           <div className="mt-4 pt-4 border-t">
@@ -211,7 +218,9 @@ export function DataTable<TData>({
                     <SelectItem value="100">100</SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-sm text-muted-foreground">por página</span>
+                <span className="text-sm text-muted-foreground">
+                  por página
+                </span>
               </div>
 
               {/* Controles de navegación */}
@@ -237,11 +246,12 @@ export function DataTable<TData>({
                   <span className="hidden sm:inline ml-1">Anterior</span>
                   <span className="sr-only sm:hidden">Anterior</span>
                 </Button>
-                
+
                 <div className="flex items-center justify-center min-w-[100px] text-sm font-medium">
-                  Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+                  Página {table.getState().pagination.pageIndex + 1} de{" "}
+                  {table.getPageCount()}
                 </div>
-                
+
                 <Button
                   variant="outline"
                   size="sm"

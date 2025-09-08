@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell } from "lucide-react";
-import MainUsers from "@/features/user/components/MainUsers";
+import MainUsers from "@/features/user/components/user-system/MainUsers";
 
 export default function UserPage() {
   return (
