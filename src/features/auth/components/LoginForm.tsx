@@ -38,6 +38,11 @@ export function LoginForm({
   });
 
   const userAccount = {
+    super_admin: {
+      name: "super_admin",
+      email: "super_admin@ejemplo.com",
+      password: "12345678",
+    },
     admin: {
       name: "admin",
       email: "admin@admin.com",
