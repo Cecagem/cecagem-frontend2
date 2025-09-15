@@ -12,6 +12,7 @@ import {
   CreditCard,
   BarChart3,
   Building2,
+  DollarSign,
   Package,
 } from "lucide-react";
 
@@ -130,6 +131,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             icon: CreditCard,
             collapsible: false,
           },
+          {
+            title: "Contabilidad",
+            url: "/account",
+            icon: DollarSign,
+            collapsible: false,
+          }
         ],
       },
       // Herramientas y Configuración - Admins y Super Admins
