@@ -45,23 +45,23 @@ export function LoginForm({
     },
     admin: {
       name: "admin",
-      email: "admin@admin.com",
-      password: "123456781",
+      email: "admin@cecagem.com",
+      password: "123456",
     },
     rrhh: {
       name: "rrhh",
-      email: "maria.rodriguez@cecagem.com",
-      password: "12345678",
+      email: "rrhh@cecagem.com",
+      password: "123456",
     },
     colaborador_interno: {
       name: "colaborador_interno",
-      email: "usuario@ejemplo.com",
-      password: "12345678",
+      email: "carlos.mendoza@cecagem.com",
+      password: "123456",
     },
     colaborador_externo: {
       name: "colaborador_externo",
-      email: "colaborador_externo@ejemplo.com",
-      password: "12345678",
+      email: "diana.torres@freelance.com",
+      password: "123456",
     },
   };
 

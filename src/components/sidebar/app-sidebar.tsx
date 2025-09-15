@@ -13,6 +13,7 @@ import {
   BarChart3,
   Building2,
   DollarSign,
+  Package,
 } from "lucide-react";
 
 import {
@@ -84,6 +85,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Proyectos",
             url: "/project",
             icon: FolderOpen,
+            collapsible: false,
+          },
+          {
+            title: "Servicios",
+            url: "/services",
+            icon: Settings,
+            collapsible: false,
+          },
+          {
+            title: "Entregables",
+            url: "/deliverables",
+            icon: Package,
             collapsible: false,
           },
           {
