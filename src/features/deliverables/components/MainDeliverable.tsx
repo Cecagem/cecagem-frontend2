@@ -14,7 +14,7 @@ import {
 import { FileText as DeliverableIcon } from "lucide-react";
 import { deliverableColumns } from "./deliverable-columns";
 import { DeliverableFilters } from "./DeliverableFilters";
-import { CreateDeliverableDialog } from "./DreateDeliverable";
+import { CreateDeliverableDialog } from "./CreateDeliverable";
 import { EditDeliverableDialog } from "./EditDeliverable";
 import { ViewDeliverableDialog } from "./ViewDeliverable";
 import { DeleteDeliverableDialog } from "./DeleteDeliverable";

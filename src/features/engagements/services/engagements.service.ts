@@ -6,6 +6,7 @@ import {
   UpdateServiceRequest,
   ServiceResponse,
   DeleteServiceResponse,
+  DeliverablesResponse,
 } from "../types/engagements.type";
 
 class EngagementService {
@@ -67,6 +68,14 @@ class EngagementService {
       `${this.baseEndpoint}/${serviceId}`
     );
   }
+
+  async getDeliverablesByServiceId(
+    serviceId: string
+  ): Promise<DeliverablesResponse> {
+    return await cecagemApi.get<DeliverablesResponse>(
+      `${this.baseEndpoint}/${serviceId}/deliverables`
+    );
+  }
 }
 
 const engagementApiService = new EngagementService();
@@ -86,4 +95,7 @@ export const engagementService = {
 
   deleteService: (serviceId: string) =>
     engagementApiService.deleteService(serviceId),
+
+  getDeliverablesByServiceId: (serviceId: string) =>
+    engagementApiService.getDeliverablesByServiceId(serviceId),
 } as const;
