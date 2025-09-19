@@ -7,12 +7,13 @@ import { useMeetings, getCurrentMonthDateRange, getMonthDateRange } from '../hoo
 import { MeetingDialog } from './MeetingDialog';
 import { CalendarGrid } from './CalendarGrid';
 import { MeetingList } from './MeetingList';
-import type { IMeetingFilters } from '../types/calendar.types';
+import type { IMeetingFilters, IMeeting } from '../types/calendar.types';
 
 export function Calendar() {
   const [showGrid, setShowGrid] = useState(true);
   const [showMeetingDialog, setShowMeetingDialog] = useState(false);
-  // const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
+  const [editingMeeting, setEditingMeeting] = useState<IMeeting | null>(null); // Reunión que se está editando
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create'); // Modo del diálogo
   
   // Estado compartido para el mes actual entre ambas vistas
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -46,7 +47,15 @@ export function Calendar() {
 
   const handleMeetingCreated = () => {
     setShowMeetingDialog(false);
+    setEditingMeeting(null);
+    setDialogMode('create');
     refetch(); // Recargar los datos
+  };
+
+  const handleCreateNewMeeting = () => {
+    setEditingMeeting(null);
+    setDialogMode('create');
+    setShowMeetingDialog(true);
   };
 
   const { data: meetingsData, isLoading, error, refetch } = useMeetings(filters);
@@ -59,8 +68,12 @@ export function Calendar() {
   // };
 
   const handleEditMeeting = (meetingId: string) => {
-    console.log('Edit meeting:', meetingId);
-    // TODO: Implementar edición cuando tengamos el dialog funcional
+    const meeting = meetings.find(m => m.id === meetingId);
+    if (meeting) {
+      setEditingMeeting(meeting);
+      setDialogMode('edit');
+      setShowMeetingDialog(true);
+    }
   };
 
   const handleMeetingDeleted = () => {
@@ -105,7 +118,7 @@ export function Calendar() {
             
             <Button 
               className="text-white"
-              onClick={() => setShowMeetingDialog(true)}
+              onClick={handleCreateNewMeeting}
             >
               <Plus className="h-4 w-4 mr-2" />
               Nueva Reunión
@@ -123,7 +136,7 @@ export function Calendar() {
           <div className="flex flex-col gap-3">
             <Button 
               className="text-white"
-              onClick={() => setShowMeetingDialog(true)}
+              onClick={handleCreateNewMeeting}
             >
               <Plus className="h-4 w-4 mr-2" />
               Nueva Reunión
@@ -166,6 +179,7 @@ export function Calendar() {
                 currentMonth={currentMonth}
                 onMonthChange={handleMonthChange}
                 onEditMeeting={handleEditMeeting}
+                onMeetingDeleted={handleMeetingDeleted}
               />
             </div>
           )}
@@ -177,6 +191,8 @@ export function Calendar() {
         open={showMeetingDialog}
         onOpenChange={setShowMeetingDialog}
         onMeetingCreated={handleMeetingCreated}
+        meeting={editingMeeting}
+        mode={dialogMode}
       />
     </div>
   );

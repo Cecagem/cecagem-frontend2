@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { IMeeting } from '../types/calendar.types';
+import { MeetingActions } from './MeetingActions';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -14,9 +15,10 @@ interface MeetingListProps {
   currentMonth: Date;
   onMonthChange: (month: Date) => void;
   onEditMeeting: (meetingId: string) => void;
+  onMeetingDeleted?: () => void;
 }
 
-export function MeetingList({ meetings, currentMonth, onMonthChange, onEditMeeting }: MeetingListProps) {
+export function MeetingList({ meetings, currentMonth, onMonthChange, onEditMeeting, onMeetingDeleted }: MeetingListProps) {
 
   const getStatusBadge = (isCompleted: boolean) => {
     return isCompleted 
@@ -124,12 +126,11 @@ export function MeetingList({ meetings, currentMonth, onMonthChange, onEditMeeti
                 
                 {/* Botones de acción */}
                 <div className="flex-shrink-0 self-start">
-                  <button
-                    onClick={() => onEditMeeting(meeting.id)}
-                    className="px-3 py-1 text-sm bg-primary/10 text-primary rounded hover:bg-primary/20"
-                  >
-                    Editar
-                  </button>
+                  <MeetingActions
+                    meeting={meeting}
+                    onEditMeeting={onEditMeeting}
+                    onMeetingUpdated={() => onMeetingDeleted?.()}
+                  />
                 </div>
               </div>
             </CardHeader>

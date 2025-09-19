@@ -90,7 +90,7 @@ export function MeetingDetailsSheet({
                 className={`
                   ${!meeting.isCompleted 
                     ? 'bg-white/20 text-white border-white/30 hover:bg-white/30' 
-                    : ''
+                    : 'bg-white/90 text-gray-800 border-white hover:bg-white'
                   }
                 `}
               >
@@ -106,7 +106,7 @@ export function MeetingDetailsSheet({
           {meeting.description && (
             <div>
               <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Descripción</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-100/80 dark:bg-gray-800 p-3 rounded-lg border border-gray-200/50 dark:border-gray-700">
                 {meeting.description}
               </p>
             </div>
@@ -114,24 +114,24 @@ export function MeetingDetailsSheet({
 
           {/* Date and Time Info */}
           <div className="grid grid-cols-1 gap-4">
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-100/80 dark:bg-gray-800 p-4 rounded-lg border border-gray-200/50 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg">
+                <div className="p-2 bg-primary/15 dark:bg-primary/20 rounded-lg">
                   <Clock className="h-4 w-4 text-primary" />
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Fecha y hora</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
                     {format(new Date(meeting.startDate), 'dd/MM/yyyy', { locale: es })}
                   </p>
                 </div>
               </div>
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-11">
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-300 ml-11">
                 {formatTime(meeting.startDate)} - {formatTime(meeting.endDate)}
               </div>
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-100/80 dark:bg-gray-800 p-4 rounded-lg border border-gray-200/50 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                   {meeting.modo === 'VIRTUAL' ? (
@@ -144,7 +144,7 @@ export function MeetingDetailsSheet({
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     {meeting.modo === 'VIRTUAL' ? 'Reunión virtual' : 'Reunión presencial'}
                   </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
                     {meeting.ubicacion}
                   </p>
                 </div>
@@ -164,14 +164,14 @@ export function MeetingDetailsSheet({
             </div>
             <div className="space-y-3">
               {meeting.asistentes.map((attendee, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <div key={index} className="flex items-center justify-between bg-gray-100/80 dark:bg-gray-800 p-3 rounded-lg border border-gray-200/50 dark:border-gray-700">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-medium">
-                      {attendee.nombre.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                      {attendee.nombre ? attendee.nombre.split(' ').map((n: string) => n[0]).join('').toUpperCase() : '??'}
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{attendee.nombre}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{attendee.email}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{attendee.nombre || 'Sin nombre'}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">{attendee.email || 'Sin email'}</div>
                     </div>
                   </div>
                 </div>
@@ -181,12 +181,12 @@ export function MeetingDetailsSheet({
         </div>
 
         {/* Actions Section */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-gray-50 dark:bg-gray-800/50">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-gray-100/50 dark:bg-gray-800/50">
           <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Acciones</h4>
           <div className="space-y-3">
             <Button
               variant="outline"
-              className="w-full justify-start h-11 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full justify-start h-11 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-200/80 hover:text-gray-800 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
               onClick={() => {
                 onEditMeeting(meeting.id);
                 onOpenChange(false);
@@ -199,7 +199,7 @@ export function MeetingDetailsSheet({
             {!meeting.isCompleted && (
               <Button
                 variant="outline"
-                className="w-full justify-start h-11 text-green-700 dark:text-green-400 border-green-300 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                className="w-full justify-start h-11 text-green-700 dark:text-green-400 border-green-300 dark:border-green-600 hover:bg-green-100/80 hover:text-green-800 hover:border-green-400 dark:hover:bg-green-900/20 dark:hover:text-green-300 transition-colors"
                 onClick={handleStatusChange}
                 disabled={completeMeetingMutation.isPending}
               >
@@ -212,7 +212,7 @@ export function MeetingDetailsSheet({
               <AlertDialogTrigger asChild>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start h-11 text-red-700 dark:text-red-400 border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="w-full justify-start h-11 text-red-700 dark:text-red-400 border-red-300 dark:border-red-600 hover:bg-red-100/80 hover:text-red-800 hover:border-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300 transition-colors"
                   disabled={deleteMeetingMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-3" />

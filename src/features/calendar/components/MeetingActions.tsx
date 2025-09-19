@@ -58,29 +58,33 @@ export function MeetingActions({
         variant="outline"
         size="sm"
         onClick={() => onEditMeeting(meeting.id)}
+        className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-200/80 hover:text-gray-800 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
       >
         <Edit className="h-4 w-4" />
       </Button>
       
       {/* Botón para cambiar estado completado */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleToggleCompleted}
-        disabled={completeMeeting.isPending}
-        className={
-          meeting.isCompleted 
-            ? "text-green-600 hover:text-green-700 hover:bg-green-50" 
-            : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-        }
-        title={meeting.isCompleted ? "Reunión completada" : "Marcar como completada"}
-      >
-        <CheckCircle className="h-4 w-4" />
-      </Button>
+      {!meeting.isCompleted && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleToggleCompleted}
+          disabled={completeMeeting.isPending}
+          className="text-green-700 dark:text-green-400 border-green-300 dark:border-green-600 hover:bg-green-100/80 hover:text-green-800 hover:border-green-400 dark:hover:bg-green-900/20 dark:hover:text-green-300 transition-colors"
+          title="Marcar como completada"
+        >
+          <CheckCircle className="h-4 w-4" />
+        </Button>
+      )}
       
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="outline" size="sm" disabled={deleteMeeting.isPending}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            disabled={deleteMeeting.isPending}
+            className="text-red-700 dark:text-red-400 border-red-300 dark:border-red-600 hover:bg-red-100/80 hover:text-red-800 hover:border-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300 transition-colors"
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </AlertDialogTrigger>

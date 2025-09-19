@@ -112,7 +112,7 @@ export function LoginForm({
                     className="block dark:hidden"
                   />
                   <Image
-                    src="/image/logos/logocecagem.png"
+                    src="/image/logos/logoblanco.png"
                     alt="CECAGEM logo"
                     width={180}
                     height={180}
@@ -257,7 +257,7 @@ export function LoginForm({
                   className="block dark:hidden"
                 />
                 <Image
-                  src="/image/logos/logocecagem.png"
+                  src="/image/logos/logoblanco.png"
                   alt="CECAGEM logo"
                   width={180}
                   height={180}

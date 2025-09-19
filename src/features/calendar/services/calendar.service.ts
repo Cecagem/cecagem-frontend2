@@ -50,10 +50,18 @@ export const calendarService = {
 
   // Actualizar reunión
   async updateMeeting(id: string, data: IUpdateMeetingDto): Promise<IMeeting> {
-    return await cecagemApi.patch<IMeeting>(
-      ENDPOINTS.meeting(id), 
-      data as unknown as Record<string, unknown>
-    );
+    console.log('📝 Actualizando reunión:', { id, data });
+    try {
+      const result = await cecagemApi.patch<IMeeting>(
+        ENDPOINTS.meeting(id), 
+        data as unknown as Record<string, unknown>
+      );
+      console.log('✅ Reunión actualizada correctamente:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error al actualizar reunión:', error);
+      throw error;
+    }
   },
 
   // Eliminar reunión

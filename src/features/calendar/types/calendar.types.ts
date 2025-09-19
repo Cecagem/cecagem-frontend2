@@ -33,7 +33,7 @@ export interface IMeeting {
 
 // DTOs para API
 export interface ICreateMeetingDto {
-  contractId: string;
+  contractId: string | null;
   title: string;
   description: string;
   startDate: string;

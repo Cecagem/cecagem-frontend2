@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { useCreateMeeting } from '../hooks/use-calendar';
+import { useCreateMeeting, useUpdateMeeting } from '../hooks/use-calendar';
 import { toast } from 'sonner';
-import { MeetingType, MeetingMode, ICreateMeetingDto, IAttendee } from '../types/calendar.types';
+import { MeetingType, MeetingMode, ICreateMeetingDto, IUpdateMeetingDto, IAttendee, IMeeting } from '../types/calendar.types';
 import { Plus, Trash2 } from 'lucide-react';
 import { z } from 'zod';
 
@@ -49,14 +49,19 @@ interface MeetingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMeetingCreated: () => void;
+  meeting?: IMeeting | null; // Para edición
+  mode?: 'create' | 'edit'; // Para diferenciar entre crear y editar
 }
 
 export function MeetingDialog({
   open,
   onOpenChange,
   onMeetingCreated,
+  meeting = null,
+  mode = 'create'
 }: MeetingDialogProps) {
   const createMeetingMutation = useCreateMeeting();
+  const updateMeetingMutation = useUpdateMeeting();
   const [duration, setDuration] = useState<number>(30);
   const [newAttendeeEmail, setNewAttendeeEmail] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -71,9 +76,60 @@ export function MeetingDialog({
     asistentes: [],
   });
 
+  // Cargar datos de la reunión para edición
+  useEffect(() => {
+    if (mode === 'edit' && meeting && open) {
+      const startDate = new Date(meeting.startDate);
+      const endDate = new Date(meeting.endDate);
+      const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+      
+      // Formatear fecha para datetime-local sin problemas de zona horaria
+      const formatDateTimeLocal = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      };
+      
+      setFormData({
+        title: meeting.title,
+        description: meeting.description || '',
+        startDate: formatDateTimeLocal(startDate),
+        tipo: meeting.tipo,
+        modo: meeting.modo,
+        ubicacion: meeting.ubicacion || '',
+        asistentes: meeting.asistentes || [],
+      });
+      setDuration(duration);
+    } else if (mode === 'create' && open) {
+      // Reset form para crear nueva reunión
+      setFormData({
+        title: '',
+        description: '',
+        startDate: '',
+        tipo: MeetingType.PERSONAL,
+        modo: MeetingMode.OFFICE,
+        ubicacion: '',
+        asistentes: [],
+      });
+      setDuration(30);
+      setNewAttendeeEmail('');
+      setErrors({});
+    }
+  }, [mode, meeting, open]);
+
   const validateForm = (data: Partial<MeetingFormData>): boolean => {
     try {
-      meetingFormSchema.parse(data);
+      // Crear un esquema dinámico que permita fechas pasadas en modo edición
+      const dynamicSchema = mode === 'edit' 
+        ? meetingFormSchema.omit({ startDate: true }).extend({
+            startDate: z.string().min(1, 'La fecha y hora de inicio es obligatoria')
+          })
+        : meetingFormSchema;
+        
+      dynamicSchema.parse(data);
       setErrors({});
       return true;
     } catch (error) {
@@ -116,11 +172,20 @@ export function MeetingDialog({
         modo: formData.modo!,
         ubicacion: formData.ubicacion || '',
         asistentes: formData.asistentes || [],
-        contractId: 'default-contract',
-      } as ICreateMeetingDto;
+      };
       
       console.log('📤 Datos finales enviados:', meetingData);
-      await createMeetingMutation.mutateAsync(meetingData);
+      
+      if (mode === 'edit' && meeting) {
+        // Actualizar reunión existente
+        await updateMeetingMutation.mutateAsync({ 
+          id: meeting.id, 
+          data: meetingData as IUpdateMeetingDto 
+        });
+      } else {
+        // Crear nueva reunión
+        await createMeetingMutation.mutateAsync(meetingData as ICreateMeetingDto);
+      }
       
       // Reset form
       setFormData({
@@ -137,10 +202,9 @@ export function MeetingDialog({
       setErrors({});
       onOpenChange(false);
       onMeetingCreated();
-      toast.success('Reunión creada exitosamente');
     } catch (error) {
-      console.error('Error al crear reunión:', error);
-      toast.error('Error al crear la reunión');
+      console.error('Error en operación de reunión:', error);
+      // Los errores específicos se manejan en los hooks
     }
   };
 
@@ -193,7 +257,7 @@ export function MeetingDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader className="border-b pb-4">
-          <DialogTitle>Nueva Reunión</DialogTitle>
+          <DialogTitle>{mode === 'edit' ? 'Editar Reunión' : 'Nueva Reunión'}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -371,9 +435,12 @@ export function MeetingDialog({
             </Button>
             <Button 
               type="submit" 
-              disabled={createMeetingMutation.isPending}
+              disabled={createMeetingMutation.isPending || updateMeetingMutation.isPending}
             >
-              {createMeetingMutation.isPending ? 'Creando...' : 'Crear Reunión'}
+              {(createMeetingMutation.isPending || updateMeetingMutation.isPending) 
+                ? (mode === 'edit' ? 'Actualizando...' : 'Creando...') 
+                : (mode === 'edit' ? 'Actualizar Reunión' : 'Crear Reunión')
+              }
             </Button>
           </DialogFooter>
         </form>
