@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/cecagem/:path*",
-        destination: "https://back.ecomassystems.com/api/v1/:path*",
-        // destination: "http://localhost:5000/api/v1/:path*",
+        // destination: "https://back.ecomassystems.com/api/v1/:path*",
+        destination: "http://localhost:3001/api/v1/:path*",
       },
     ];
   },
@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com",
         port: "",
-        pathname: "/**",
+        pathname: "/",
       },
     ],
   },

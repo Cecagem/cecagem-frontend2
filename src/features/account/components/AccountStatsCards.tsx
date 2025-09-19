@@ -2,10 +2,10 @@
 
 import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
 import { StatsGrid, StatCard } from "@/components/shared/stats-cards";
-import type { TransactionStats } from "../types/account.types";
+import type { ITransactionStats } from "../types/account.types";
 
 interface AccountStatsCardsProps {
-  stats: TransactionStats;
+  stats: ITransactionStats;
   isLoading: boolean;
 }
 
@@ -26,23 +26,23 @@ export const AccountStatsCards = ({ stats, isLoading }: AccountStatsCardsProps) 
   }> = [
     {
       title: "Balance Total",
-      value: formatCurrency(stats.balance),
+      value: formatCurrency(stats.totalBalance),
       icon: DollarSign,
-      subtitle: `${stats.balance >= 0 ? "Positivo" : "Negativo"}`,
-      variant: stats.balance >= 0 ? "success" : "error" as const,
+      subtitle: `${stats.totalBalance >= 0 ? "Positivo" : "Negativo"}`,
+      variant: stats.totalBalance >= 0 ? "success" : "error" as const,
     },
     {
       title: "Ingresos Totales",
       value: formatCurrency(stats.totalIncome),
       icon: TrendingUp,
-      subtitle: `${formatCurrency(stats.monthlyIncome)} este mes`,
+      subtitle: `Total acumulado`,
       variant: "success" as const,
     },
     {
       title: "Gastos Totales",
       value: formatCurrency(stats.totalExpenses),
       icon: TrendingDown,
-      subtitle: `${formatCurrency(stats.monthlyExpenses)} este mes`,
+      subtitle: `Total acumulado`,
       variant: "error" as const,
     },
     {

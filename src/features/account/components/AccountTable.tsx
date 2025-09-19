@@ -10,47 +10,30 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash, Eye } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, Eye, RefreshCw } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Transaction, TransactionType, TransactionCategory, TransactionStatus } from "../types/account.types";
-import { TransactionType as TType, TransactionCategory as TCategory, TransactionStatus as TStatus } from "../types/account.types";
+import type { ITransaction, TransactionType, TransactionStatus } from "../types/account.types";
+import { TransactionType as TType, TransactionStatus as TStatus } from "../types/account.types";
 
 interface AccountTableProps {
-  transactions: Transaction[];
+  transactions: ITransaction[];
   isLoading: boolean;
-  onEdit: (transaction: Transaction) => void;
+  onEdit: (transaction: ITransaction) => void;
   onDelete: (id: string) => void;
-  onView: (transaction: Transaction) => void;
+  onView: (transaction: ITransaction) => void;
+  onChangeStatus: (id: string) => void;
 }
 
-const getCategoryLabel = (category: TransactionCategory): string => {
-  const labels: Record<TransactionCategory, string> = {
-    // Ingresos
-    [TCategory.SALARY]: "Salario",
-    [TCategory.FREELANCE]: "Freelance",
-    [TCategory.INVESTMENT]: "Inversión",
-    [TCategory.BUSINESS]: "Negocio",
-    [TCategory.OTHER_INCOME]: "Otros Ingresos",
-    
-    // Egresos
-    [TCategory.FOOD]: "Comida",
-    [TCategory.TRANSPORT]: "Transporte",
-    [TCategory.UTILITIES]: "Servicios",
-    [TCategory.ENTERTAINMENT]: "Entretenimiento",
-    [TCategory.HEALTHCARE]: "Salud",
-    [TCategory.EDUCATION]: "Educación",
-    [TCategory.SHOPPING]: "Compras",
-    [TCategory.RENT]: "Alquiler",
-    [TCategory.OTHER_EXPENSE]: "Otros Gastos",
-  };
-  return labels[category];
+const getCategoryLabel = (category: string): string => {
+  // Como ahora las categorías son strings, simplemente retornamos el valor
+  return category;
 };
 
 const getStatusLabel = (status: TransactionStatus): string => {
   const labels: Record<TransactionStatus, string> = {
     [TStatus.PENDING]: "Pendiente",
     [TStatus.COMPLETED]: "Completado",
-    [TStatus.CANCELLED]: "Cancelado",
+    [TStatus.CANCELED]: "Cancelado",
   };
   return labels[status];
 };
@@ -59,7 +42,7 @@ const getStatusVariant = (status: TransactionStatus): "default" | "secondary" | 
   const variants: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
     [TStatus.PENDING]: "secondary",
     [TStatus.COMPLETED]: "default",
-    [TStatus.CANCELLED]: "destructive",
+    [TStatus.CANCELED]: "destructive",
   };
   return variants[status];
 };
@@ -78,6 +61,7 @@ export const AccountTable = ({
   onEdit,
   onDelete,
   onView,
+  onChangeStatus,
 }: AccountTableProps) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-PE", {
@@ -87,53 +71,60 @@ export const AccountTable = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-PE");
+    // Usar UTC para evitar problemas de zona horaria
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("es-PE", {
+      timeZone: "UTC",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(date);
   };
 
-  const columns = useMemo<ColumnDef<Transaction>[]>(() => [
+  const columns = useMemo<ColumnDef<ITransaction>[]>(() => [
     {
-      accessorKey: "date",
+      accessorKey: "fecha",
       header: "Fecha",
-      cell: ({ row }) => formatDate(row.original.date),
+      cell: ({ row }) => formatDate(row.original.fecha),
     },
     {
-      accessorKey: "type",
+      accessorKey: "tipo",
       header: "Tipo",
       cell: ({ row }) => (
-        <Badge variant={getTypeVariant(row.original.type)}>
-          {getTypeLabel(row.original.type)}
+        <Badge variant={getTypeVariant(row.original.tipo)}>
+          {getTypeLabel(row.original.tipo)}
         </Badge>
       ),
     },
     {
-      accessorKey: "category",
+      accessorKey: "categoria",
       header: "Categoría",
-      cell: ({ row }) => getCategoryLabel(row.original.category),
+      cell: ({ row }) => getCategoryLabel(row.original.categoria),
     },
     {
-      accessorKey: "description",
+      accessorKey: "descripcion",
       header: "Descripción",
       cell: ({ row }) => (
-        <div className="max-w-xs truncate" title={row.original.description}>
-          {row.original.description}
+        <div className="max-w-xs truncate" title={row.original.descripcion}>
+          {row.original.descripcion}
         </div>
       ),
     },
     {
-      accessorKey: "amount",
+      accessorKey: "monto",
       header: "Monto",
       cell: ({ row }) => (
-        <span className={row.original.type === TType.INCOME ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-          {formatCurrency(row.original.amount)}
+        <span className={row.original.tipo === TType.INCOME ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+          {formatCurrency(parseFloat(row.original.monto))}
         </span>
       ),
     },
     {
-      accessorKey: "status",
+      accessorKey: "estado",
       header: "Estado",
       cell: ({ row }) => (
-        <Badge variant={getStatusVariant(row.original.status)}>
-          {getStatusLabel(row.original.status)}
+        <Badge variant={getStatusVariant(row.original.estado)}>
+          {getStatusLabel(row.original.estado)}
         </Badge>
       ),
     },
@@ -158,6 +149,12 @@ export const AccountTable = ({
               Editar
             </DropdownMenuItem>
             <DropdownMenuItem 
+              onClick={() => onChangeStatus(row.original.id)}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Cambiar Estado
+            </DropdownMenuItem>
+            <DropdownMenuItem 
               onClick={() => onDelete(row.original.id)}
               className="text-red-600"
             >
@@ -168,7 +165,7 @@ export const AccountTable = ({
         </DropdownMenu>
       ),
     },
-  ], [onEdit, onDelete, onView]);
+  ], [onEdit, onDelete, onView, onChangeStatus]);
 
   return (
     <DataTable
