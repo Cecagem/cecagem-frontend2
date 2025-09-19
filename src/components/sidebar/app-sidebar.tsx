@@ -132,7 +132,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             collapsible: false,
           },
           {
-            title: "Contabilidad",
+            title: "Ingresos y Egresos",
             url: "/account",
             icon: DollarSign,
             collapsible: false,

@@ -5,12 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import type { TransactionFilters, TransactionStatus } from "../types/account.types";
+import type { ITransactionFilters, TransactionStatus } from "../types/account.types";
 import { TransactionType as TType, TransactionStatus as TStatus } from "../types/account.types";
 
 interface AccountFiltersProps {
-  filters: Partial<TransactionFilters>;
-  onFiltersChange: (filters: Partial<TransactionFilters>) => void;
+  filters: Partial<ITransactionFilters>;
+  onFiltersChange: (filters: Partial<ITransactionFilters>) => void;
   onClearFilters: () => void;
   isLoading?: boolean;
 }
@@ -19,7 +19,7 @@ const getStatusLabel = (status: TransactionStatus): string => {
   const labels: Record<TransactionStatus, string> = {
     [TStatus.PENDING]: "Pendiente",
     [TStatus.COMPLETED]: "Completado",
-    [TStatus.CANCELLED]: "Cancelado",
+    [TStatus.CANCELED]: "Cancelado",
   };
   return labels[status];
 };
@@ -30,7 +30,7 @@ export const AccountFilters = ({
   onClearFilters,
   isLoading = false,
 }: AccountFiltersProps) => {
-  const handleInputChange = (field: keyof TransactionFilters, value: string | number | undefined) => {
+  const handleInputChange = (field: keyof ITransactionFilters, value: string | number | undefined) => {
     onFiltersChange({ ...filters, [field]: value });
   };
 
@@ -58,8 +58,8 @@ export const AccountFilters = ({
           {/* Tipo */}
           <div>
             <Select
-              value={filters.type || "all"}
-              onValueChange={(value) => handleInputChange("type", value === "all" ? undefined : value)}
+              value={filters.tipo || "all"}
+              onValueChange={(value) => handleInputChange("tipo", value === "all" ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos los tipos" />
@@ -75,8 +75,8 @@ export const AccountFilters = ({
           {/* Estado */}
           <div>
             <Select
-              value={filters.status || "all"}
-              onValueChange={(value) => handleInputChange("status", value === "all" ? undefined : value)}
+              value={filters.estado || "all"}
+              onValueChange={(value) => handleInputChange("estado", value === "all" ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos los estados" />

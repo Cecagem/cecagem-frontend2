@@ -1,106 +1,99 @@
 import { cecagemApi } from "@/lib/api-client";
 import {
-  TransactionFilters,
-  TransactionsResponse,
-  CreateTransactionRequest,
-  UpdateTransactionRequest,
-  TransactionResponse,
-  DeleteTransactionResponse,
-  TransactionStats,
-  MonthlyData,
+  ICreateTransactionDto,
+  IUpdateTransactionDto,
+  ITransactionFilters,
+  ITransactionsResponse,
+  ITransactionResponse,
+  ITransactionStats,
 } from "../types/account.types";
 
-class AccountService {
-  private readonly baseEndpoint = "/transactions";
-
-  async getTransactions(filters?: Partial<TransactionFilters>): Promise<TransactionsResponse> {
+export class TransactionService {
+  async getAll(filters?: ITransactionFilters): Promise<ITransactionsResponse> {
     const params = new URLSearchParams();
 
-    if (filters?.type) {
-      params.append("type", filters.type);
-    }
-    if (filters?.category) {
-      params.append("category", filters.category);
-    }
-    if (filters?.status) {
-      params.append("status", filters.status);
-    }
-    if (filters?.dateFrom) {
-      params.append("dateFrom", filters.dateFrom);
-    }
-    if (filters?.dateTo) {
-      params.append("dateTo", filters.dateTo);
-    }
-    if (filters?.amountMin) {
-      params.append("amountMin", filters.amountMin.toString());
-    }
-    if (filters?.amountMax) {
-      params.append("amountMax", filters.amountMax.toString());
-    }
-    if (filters?.search) {
-      params.append("search", filters.search);
-    }
-    if (filters?.page) {
-      params.append("page", filters.page.toString());
-    }
-    if (filters?.limit) {
-      params.append("limit", filters.limit.toString());
-    }
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.tipo) params.append("tipo", filters.tipo);
+    if (filters?.estado) params.append("estado", filters.estado);
+    if (filters?.categoria) params.append("categoria", filters.categoria);
+    if (filters?.fechaInicio) params.append("fechaInicio", filters.fechaInicio);
+    if (filters?.fechaFin) params.append("fechaFin", filters.fechaFin);
+    if (filters?.page) params.append("page", filters.page.toString());
+    if (filters?.limit) params.append("limit", filters.limit.toString());
 
     const queryString = params.toString();
     const url = queryString
-      ? `${this.baseEndpoint}?${queryString}`
-      : this.baseEndpoint;
+      ? `/transactions?${queryString}`
+      : "/transactions";
 
-    return await cecagemApi.get<TransactionsResponse>(url);
+    return await cecagemApi.get<ITransactionsResponse>(url);
   }
 
-  async getTransactionById(id: string): Promise<TransactionResponse> {
-    return await cecagemApi.get<TransactionResponse>(`${this.baseEndpoint}/${id}`);
-  }
-
-  async createTransaction(transactionData: CreateTransactionRequest): Promise<TransactionResponse> {
-    return await cecagemApi.post<TransactionResponse>(
-      this.baseEndpoint,
-      transactionData as unknown as Record<string, unknown>
+  async getById(id: string): Promise<ITransactionResponse> {
+    return await cecagemApi.get<ITransactionResponse>(
+      `/transactions/${id}`
     );
   }
 
-  async updateTransaction(
+  async create(data: ICreateTransactionDto): Promise<ITransactionResponse> {
+    return await cecagemApi.post<ITransactionResponse>(
+      "/transactions",
+      data as unknown as Record<string, unknown>
+    );
+  }
+
+  async update(
     id: string,
-    transactionData: UpdateTransactionRequest
-  ): Promise<TransactionResponse> {
-    return await cecagemApi.put<TransactionResponse>(
-      `${this.baseEndpoint}/${id}`,
-      transactionData as unknown as Record<string, unknown>
+    data: IUpdateTransactionDto
+  ): Promise<ITransactionResponse> {
+    return await cecagemApi.patch<ITransactionResponse>(
+      `/transactions/${id}`,
+      data as unknown as Record<string, unknown>
     );
   }
 
-  async deleteTransaction(id: string): Promise<DeleteTransactionResponse> {
-    return await cecagemApi.delete<DeleteTransactionResponse>(`${this.baseEndpoint}/${id}`);
+  async delete(id: string): Promise<{ message: string }> {
+    return await cecagemApi.delete<{ message: string }>(
+      `/transactions/${id}`
+    );
   }
 
-  async getStats(filters?: { dateFrom?: string; dateTo?: string }): Promise<TransactionStats> {
-    const params = new URLSearchParams();
+  async getStats(): Promise<ITransactionStats> {
+    try {
+      // Intentar obtener stats del endpoint específico
+      return await cecagemApi.get<ITransactionStats>("/transactions/stats");
+    } catch {
+      // Si el endpoint no existe, calcular localmente
+      console.warn("Endpoint /transactions/stats no disponible, calculando localmente");
+      return await this.calculateStatsLocally();
+    }
+  }
+
+  private async calculateStatsLocally(): Promise<ITransactionStats> {
+    // Obtener todas las transacciones
+    const response = await this.getAll();
+    const transactions = response.data || [];
     
-    if (filters?.dateFrom) {
-      params.append("dateFrom", filters.dateFrom);
-    }
-    if (filters?.dateTo) {
-      params.append("dateTo", filters.dateTo);
-    }
-
-    const queryString = params.toString();
-    const url = queryString
-      ? `${this.baseEndpoint}/stats?${queryString}`
-      : `${this.baseEndpoint}/stats`;
-
-    return await cecagemApi.get<TransactionStats>(url);
-  }
-
-  async getMonthlyReport(year: number): Promise<MonthlyData[]> {
-    return await cecagemApi.get(`${this.baseEndpoint}/monthly-report/${year}`);
+    // Filtrar solo las transacciones completadas
+    const completedTransactions = transactions.filter(t => t.estado === "COMPLETED");
+    
+    const totalIncome = completedTransactions
+      .filter(t => t.tipo === "INCOME")
+      .reduce((sum, t) => sum + parseFloat(t.monto || "0"), 0);
+      
+    const totalExpenses = completedTransactions
+      .filter(t => t.tipo === "EXPENSE")
+      .reduce((sum, t) => sum + parseFloat(t.monto || "0"), 0);
+      
+    const totalBalance = totalIncome - totalExpenses;
+    
+    return {
+      totalBalance,
+      totalIncome,
+      totalExpenses,
+      transactionCount: completedTransactions.length,
+    };
   }
 }
 
-export const accountService = new AccountService();
+export const transactionService = new TransactionService();

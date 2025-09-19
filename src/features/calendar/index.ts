@@ -1,12 +1,11 @@
 // Types
-export type * from './types';
+export type * from './types/calendar.types';
 
 // Services
-export { CalendarService } from './services';
+export { calendarService } from './services/calendar.service';
 
 // Hooks
-export * from './hooks';
+export * from './hooks/use-calendar';
 
 // Components
-export * from './components';
 export * from './components';

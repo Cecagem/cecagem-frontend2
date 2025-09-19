@@ -7,42 +7,48 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { AccountStatsCards, AccountFilters, AccountTable, AccountForm } from "./index";
+import { AccountStatsCards, AccountFilters, AccountTable, AccountForm, TransactionDetailsModal, ChangeStatusModal } from "./index";
 import { 
   useTransactions, 
-  useTransactionStats, 
+  useTransactionStats,
   useCreateTransaction, 
   useUpdateTransaction, 
+  useUpdateTransactionStatus,
   useDeleteTransaction 
 } from "../hooks/use-account";
 import type { 
-  Transaction, 
-  TransactionFilters, 
-  CreateTransactionRequest, 
-  UpdateTransactionRequest 
+  ITransaction, 
+  ITransactionFilters, 
+  ICreateTransactionDto, 
+  IUpdateTransactionDto,
+  TransactionStatus
 } from "../types/account.types";
 
 export const MainAccount = () => {
-  const [filters, setFilters] = useState<Partial<TransactionFilters>>({
+  const [filters, setFilters] = useState<Partial<ITransactionFilters>>({
     page: 1,
     limit: 10,
   });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isChangeStatusModalOpen, setIsChangeStatusModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<ITransaction | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [transactionToChangeStatus, setTransactionToChangeStatus] = useState<ITransaction | null>(null);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
 
   // Queries
   const { data: transactionsData, isLoading: transactionsLoading } = useTransactions(filters);
-  const { data: stats, isLoading: statsLoading } = useTransactionStats();
+  const { data: statsData, isLoading: statsLoading } = useTransactionStats();
 
   // Mutations
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
+  const updateStatusMutation = useUpdateTransactionStatus();
   const deleteMutation = useDeleteTransaction();
 
-  const handleFiltersChange = (newFilters: Partial<TransactionFilters>) => {
+  const handleFiltersChange = (newFilters: Partial<ITransactionFilters>) => {
     setFilters({ ...filters, ...newFilters, page: 1 });
   };
 
@@ -56,16 +62,39 @@ export const MainAccount = () => {
     setIsFormOpen(true);
   };
 
-  const handleEditTransaction = (transaction: Transaction) => {
+  const handleEditTransaction = (transaction: ITransaction) => {
     setSelectedTransaction(transaction);
     setFormMode("edit");
     setIsFormOpen(true);
   };
 
-  const handleViewTransaction = (transaction: Transaction) => {
+  const handleViewTransaction = (transaction: ITransaction) => {
     setSelectedTransaction(transaction);
-    // Aquí podrías abrir un modal de vista detallada
-    toast.info(`Viendo transacción: ${transaction.description}`);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleChangeStatus = (id: string) => {
+    const transaction = transactionsData?.data?.find(t => t.id === id);
+    if (transaction) {
+      setTransactionToChangeStatus(transaction);
+      setIsChangeStatusModalOpen(true);
+    }
+  };
+
+  const handleConfirmStatusChange = (id: string, newStatus: TransactionStatus) => {
+    updateStatusMutation.mutate(
+      { id, estado: newStatus },
+      {
+        onSuccess: () => {
+          toast.success("Estado actualizado correctamente");
+          setIsChangeStatusModalOpen(false);
+          setTransactionToChangeStatus(null);
+        },
+        onError: (error) => {
+          toast.error(`Error al cambiar estado: ${error.message}`);
+        },
+      }
+    );
   };
 
   const handleDeleteTransaction = (id: string) => {
@@ -88,9 +117,9 @@ export const MainAccount = () => {
     }
   };
 
-  const handleFormSubmit = (data: CreateTransactionRequest | UpdateTransactionRequest) => {
+  const handleFormSubmit = (data: ICreateTransactionDto | IUpdateTransactionDto) => {
     if (formMode === "create") {
-      createMutation.mutate(data as CreateTransactionRequest, {
+      createMutation.mutate(data as ICreateTransactionDto, {
         onSuccess: () => {
           toast.success("Transacción creada correctamente");
           setIsFormOpen(false);
@@ -101,7 +130,7 @@ export const MainAccount = () => {
       });
     } else if (selectedTransaction) {
       updateMutation.mutate(
-        { id: selectedTransaction.id, data: data as UpdateTransactionRequest },
+        { id: selectedTransaction.id, data: data as IUpdateTransactionDto },
         {
           onSuccess: () => {
             toast.success("Transacción actualizada correctamente");
@@ -117,13 +146,10 @@ export const MainAccount = () => {
   };
 
   const defaultStats = {
+    totalBalance: 0,
     totalIncome: 0,
     totalExpenses: 0,
-    balance: 0,
-    monthlyIncome: 0,
-    monthlyExpenses: 0,
-    monthlyBalance: 0,
-    transactionCount: 0,
+    transactionCount: transactionsData?.data?.length || 0,
   };
 
   return (
@@ -144,7 +170,7 @@ export const MainAccount = () => {
         </div>
 
         <AccountStatsCards
-          stats={stats || defaultStats}
+          stats={statsData || defaultStats}
           isLoading={statsLoading}
         />
       </div>
@@ -159,28 +185,41 @@ export const MainAccount = () => {
 
       {/* Tabla de transacciones */}
       <AccountTable
-        transactions={transactionsData?.transactions || []}
+        transactions={transactionsData?.data || []}
         isLoading={transactionsLoading}
         onEdit={handleEditTransaction}
         onDelete={handleDeleteTransaction}
         onView={handleViewTransaction}
+        onChangeStatus={handleChangeStatus}
       />
 
       {/* Dialog para crear/editar transacción */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <AccountForm
-            transaction={selectedTransaction || undefined}
-            onSubmit={handleFormSubmit}
-            onCancel={() => setIsFormOpen(false)}
-            isLoading={createMutation.isPending || updateMutation.isPending}
-            mode={formMode}
-          />
+      <Dialog 
+        open={isFormOpen} 
+        onOpenChange={setIsFormOpen} // Permitir cierre con X
+      >
+        <DialogContent 
+          className="max-w-4xl w-[95vw] max-h-[95vh] flex flex-col p-0"
+          onInteractOutside={(e) => e.preventDefault()} // Prevenir cierre con click fuera
+          onEscapeKeyDown={(e) => e.preventDefault()} // Prevenir cierre con ESC
+        >
+          <div className="flex-1 overflow-y-auto p-6">
+            <AccountForm
+              transaction={selectedTransaction || undefined}
+              onSubmit={handleFormSubmit}
+              onCancel={() => setIsFormOpen(false)}
+              isLoading={createMutation.isPending || updateMutation.isPending}
+              mode={formMode}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Dialog de confirmación para eliminar */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog 
+        open={isDeleteDialogOpen} 
+        onOpenChange={() => {}} // Prevenir cierre con click fuera
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
@@ -189,7 +228,9 @@ export const MainAccount = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteTransaction}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -200,6 +241,28 @@ export const MainAccount = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de detalles de transacción */}
+      <TransactionDetailsModal
+        transaction={selectedTransaction}
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+      />
+
+      {/* Modal para cambiar estado */}
+      <ChangeStatusModal
+        transaction={transactionToChangeStatus}
+        isOpen={isChangeStatusModalOpen}
+        onClose={() => {
+          setIsChangeStatusModalOpen(false);
+          setTransactionToChangeStatus(null);
+        }}
+        onConfirm={handleConfirmStatusChange}
+        isLoading={updateStatusMutation.isPending}
+      />
     </div>
   );
 };

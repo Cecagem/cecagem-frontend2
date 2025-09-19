@@ -6,33 +6,37 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isToday, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { Meeting, CalendarViewType } from '../types';
+import type { IMeeting } from '../types/calendar.types';
 import { MeetingDetailsSheet } from './MeetingDetailsSheet';
 
 interface CalendarGridProps {
-  meetings: Meeting[];
-  viewType: CalendarViewType['view'];
-  onViewTypeChange: (view: CalendarViewType['view']) => void;
+  meetings: IMeeting[];
+  currentMonth: Date;
+  onMonthChange: (month: Date) => void;
   onEditMeeting: (meetingId: string) => void;
   onMeetingDeleted?: () => void;
 }
 
 export function CalendarGrid({ 
   meetings, 
+  currentMonth,
+  onMonthChange,
   onEditMeeting,
   onMeetingDeleted
 }: CalendarGridProps) {
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  // Removemos el estado local del mes ya que ahora viene desde Calendar
+  // const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [selectedMeeting, setSelectedMeeting] = useState<IMeeting | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const getMeetingsForDate = (date: Date): Meeting[] => {
+  const getMeetingsForDate = (date: Date): IMeeting[] => {
     return meetings.filter(meeting => 
       isSameDay(new Date(meeting.startDate), date)
     );
   };
 
-  const formatTime = (date: Date): string => {
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
     return format(date, 'HH:mm');
   };
 
@@ -45,19 +49,16 @@ export function CalendarGrid({
 
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-  const handleMeetingClick = (meeting: Meeting) => {
+  const handleMeetingClick = (meeting: IMeeting) => {
     setSelectedMeeting(meeting);
     setIsSheetOpen(true);
   };
 
-  const getMeetingColor = (meeting: Meeting) => {
-    if (meeting.status === 'completed') {
+  const getMeetingColor = (meeting: IMeeting) => {
+    if (meeting.isCompleted) {
       return 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300';
     }
-    if (meeting.status === 'cancelled') {
-      return 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-    }
-    // Para reuniones programadas (scheduled)
+    // Para reuniones programadas (no completadas)
     return 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
   };
 
@@ -71,7 +72,7 @@ export function CalendarGrid({
               variant="ghost"
               size="icon"
               className="h-9 w-9"
-              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+              onClick={() => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -82,7 +83,7 @@ export function CalendarGrid({
               variant="ghost"
               size="icon"
               className="h-9 w-9"
-              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+              onClick={() => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

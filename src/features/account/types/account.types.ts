@@ -1,137 +1,130 @@
 // ENUMS
-export const TransactionType = {
-  INCOME: "INCOME",
-  EXPENSE: "EXPENSE",
-} as const;
+export enum TransactionType {
+  INCOME = "INCOME",
+  EXPENSE = "EXPENSE",
+}
 
-export const TransactionCategory = {
-  // Ingresos
-  SALARY: "SALARY",
-  FREELANCE: "FREELANCE",
-  INVESTMENT: "INVESTMENT",
-  BUSINESS: "BUSINESS",
-  OTHER_INCOME: "OTHER_INCOME",
-  
-  // Egresos
-  FOOD: "FOOD",
-  TRANSPORT: "TRANSPORT",
-  UTILITIES: "UTILITIES",
-  ENTERTAINMENT: "ENTERTAINMENT",
-  HEALTHCARE: "HEALTHCARE",
-  EDUCATION: "EDUCATION",
-  SHOPPING: "SHOPPING",
-  RENT: "RENT",
-  OTHER_EXPENSE: "OTHER_EXPENSE",
-} as const;
-
-export const TransactionStatus = {
-  PENDING: "PENDING",
-  COMPLETED: "COMPLETED",
-  CANCELLED: "CANCELLED",
-} as const;
-
-export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType];
-export type TransactionCategory = (typeof TransactionCategory)[keyof typeof TransactionCategory];
-export type TransactionStatus = (typeof TransactionStatus)[keyof typeof TransactionStatus];
+export enum TransactionStatus {
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED",
+  CANCELED = "CANCELED",
+}
 
 // ENTITIES
-export interface Transaction {
+export interface ITransaction {
   id: string;
-  userId: string;
-  type: TransactionType;
-  category: TransactionCategory;
-  amount: number;
-  description: string;
-  date: string;
-  status: TransactionStatus;
+  tipo: TransactionType;
+  categoria: string;
+  monto: string;
+  fecha: string;
+  estado: TransactionStatus;
+  descripcion: string;
+  paymentId: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface TransactionStats {
-  totalIncome: number;
-  totalExpenses: number;
-  balance: number;
-  monthlyIncome: number;
-  monthlyExpenses: number;
-  monthlyBalance: number;
-  transactionCount: number;
+// DTOs
+export interface ICreateTransactionDto {
+  tipo: TransactionType;
+  categoria: string;
+  monto: string;
+  fecha: string;
+  estado: TransactionStatus;
+  descripcion: string;
+  paymentId?: string;
+}
+
+export interface IUpdateTransactionDto {
+  tipo?: TransactionType;
+  categoria?: string;
+  monto?: string;
+  fecha?: string;
+  estado?: TransactionStatus;
+  descripcion?: string;
+  paymentId?: string;
 }
 
 // FILTERS
-export interface TransactionFilters {
-  type?: TransactionType | "all";
-  category?: TransactionCategory | "all";
-  status?: TransactionStatus | "all";
-  dateFrom?: string;
-  dateTo?: string;
-  amountMin?: number;
-  amountMax?: number;
+export interface ITransactionFilters {
   search?: string;
+  tipo?: TransactionType;
+  estado?: TransactionStatus;
+  categoria?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
   page?: number;
   limit?: number;
 }
 
-// API RESPONSES
-export interface TransactionsResponse {
-  transactions: Transaction[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-  stats: TransactionStats;
+// RESPONSES
+export interface ITransactionMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
-export interface TransactionResponse {
-  transaction: Transaction;
+export interface ITransactionsResponse {
+  data: ITransaction[];
+  meta: ITransactionMeta;
 }
 
-// API REQUESTS
-export interface CreateTransactionRequest {
-  type: TransactionType;
-  category: TransactionCategory;
-  amount: number;
-  description: string;
-  date: string;
-  status?: TransactionStatus;
-}
-
-export interface UpdateTransactionRequest {
-  type?: TransactionType;
-  category?: TransactionCategory;
-  amount?: number;
-  description?: string;
-  date?: string;
-  status?: TransactionStatus;
-}
-
-export interface DeleteTransactionResponse {
-  message: string;
-  deletedId: string;
+export interface ITransactionResponse {
+  data: ITransaction;
+  message?: string;
 }
 
 // FORM TYPES
-export interface TransactionFormData {
-  type: TransactionType;
-  category: TransactionCategory;
-  amount: string;
-  description: string;
-  date: string;
-  status: TransactionStatus;
+export interface ITransactionFormData {
+  tipo: TransactionType;
+  categoria: string;
+  monto: string;
+  fecha: string;
+  estado: TransactionStatus;
+  descripcion: string;
+  paymentId?: string;
 }
 
-// UTILITY TYPES
-export interface CategoryOption {
-  value: TransactionCategory;
-  label: string;
-  type: TransactionType;
+// TABLE TYPES
+export interface ITransactionTableFilters {
+  search: string;
+  tipo: string;
+  estado: string;
+  categoria: string;
+  fechaInicio: string;
+  fechaFin: string;
+  page: number;
+  limit: number;
 }
 
-export interface MonthlyData {
-  month: string;
-  income: number;
-  expenses: number;
-  balance: number;
+// STATS
+export interface ITransactionStats {
+  totalBalance: number;
+  totalIncome: number;
+  totalExpenses: number;
+  transactionCount: number;
 }
+
+// CATEGORIES (predefined options)
+export const INCOME_CATEGORIES = [
+  "Salario",
+  "Freelance", 
+  "Inversión",
+  "Negocio",
+  "Otros Ingresos"
+];
+
+export const EXPENSE_CATEGORIES = [
+  "Servicios",
+  "Comida",
+  "Transporte", 
+  "Entretenimiento",
+  "Salud",
+  "Educación",
+  "Compras",
+  "Alquiler",
+  "Otros Gastos"
+];
