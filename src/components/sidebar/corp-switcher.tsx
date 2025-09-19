@@ -40,7 +40,7 @@ export function TeamSwitcher({
                 className="block dark:hidden"
               />
               <Image
-                src="/image/logos/logocecagem.png"
+                src="/image/logos/logoblanco.png"
                 alt="CECAGEM logo"
                 width={150}
                 height={150}

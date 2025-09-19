@@ -3,29 +3,77 @@
 import React, { useState } from 'react';
 import { Plus, Grid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CalendarViewType } from '../types';
-import { useMeetings } from '../hooks';
-import { MeetingDialog } from './MeetingDialogSimple';
+import { useMeetings, getCurrentMonthDateRange, getMonthDateRange } from '../hooks/use-calendar';
+import { MeetingDialog } from './MeetingDialog';
 import { CalendarGrid } from './CalendarGrid';
 import { MeetingList } from './MeetingList';
+import type { IMeetingFilters, IMeeting } from '../types/calendar.types';
 
 export function Calendar() {
-  const [viewType, setViewType] = useState<CalendarViewType['view']>('month');
   const [showGrid, setShowGrid] = useState(true);
   const [showMeetingDialog, setShowMeetingDialog] = useState(false);
-  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
+  const [editingMeeting, setEditingMeeting] = useState<IMeeting | null>(null); // Reunión que se está editando
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create'); // Modo del diálogo
+  
+  // Estado compartido para el mes actual entre ambas vistas
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  
+  // Configurar filtros basados en el mes actual
+  const [filters, setFilters] = useState<Partial<IMeetingFilters>>(() => {
+    const { startDate, endDate } = getCurrentMonthDateRange();
+    return {
+      page: 1,
+      limit: 100, // Aumentamos el límite para obtener todas las reuniones del mes
+      startDate,
+      endDate,
+    };
+  });
 
-  const { meetings, loading, error, refetch } = useMeetings();
+  // Actualizar filtros cuando cambie el mes
+  const updateFiltersForMonth = (date: Date) => {
+    const { startDate, endDate } = getMonthDateRange(date.getFullYear(), date.getMonth());
+    setFilters(prev => ({
+      ...prev,
+      startDate,
+      endDate,
+    }));
+  };
+
+  // Función para cambiar mes (será llamada desde CalendarGrid)
+  const handleMonthChange = (newMonth: Date) => {
+    setCurrentMonth(newMonth);
+    updateFiltersForMonth(newMonth);
+  };
 
   const handleMeetingCreated = () => {
     setShowMeetingDialog(false);
-    setSelectedMeetingId(null);
-    refetch();
+    setEditingMeeting(null);
+    setDialogMode('create');
+    refetch(); // Recargar los datos
   };
 
-  const handleEditMeeting = (meetingId: string) => {
-    setSelectedMeetingId(meetingId);
+  const handleCreateNewMeeting = () => {
+    setEditingMeeting(null);
+    setDialogMode('create');
     setShowMeetingDialog(true);
+  };
+
+  const { data: meetingsData, isLoading, error, refetch } = useMeetings(filters);
+  const meetings = meetingsData?.data || [];
+
+  // const handleMeetingCreated = () => {
+  //   setShowMeetingDialog(false);
+  //   setSelectedMeetingId(null);
+  //   refetch();
+  // };
+
+  const handleEditMeeting = (meetingId: string) => {
+    const meeting = meetings.find(m => m.id === meetingId);
+    if (meeting) {
+      setEditingMeeting(meeting);
+      setDialogMode('edit');
+      setShowMeetingDialog(true);
+    }
   };
 
   const handleMeetingDeleted = () => {
@@ -36,8 +84,8 @@ export function Calendar() {
     return (
       <div className="space-y-6">
         <div className="text-center text-red-600">
-          <p>Error al cargar el calendario: {error}</p>
-          <Button onClick={refetch} className="mt-4">
+          <p>Error al cargar el calendario</p>
+          <Button onClick={() => refetch()} className="mt-4">
             Reintentar
           </Button>
         </div>
@@ -69,8 +117,8 @@ export function Calendar() {
             </Button>
             
             <Button 
-              onClick={() => setShowMeetingDialog(true)}
               className="text-white"
+              onClick={handleCreateNewMeeting}
             >
               <Plus className="h-4 w-4 mr-2" />
               Nueva Reunión
@@ -87,8 +135,8 @@ export function Calendar() {
           
           <div className="flex flex-col gap-3">
             <Button 
-              onClick={() => setShowMeetingDialog(true)}
               className="text-white"
+              onClick={handleCreateNewMeeting}
             >
               <Plus className="h-4 w-4 mr-2" />
               Nueva Reunión
@@ -107,7 +155,7 @@ export function Calendar() {
       </div>
 
       {/* Calendar Content */}
-      {loading ? (
+      {isLoading ? (
         <div className="bg-card border rounded-lg p-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -119,8 +167,8 @@ export function Calendar() {
           {showGrid ? (
             <CalendarGrid 
               meetings={meetings}
-              viewType={viewType}
-              onViewTypeChange={setViewType}
+              currentMonth={currentMonth}
+              onMonthChange={handleMonthChange}
               onEditMeeting={handleEditMeeting}
               onMeetingDeleted={handleMeetingDeleted}
             />
@@ -128,6 +176,8 @@ export function Calendar() {
             <div className="p-4">
               <MeetingList 
                 meetings={meetings}
+                currentMonth={currentMonth}
+                onMonthChange={handleMonthChange}
                 onEditMeeting={handleEditMeeting}
                 onMeetingDeleted={handleMeetingDeleted}
               />
@@ -140,9 +190,9 @@ export function Calendar() {
       <MeetingDialog
         open={showMeetingDialog}
         onOpenChange={setShowMeetingDialog}
-        meetingId={selectedMeetingId}
         onMeetingCreated={handleMeetingCreated}
-        onMeetingUpdated={handleMeetingCreated}
+        meeting={editingMeeting}
+        mode={dialogMode}
       />
     </div>
   );
