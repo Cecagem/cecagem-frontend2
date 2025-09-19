@@ -19,12 +19,16 @@ export const userKeys = {
   detail: (id: string) => [...userKeys.details(), id] as const,
 } as const;
 
-export const useUsers = (filters?: Partial<UserFilters>) => {
+export const useUsers = (
+  filters?: Partial<UserFilters>,
+  options?: { enabled?: boolean }
+) => {
   return useQuery<UsersResponse, Error>({
     queryKey: userKeys.list(filters),
     queryFn: () => userService.getUsers(filters),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    enabled: options?.enabled ?? true,
   });
 };
 

@@ -83,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "Proyectos",
-            url: "/project",
+            url: "/contract",
             icon: FolderOpen,
             collapsible: false,
           },
@@ -136,7 +136,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: "/account",
             icon: DollarSign,
             collapsible: false,
-          }
+          },
         ],
       },
       // Herramientas y Configuración - Admins y Super Admins

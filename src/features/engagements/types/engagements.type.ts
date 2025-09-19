@@ -9,6 +9,16 @@ export interface Service {
   updatedAt: string;
 }
 
+export interface Deliverable {
+  id: string;
+  serviceId: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // REQUEST DTOs
 export interface CreateServiceRequest {
   name: string;
@@ -44,6 +54,12 @@ export interface ServicesResponse {
 
 export interface DeleteServiceResponse {
   success: boolean;
+  message: string;
+}
+
+export interface DeliverablesResponse {
+  success: boolean;
+  data: Deliverable[];
   message: string;
 }
 
