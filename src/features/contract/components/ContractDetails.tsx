@@ -26,7 +26,7 @@ export const ContractDetails = ({ contract }: ContractDetailsProps) => {
           </TabsList>
 
           <TabsContent value="information" className="mt-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {/* Información básica */}
               <Card>
                 <CardHeader>
@@ -35,83 +35,21 @@ export const ContractDetails = ({ contract }: ContractDetailsProps) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">
-                      Nombre del contrato:
-                    </span>
-                    <span className="text-sm">{contract.name}</span>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Nombre del contrato</p>
+                    <p className="text-sm">{contract.name}</p>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Observacion:</span>
-                    <span className="text-sm">{contract.observation}</span>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Observación</p>
+                    <p className="text-sm">{contract.observation || "Sin observaciones"}</p>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Universidad:</span>
-                    <span className="text-sm">
-                      {contract.university || "N/A"}
-                    </span>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Universidad</p>
+                    <p className="text-sm">{contract.university || "No especificada"}</p>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Carrera:</span>
-                    <span className="text-sm">{contract.career || "N/A"}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Usuarios y entregables */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-muted-foreground">
-                    USUARIOS Y ENTREGABLES
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">
-                      Usuarios asignados:
-                    </span>
-                    <div>
-                      <span>{contract.contractUsers?.length || 0}</span>
-                    </div>
-
-                    {/* <Badge variant="secondary">
-                      {contract.contractUsers?.length || 0}
-                    </Badge> */}
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Entregables:</span>
-                    <Badge variant="secondary">
-                      {contract.contractDeliverables?.length || 0}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Fechas */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-muted-foreground">
-                    FECHAS
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Fecha inicio:</span>
-                    <span className="text-sm">
-                      {formatDate(contract.startDate)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Fecha fin:</span>
-                    <span className="text-sm">
-                      {formatDate(contract.endDate)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Creado:</span>
-                    <span className="text-sm">
-                      {formatDateTime(contract.createdAt)}
-                    </span>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Carrera</p>
+                    <p className="text-sm">{contract.career || "No especificada"}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -124,15 +62,67 @@ export const ContractDetails = ({ contract }: ContractDetailsProps) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Costo total:</span>
-                    <span className="text-sm font-semibold">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Costo total</p>
+                    <p className="text-lg font-semibold text-primary">
                       {contract.currency} {contract.costTotal?.toFixed(2)}
-                    </span>
+                    </p>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Moneda:</span>
-                    <span className="text-sm">{contract.currency}</span>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Moneda</p>
+                    <p className="text-sm">{contract.currency}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Progreso general</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">
+                        {contract.overallProgress?.toFixed(0) || 0}%
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Fechas */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold text-muted-foreground">
+                    FECHAS
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Fecha inicio</p>
+                    <p className="text-sm">{formatDate(contract.startDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Fecha fin</p>
+                    <p className="text-sm">{formatDate(contract.endDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Creado</p>
+                    <p className="text-sm">{formatDateTime(contract.createdAt)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Usuarios y entregables */}
+              <Card className="md:col-span-2 lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold text-muted-foreground">
+                    USUARIOS Y ENTREGABLES
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="text-center p-4 bg-muted/50 rounded-lg">
+                      <p className="text-2xl font-bold">{contract.contractUsers?.length || 0}</p>
+                      <p className="text-sm text-muted-foreground">Usuarios asignados</p>
+                    </div>
+                    <div className="text-center p-4 bg-muted/50 rounded-lg">
+                      <p className="text-2xl font-bold">{contract.contractDeliverables?.length || 0}</p>
+                      <p className="text-sm text-muted-foreground">Entregables</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

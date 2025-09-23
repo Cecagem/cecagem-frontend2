@@ -27,6 +27,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { useDeleteCompany } from '../hooks/use-accounting-clients';
 import type { ICompany, IUserRelation } from "../types/accounting-clients.types";
+import { CompanyExpandedView } from './CompanyExpandedView';
 
 interface AccountingClientTableProps {
   data: ICompany[];
@@ -41,6 +42,7 @@ export const AccountingClientTable = ({
   onEdit,
 }: AccountingClientTableProps) => {
   const [companyToDelete, setCompanyToDelete] = useState<ICompany | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<ICompany | null>(null);
   const deleteCompanyMutation = useDeleteCompany();
 
   const handleDeleteCompany = async () => {
@@ -227,6 +229,12 @@ export const AccountingClientTable = ({
         enablePagination={true}
         enableSorting={true}
         pageSize={10}
+        selectedItem={selectedCompany}
+        detailComponent={(company: ICompany) => <CompanyExpandedView company={company} />}
+        detailTitle={(company: ICompany) => company.businessName}
+        onRowClick={(company: ICompany) => {
+          setSelectedCompany(selectedCompany?.id === company.id ? null : company);
+        }}
       />
 
       {/* Modal de confirmación para eliminar */}

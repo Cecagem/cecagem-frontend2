@@ -44,11 +44,16 @@ export const ContractDeleteDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel 
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => contract && onConfirm(contract.id)}
             disabled={isLoading || !contract}
-            className="bg-destructive hover:bg-destructive/90"
+            className="w-full sm:w-auto bg-destructive hover:bg-destructive/90"
           >
             {isLoading ? "Eliminando..." : "Eliminar"}
           </AlertDialogAction>

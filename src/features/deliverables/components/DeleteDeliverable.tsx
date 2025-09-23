@@ -114,6 +114,7 @@ export const DeleteDeliverableDialog = ({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isDeleting}
+            className="w-full sm:w-auto"
           >
             Cancelar
           </Button>
@@ -121,7 +122,7 @@ export const DeleteDeliverableDialog = ({
             variant="destructive"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="min-w-[100px]"
+            className="w-full sm:w-auto min-w-[100px]"
           >
             {isDeleting ? (
               "Eliminando..."

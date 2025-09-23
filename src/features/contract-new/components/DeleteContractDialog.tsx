@@ -10,40 +10,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
 
-interface DeleteServiceDialogProps {
+interface DeleteContractDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
-  isLoading: boolean;
+  contractName?: string;
+  isLoading?: boolean;
 }
 
-export function DeleteServiceDialog({
+export const DeleteContractDialog = ({
   open,
   onOpenChange,
   onConfirm,
-  isLoading,
-}: DeleteServiceDialogProps) {
+  contractName,
+  isLoading = false,
+}: DeleteContractDialogProps) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="sm:max-w-[500px] max-w-[95vw]">
+      <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-red-600" />
-            ¿Eliminar servicio?
-          </AlertDialogTitle>
+          <AlertDialogTitle>¿Eliminar contrato?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta acción no se puede deshacer. El servicio será eliminado
-            permanentemente del sistema.
-            <br />
-            <br />
-            <strong>¿Estás seguro de que deseas continuar?</strong>
+            Esta acción eliminará permanentemente el contrato
+            {contractName && (
+              <>
+                {" "}
+                <strong>&ldquo;{contractName}&rdquo;</strong>
+              </>
+            )}
+            {" "}y todos sus datos asociados. Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="gap-2">
+        <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
+          <AlertDialogAction 
             onClick={onConfirm}
             disabled={isLoading}
             className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
@@ -54,4 +55,4 @@ export function DeleteServiceDialog({
       </AlertDialogContent>
     </AlertDialog>
   );
-}
+};

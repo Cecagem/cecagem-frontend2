@@ -1,9 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { DataTable } from "@/components/shared/data-table";
 import { ContractStats } from "./ContractStats";
 import { ContractFilters } from "./ContractFilters";
-import { ContractTable } from "./ContractTable";
+import { contractColumns } from "./contract-columns";
 import { ContractFormSteps } from "./ContractFormSteps";
 import { ContractDeleteDialog } from "./ContractDeleteDialog";
 import { ContractDetails } from "./ContractDetails";
@@ -32,13 +33,6 @@ export const MainContract = () => {
   const handleApplyFilters = (newFilters: Partial<IContractFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
-
-  const handlePaginationChange = useCallback(
-    (newFilters: Partial<IContractFilters>) => {
-      setFilters((prev) => ({ ...prev, ...newFilters }));
-    },
-    []
-  );
 
   const handleClearFilters = () => {
     setFilters({ page: 1, limit: 5 });
@@ -117,14 +111,18 @@ export const MainContract = () => {
         onClearFilters={handleClearFilters}
       />
 
-      <ContractTable
-        contracts={contractsData?.data || []}
-        meta={contractsData?.meta}
+      <DataTable
+        data={contractsData?.data || []}
+        columns={contractColumns({
+          onView: handleViewContract,
+          onEdit: handleEditContract,
+          onDelete: handleDeleteContract,
+        })}
         isLoading={isLoading}
-        onEdit={handleEditContract}
-        onDelete={handleDeleteContract}
-        onView={handleViewContract}
-        onFiltersChange={handlePaginationChange}
+        noDataMessage="No se encontraron contratos"
+        enablePagination={true}
+        enableSorting={true}
+        pageSize={filters.limit}
       />
 
       {contractToView && (

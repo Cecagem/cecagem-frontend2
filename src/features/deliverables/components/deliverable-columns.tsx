@@ -121,8 +121,8 @@ export const deliverableColumns = ({
       return (
         <div className="flex items-center space-x-1">
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
             className="h-8 w-8"
             onClick={() => onView(deliverable)}
             title="Ver detalles"
@@ -130,8 +130,8 @@ export const deliverableColumns = ({
             <Eye className="h-4 w-4" />
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
             className="h-8 w-8"
             onClick={() => onEdit(deliverable)}
             title="Editar"
@@ -139,8 +139,8 @@ export const deliverableColumns = ({
             <Edit className="h-4 w-4" />
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
             className="h-8 w-8 text-destructive hover:text-destructive"
             onClick={() => onDelete(deliverable)}
             title="Eliminar"

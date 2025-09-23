@@ -37,8 +37,7 @@ import { useUsers } from "@/features/user/hooks/use-users";
 import { useCreateContract, useUpdateContract } from "../hooks/useContract";
 import { MultiUserSelect } from "./MultiUserSelect";
 import { CreateDeliverableDialog } from "@/features/deliverables/components/CreateDeliverable";
-import { ClientForm } from "@/features/user/components/client/ClientForm";
-import { UserForm } from "@/features/user/components/user-system/UserForm";
+import { UserForm } from "@/features/user/components/UserForm";
 import type {
   IContract,
   ICreateConctract,
@@ -46,9 +45,7 @@ import type {
 } from "../types/contract.type";
 import {
   UserRole,
-  type CreateCompleteUserRequest,
-} from "@/features/user/types/user.type";
-import { useCreateUser } from "@/features/user/hooks/use-users";
+} from "@/features/user/types/user.types";
 import {
   validateNameField,
   validateServiceField,
@@ -74,12 +71,10 @@ export const ContractFormSteps = ({
   const [searchClients, setSearchClients] = useState("");
   const [searchCollaborators, setSearchCollaborators] = useState("");
   const [showCreateDeliverable, setShowCreateDeliverable] = useState(false);
-  const [showCreateClient, setShowCreateClient] = useState(false);
-  const [showCreateCollaborator, setShowCreateCollaborator] = useState(false);
+  const [showCreateUser, setShowCreateUser] = useState(false);
 
   const createContractMutation = useCreateContract();
   const updateContractMutation = useUpdateContract();
-  const createUserMutation = useCreateUser();
 
   const form = useForm({
     defaultValues: {
@@ -158,30 +153,26 @@ export const ContractFormSteps = ({
 
   const { data: servicesData } = useServices({ isActive: true, limit: 100 });
 
+  // Solo buscar clientes si hay texto de búsqueda
   const { data: clientsData } = useUsers(
-    {
+    searchClients.length >= 2 ? {
       search: searchClients,
       isActive: true,
-      role: UserRole.CLIENT,
-    },
-    {
-      enabled: searchClients.length >= 2,
-    }
+      role: UserRole.COLLABORATOR_EXTERNAL,
+    } : {}
   );
 
   const { data: allClientsData } = useUsers({
     isActive: true,
-    role: UserRole.CLIENT,
+    role: UserRole.COLLABORATOR_EXTERNAL,
   });
 
+  // Solo buscar colaboradores si hay texto de búsqueda  
   const { data: collaboratorsData } = useUsers(
-    {
+    searchCollaborators.length >= 2 ? {
       search: searchCollaborators,
       isActive: true,
-    },
-    {
-      enabled: searchCollaborators.length >= 2,
-    }
+    } : {}
   );
 
   const { data: allCollaboratorsData } = useUsers({
@@ -300,40 +291,9 @@ export const ContractFormSteps = ({
     onClose();
   };
 
-  const handleCreateClient = async (userData: CreateCompleteUserRequest) => {
-    try {
-      const newUser = await createUserMutation.mutateAsync({
-        ...userData,
-        user: { ...userData.user, role: UserRole.CLIENT },
-      });
-
-      const currentClientIds = form.getFieldValue("clientIds") || [];
-      form.setFieldValue("clientIds", [...currentClientIds, newUser.id]);
-      setShowCreateClient(false);
-    } catch (error) {
-      console.error("Error creating client:", error);
-    }
-  };
-
-  const handleCreateCollaborator = async (
-    userData: CreateCompleteUserRequest
-  ) => {
-    try {
-      const newUser = await createUserMutation.mutateAsync({
-        ...userData,
-        user: { ...userData.user, role: UserRole.COLLABORATOR_EXTERNAL },
-      });
-
-      const currentCollaboratorIds =
-        form.getFieldValue("collaboratorIds") || [];
-      form.setFieldValue("collaboratorIds", [
-        ...currentCollaboratorIds,
-        newUser.id,
-      ]);
-      setShowCreateCollaborator(false);
-    } catch (error) {
-      console.error("Error creating collaborator:", error);
-    }
+  const handleUserCreated = () => {
+    // Refrescar la lista de usuarios después de crear uno nuevo
+    setShowCreateUser(false);
   };
 
   return (
@@ -513,7 +473,7 @@ export const ContractFormSteps = ({
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={() => setShowCreateClient(true)}
+                        onClick={() => setShowCreateUser(true)}
                       >
                         + Cliente
                       </Button>
@@ -562,7 +522,7 @@ export const ContractFormSteps = ({
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={() => setShowCreateCollaborator(true)}
+                        onClick={() => setShowCreateUser(true)}
                       >
                         + Colaborador
                       </Button>
@@ -1242,23 +1202,37 @@ export const ContractFormSteps = ({
             )}
           </div>
 
-          <DialogFooter className="flex justify-between mt-8">
-            <div className="flex gap-2">
+          <DialogFooter className="flex flex-col sm:flex-row gap-4 sm:gap-2 sm:justify-between mt-8">
+            <div className="flex gap-2 order-2 sm:order-1">
               {currentStep > 1 && (
-                <Button type="button" variant="outline" onClick={prevStep}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={prevStep}
+                  className="w-full sm:w-auto"
+                >
                   <ChevronLeft className="mr-2 h-4 w-4" />
                   Anterior
                 </Button>
               )}
             </div>
 
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={handleClose}>
+            <div className="flex gap-2 order-1 sm:order-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleClose}
+                className="w-full sm:w-auto"
+              >
                 Cancelar
               </Button>
 
               {currentStep < 4 ? (
-                <Button type="button" onClick={nextStep}>
+                <Button 
+                  type="button" 
+                  onClick={nextStep}
+                  className="w-full sm:w-auto"
+                >
                   Siguiente
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -1274,6 +1248,7 @@ export const ContractFormSteps = ({
                     createContractMutation.isPending ||
                     updateContractMutation.isPending
                   }
+                  className="w-full sm:w-auto"
                 >
                   {contract ? "Actualizar Contrato" : "Crear Contrato"}
                 </Button>
@@ -1290,23 +1265,12 @@ export const ContractFormSteps = ({
         services={servicesData?.data || []}
       />
 
-      {showCreateClient && (
-        <ClientForm
-          isOpen={showCreateClient}
-          onClose={() => setShowCreateClient(false)}
-          onSubmit={handleCreateClient}
-          isLoading={createUserMutation.isPending}
-        />
-      )}
-
-      {showCreateCollaborator && (
-        <UserForm
-          isOpen={showCreateCollaborator}
-          onClose={() => setShowCreateCollaborator(false)}
-          onSubmit={handleCreateCollaborator}
-          isLoading={createUserMutation.isPending}
-        />
-      )}
+      <UserForm
+        open={showCreateUser}
+        onOpenChange={setShowCreateUser}
+        onUserSaved={handleUserCreated}
+        mode="create"
+      />
     </Dialog>
   );
 };

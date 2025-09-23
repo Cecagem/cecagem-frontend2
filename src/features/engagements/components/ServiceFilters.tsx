@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, X, Filter } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { ServiceFilters as IServiceFilters } from "../types/engagements.type";
 
 interface ServiceFiltersProps {
@@ -18,11 +18,13 @@ interface ServiceFiltersProps {
   onFiltersChange: (
     filters: Partial<IServiceFilters & { isActive?: boolean | undefined }>
   ) => void;
+  onClearFilters?: () => void;
 }
 
 export const ServiceFilters = ({
   filters,
   onFiltersChange,
+  onClearFilters,
 }: ServiceFiltersProps) => {
   const handleSearchChange = (value: string) => {
     onFiltersChange({ search: value, page: 1 });
@@ -41,22 +43,25 @@ export const ServiceFilters = ({
   };
 
   const handleClearFilters = () => {
-    onFiltersChange({
-      search: "",
-      isActive: undefined,
-      page: 1,
-    });
+    if (onClearFilters) {
+      onClearFilters();
+    } else {
+      onFiltersChange({
+        search: "",
+        isActive: undefined,
+        page: 1,
+      });
+    }
   };
 
   const hasActiveFilters = filters.search || filters.isActive !== undefined;
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Search */}
-          <div className="flex-1 space-y-2">
-            <label className="text-sm font-medium">Buscar</label>
+          <div>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -69,8 +74,7 @@ export const ServiceFilters = ({
           </div>
 
           {/* Status Filter */}
-          <div className="w-full sm:w-[160px] space-y-2">
-            <label className="text-sm font-medium">Estado</label>
+          <div>
             <Select
               value={
                 filters.isActive === undefined
@@ -93,36 +97,18 @@ export const ServiceFilters = ({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div>
             <Button
               variant="outline"
-              size="sm"
               onClick={handleClearFilters}
               disabled={!hasActiveFilters}
-              className="whitespace-nowrap"
+              className="w-full"
             >
               <X className="h-4 w-4 mr-2" />
-              Limpiar
+              Limpiar Filtros
             </Button>
           </div>
         </div>
-
-        {hasActiveFilters && (
-          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Filter className="h-4 w-4" />
-            <span>Filtros activos:</span>
-            {filters.search && (
-              <span className="bg-secondary px-2 py-1 rounded text-xs">
-                Buscar: &quot;{filters.search}&quot;
-              </span>
-            )}
-            {filters.isActive !== undefined && (
-              <span className="bg-secondary px-2 py-1 rounded text-xs">
-                Estado: {filters.isActive ? "Activos" : "Inactivos"}
-              </span>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
