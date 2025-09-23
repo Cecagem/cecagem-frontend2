@@ -158,7 +158,7 @@ export const MainAccount = () => {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Contabilidad</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Ingresos y Egresos</h1>
             <p className="text-muted-foreground">
               Gestiona tus ingresos y gastos personales
             </p>
@@ -200,8 +200,8 @@ export const MainAccount = () => {
       >
         <DialogContent 
           className="max-w-4xl w-[95vw] max-h-[95vh] flex flex-col p-0"
-          onInteractOutside={(e) => e.preventDefault()} // Prevenir cierre con click fuera
-          onEscapeKeyDown={(e) => e.preventDefault()} // Prevenir cierre con ESC
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <div className="flex-1 overflow-y-auto p-6">
             <AccountForm

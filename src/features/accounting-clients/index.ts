@@ -1,4 +1,4 @@
-// Components
+//Components
 export * from './components';
 
 // Hooks

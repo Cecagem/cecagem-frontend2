@@ -63,18 +63,6 @@ export const TransactionDetailsModal = ({
     }).format(date);
   };
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-PE", {
-      timeZone: "UTC", 
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
-
   return (
     <Dialog 
       open={isOpen} 
@@ -162,33 +150,6 @@ export const TransactionDetailsModal = ({
                     </p>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Información del Sistema */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Información del Sistema</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <p className="text-sm text-muted-foreground">ID de Transacción</p>
-                  <p className="font-mono text-sm bg-muted px-2 py-1 rounded break-all">
-                    {transaction.id}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-sm text-muted-foreground">Fecha de Creación</p>
-                  <p className="text-sm break-words">{formatDateTime(transaction.createdAt)}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm text-muted-foreground">Última Actualización</p>
-                  <p className="text-sm break-words">{formatDateTime(transaction.updatedAt)}</p>
-                </div>
               </div>
             </CardContent>
           </Card>

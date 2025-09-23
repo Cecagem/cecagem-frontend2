@@ -14,6 +14,7 @@ import {
   Building2,
   DollarSign,
   Package,
+  Building,
 } from "lucide-react";
 
 import {
@@ -100,20 +101,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             collapsible: false,
           },
           {
-            title: "Clientes",
-            url: "/clients",
+            title: "Clientes de Investigación",
+            url: "/research-clients",
             icon: Building2,
-            collapsible: true,
-            items: [
-              {
-                title: "Investigación",
-                url: "/client/research",
-              },
-              {
-                title: "Contables",
-                url: "/client/accounting",
-              },
-            ],
+            collapsible: false,
+          },
+          {
+            title: "Clientes Contables",
+            url: "/accounting-clients",
+            icon: Building,
+            collapsible: false,
           },
           ...(["ADMIN", "SUPER_ADMIN"].includes(currentUserRole)
             ? [
@@ -125,12 +122,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 },
               ]
             : []),
-          {
-            title: "Gestión de Pagos",
-            url: "/payment",
-            icon: CreditCard,
-            collapsible: false,
-          },
           {
             title: "Ingresos y Egresos",
             url: "/account",
