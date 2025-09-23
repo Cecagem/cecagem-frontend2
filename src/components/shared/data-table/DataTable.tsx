@@ -87,21 +87,26 @@ export function DataTable<TData>({
     },
   });
 
-  const LoadingSkeleton = () => (
-    <div className="space-y-4">
-      {Array.from({ length: pageSize }).map((_, i) => (
-        <div key={i} className="flex items-center space-x-4">
-          {columns.map((_, colIndex) => (
-            <div
-              key={colIndex}
-              className="h-4 bg-muted rounded animate-pulse"
-              style={{ width: `${Math.random() * 100 + 50}px` }}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  const LoadingSkeleton = () => {
+    // Usar un array de anchos fijos para evitar hydration mismatch
+    const skeletonWidths = [120, 80, 100, 90, 70, 130, 110, 95];
+    
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: pageSize }).map((_, i) => (
+          <div key={i} className="flex items-center space-x-4">
+            {columns.map((_, colIndex) => (
+              <div
+                key={colIndex}
+                className="h-4 bg-muted rounded animate-pulse"
+                style={{ width: `${skeletonWidths[colIndex % skeletonWidths.length]}px` }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (

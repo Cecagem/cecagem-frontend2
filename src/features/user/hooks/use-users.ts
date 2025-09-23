@@ -1,181 +1,187 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { userService } from "../services/user.service";
-import type {
-  UserFilters,
-  UsersResponse,
-  UserCompleteResponse,
-  DeleteUserResponse,
-  CreateCompleteUserRequest,
-  UpdateCompleteUserRequest,
-  DocumentType,
-} from "../types/user.type";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { userService } from '../services/user.service';
+import type { 
+  IUserFilters, 
+  ICreateUserDto, 
+  IUpdateUserDto,
+  IUserStats
+} from '../types/user.types';
 
-export const userKeys = {
-  all: ["users"] as const,
-  lists: () => [...userKeys.all, "list"] as const,
-  list: (filters?: Partial<UserFilters>) =>
-    [...userKeys.lists(), filters] as const,
-  details: () => [...userKeys.all, "detail"] as const,
-  detail: (id: string) => [...userKeys.details(), id] as const,
-} as const;
+// Query keys
+export const USER_QUERY_KEYS = {
+  users: ['users'] as const,
+  usersWithFilters: (filters: Partial<IUserFilters>) => 
+    ['users', filters] as const,
+  user: (id: string) => ['users', id] as const,
+  usersStats: ['users', 'stats'] as const,
+};
 
-export const useUsers = (
-  filters?: Partial<UserFilters>,
-  options?: { enabled?: boolean }
-) => {
-  return useQuery<UsersResponse, Error>({
-    queryKey: userKeys.list(filters),
-    queryFn: () => userService.getUsers(filters),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    enabled: options?.enabled ?? true,
+// Hook para obtener estadísticas de usuarios
+export const useUsersStats = () => {
+  return useQuery({
+    queryKey: USER_QUERY_KEYS.usersStats,
+    queryFn: async (): Promise<IUserStats> => {
+      // Obtener todos los usuarios para calcular estadísticas
+      const response = await userService.getUsers({
+        limit: 1000, // Límite alto para obtener todos
+      });
+      
+      const users = response.data;
+      
+      // Calcular salarios solo de usuarios que requieren contrato
+      const usersWithSalary = users.filter(user => 
+        user.profile.salaryMonth && user.profile.salaryMonth > 0
+      );
+      
+      const totalSalaries = usersWithSalary.reduce((sum, user) => 
+        sum + (user.profile.salaryMonth || 0), 0
+      );
+      
+      const averageSalary = usersWithSalary.length > 0 
+        ? totalSalaries / usersWithSalary.length 
+        : 0;
+      
+      return {
+        total: users.length,
+        active: users.filter(u => u.isActive).length,
+        inactive: users.filter(u => !u.isActive).length,
+        totalSalaries,
+        averageSalary,
+      };
+    },
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 };
 
+// Hook para obtener usuarios con filtros
+export const useUsers = (filters: Partial<IUserFilters> = {}) => {
+  return useQuery({
+    queryKey: USER_QUERY_KEYS.usersWithFilters(filters),
+    queryFn: () => userService.getUsers(filters),
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 30000, // 30 segundos
+  });
+};
+
+// Hook para obtener un usuario por ID
+export const useUser = (id: string) => {
+  return useQuery({
+    queryKey: USER_QUERY_KEYS.user(id),
+    queryFn: () => userService.getUserById(id),
+    enabled: !!id,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+};
+
+// Hook para crear usuario
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<UserCompleteResponse, Error, CreateCompleteUserRequest>({
-    mutationFn: userService.createCompleteUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+  return useMutation({
+    mutationFn: (data: ICreateUserDto) => userService.createUser(data),
+    onSuccess: (newUser) => {
+      // Invalidar queries relacionadas
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.users });
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.usersStats });
+
+      // Verificar que el usuario tenga la estructura correcta antes de acceder al profile
+      const userName = newUser?.profile?.firstName && newUser?.profile?.lastName 
+        ? `${newUser.profile.firstName} ${newUser.profile.lastName}`
+        : 'Usuario';
+
+      toast.success('Usuario creado correctamente', {
+        description: `${userName} ha sido registrado.`
+      });
     },
-    onError: (error) => {
-      console.error("Error creating user:", error);
+    onError: (error: Error) => {
+      console.error('Error al crear usuario:', error);
+      const message = error?.message || 'Error al crear el usuario';
+      toast.error('Error al crear usuario', {
+        description: message
+      });
     },
   });
 };
 
+// Hook para actualizar usuario
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    UserCompleteResponse,
-    Error,
-    { userId: string; data: UpdateCompleteUserRequest }
-  >({
-    mutationFn: ({ userId, data }) =>
-      userService.updateCompleteUser(userId, data),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.setQueryData(userKeys.detail(variables.userId), data);
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: IUpdateUserDto }) => 
+      userService.updateUser(id, data),
+    onSuccess: (updatedUser) => {
+      // Invalidar queries relacionadas
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.users });
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.user(updatedUser.id) });
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.usersStats });
+
+      // Verificar que el usuario tenga la estructura correcta antes de acceder al profile
+      const userName = updatedUser?.profile?.firstName && updatedUser?.profile?.lastName 
+        ? `${updatedUser.profile.firstName} ${updatedUser.profile.lastName}`
+        : 'Usuario';
+
+      toast.success('Usuario actualizado correctamente', {
+        description: `Los datos de ${userName} han sido actualizados.`
+      });
     },
-    onError: (error) => {
-      console.error("Error updating user:", error);
+    onError: (error: Error) => {
+      console.error('Error al actualizar usuario:', error);
+      const message = error?.message || 'Error al actualizar el usuario';
+      toast.error('Error al actualizar usuario', {
+        description: message
+      });
     },
   });
 };
 
+// Hook para eliminar usuario
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<DeleteUserResponse, Error, string>({
-    mutationFn: userService.deleteUser,
-    onSuccess: (_, userId) => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.removeQueries({ queryKey: userKeys.detail(userId) });
+  return useMutation({
+    mutationFn: (id: string) => userService.deleteUser(id),
+    onSuccess: () => {
+      // Invalidar queries relacionadas
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.users });
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.usersStats });
+
+      toast.success('Usuario eliminado correctamente', {
+        description: 'El usuario ha sido eliminado del sistema.'
+      });
     },
-    onError: (error) => {
-      console.error("Error deleting user:", error);
+    onError: (error: Error) => {
+      console.error('Error al eliminar usuario:', error);
+      const message = error?.message || 'Error al eliminar el usuario';
+      toast.error('Error al eliminar usuario', {
+        description: message
+      });
     },
   });
 };
 
-export const createUserData = {
-  admin: (
-    email: string,
-    profile: {
-      firstName: string;
-      lastName: string;
-      documentType: DocumentType;
-      documentNumber: string;
-      phone: string;
-    }
-  ): CreateCompleteUserRequest => ({
-    user: { email, role: "ADMIN" },
-    profile,
-  }),
+// Hook para validar email
+export const useValidateEmail = (email: string, excludeId?: string) => {
+  return useQuery({
+    queryKey: ['validate-email', email, excludeId],
+    queryFn: () => userService.validateEmail(email, excludeId),
+    enabled: !!email && email.includes('@'),
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 10000, // 10 segundos
+  });
+};
 
-  rrhh: (
-    email: string,
-    profile: {
-      firstName: string;
-      lastName: string;
-      documentType: DocumentType;
-      documentNumber: string;
-      phone: string;
-      salaryMonth: number;
-      paymentDate: string;
-    }
-  ): CreateCompleteUserRequest => ({
-    user: { email, role: "RRHH" },
-    profile,
-  }),
+// Hook helper para invalidar todas las queries de usuarios
+export const useInvalidateUsers = () => {
+  const queryClient = useQueryClient();
 
-  collaboratorInternal: (
-    email: string,
-    profile: {
-      firstName: string;
-      lastName: string;
-      documentType: DocumentType;
-      documentNumber: string;
-      phone: string;
-      salaryMonth: number;
-      paymentDate: string;
-    }
-  ): CreateCompleteUserRequest => ({
-    user: { email, role: "COLLABORATOR_INTERNAL" },
-    profile,
-  }),
-
-  collaboratorExternal: (
-    email: string,
-    profile: {
-      firstName: string;
-      lastName: string;
-      documentType: DocumentType;
-      documentNumber: string;
-      phone: string;
-    }
-  ): CreateCompleteUserRequest => ({
-    user: { email, role: "COLLABORATOR_EXTERNAL" },
-    profile,
-  }),
-
-  client: (
-    email: string,
-    profile: {
-      firstName: string;
-      lastName: string;
-      documentType: DocumentType;
-      documentNumber: string;
-      phone: string;
-      university?: string;
-      faculty?: string;
-      career?: string;
-      academicDegree?: string;
-    }
-  ): CreateCompleteUserRequest => ({
-    user: { email, role: "CLIENT" },
-    profile,
-  }),
-
-  company: (
-    email: string,
-    company: {
-      ruc: string;
-      businessName: string;
-      tradeName?: string;
-      address?: string;
-      contactName?: string;
-      contactPhone?: string;
-      contactEmail?: string;
-    }
-  ): CreateCompleteUserRequest => ({
-    user: { email, role: "COMPANY" },
-    company: {
-      ...company,
-      contactEmail: company.contactEmail || email,
-    },
-  }),
+  return () => {
+    queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.users });
+    queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.usersStats });
+  };
 };

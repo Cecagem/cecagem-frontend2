@@ -1,93 +1,158 @@
 import { cecagemApi } from "@/lib/api-client";
-import {
-  UserFilters,
-  UsersResponse,
-  CreateCompleteUserRequest,
-  UpdateCompleteUserRequest,
-  UserCompleteResponse,
-  DeleteUserResponse,
-} from "../types/user.type";
+import type { 
+  IUser,
+  IUserResponse,
+  IUserFilters,
+  ICreateUserDto,
+  IUpdateUserDto
+} from "../types/user.types";
 
-class UserService {
-  private readonly baseEndpoint = "/users";
-
-  async getUsers(filters?: Partial<UserFilters>): Promise<UsersResponse> {
-    const params = new URLSearchParams();
-
-    if (filters?.type) {
-      params.append("type", filters.type);
-    }
-    if (filters?.page) {
-      params.append("page", filters.page.toString());
-    }
-    if (filters?.limit) {
-      params.append("limit", filters.limit.toString());
-    }
-    if (filters?.search) {
-      params.append("search", filters.search);
-    }
-    if (filters?.role) {
-      params.append("role", filters.role);
-    }
-    if (filters?.isActive !== undefined) {
-      params.append("isActive", filters.isActive.toString());
-    }
-
-    const queryString = params.toString();
-    const url = queryString
-      ? `${this.baseEndpoint}?${queryString}`
-      : this.baseEndpoint;
-
-    return await cecagemApi.get<UsersResponse>(url);
-  }
-
-  async createCompleteUser(
-    userData: CreateCompleteUserRequest
-  ): Promise<UserCompleteResponse> {
-    return await cecagemApi.post<UserCompleteResponse>(
-      `${this.baseEndpoint}/complete`,
-      userData as unknown as Record<string, unknown>
-    );
-  }
-
-  // async updateUser(userId: string, userData: UpdateUserRequest): Promise<User> {
-  //   return await cecagemApi.patch<User>(
-  //     `${this.baseEndpoint}/${userId}`,
-  //     userData as unknown as Record<string, unknown>
-  //   );
-  // }
-
-  async updateCompleteUser(
-    userId: string,
-    userData: UpdateCompleteUserRequest
-  ): Promise<UserCompleteResponse> {
-    return await cecagemApi.patch<UserCompleteResponse>(
-      `${this.baseEndpoint}/${userId}/complete`,
-      userData as unknown as Record<string, unknown>
-    );
-  }
-
-  async deleteUser(userId: string): Promise<DeleteUserResponse> {
-    return await cecagemApi.delete<DeleteUserResponse>(
-      `${this.baseEndpoint}/${userId}`
-    );
-  }
-}
-
-const userApiService = new UserService();
+const ENDPOINTS = {
+  users: "/users",
+  userComplete: "/users/complete",
+  user: (id: string) => `/users/${id}`,
+  userProfile: (id: string) => `/users/${id}/profile`,
+  userCompleteUpdate: (id: string) => `/users/${id}/complete`,
+};
 
 export const userService = {
-  getUsers: (filters?: Partial<UserFilters>) =>
-    userApiService.getUsers(filters),
+  // Obtener usuarios con filtros
+  async getUsers(filters: Partial<IUserFilters> = {}): Promise<IUserResponse> {
+    const params = new URLSearchParams();
+    
+    // Parámetros obligatorios para el endpoint específico
+    params.append("type", "users_system");
+    params.append("page", (filters.page || 1).toString());
+    params.append("limit", (filters.limit || 10).toString());
+    
+    // Filtros opcionales
+    if (filters.search) params.append("search", filters.search);
+    if (filters.role) params.append("role", filters.role);
+    if (filters.isActive !== undefined) params.append("isActive", filters.isActive.toString());
 
-  createCompleteUser: (userData: CreateCompleteUserRequest) =>
-    userApiService.createCompleteUser(userData),
+    console.log('🔍 Obteniendo usuarios del sistema:', `${ENDPOINTS.users}?${params.toString()}`);
+    
+    return await cecagemApi.get<IUserResponse>(
+      `${ENDPOINTS.users}?${params.toString()}`
+    );
+  },
 
-  // updateUser: (userId: string, userData: UpdateUserRequest) =>
-  //   userApiService.updateUser(userId, userData),
+  // Obtener usuario por ID
+  async getUserById(id: string): Promise<IUser> {
+    console.log('👤 Obteniendo usuario por ID:', id);
+    return await cecagemApi.get<IUser>(ENDPOINTS.user(id));
+  },
 
-  updateCompleteUser: (userId: string, userData: UpdateCompleteUserRequest) =>
-    userApiService.updateCompleteUser(userId, userData),
+  // Crear nuevo usuario
+  async createUser(data: ICreateUserDto): Promise<IUser> {
+    console.log('➕ Creando usuario:', data);
+    try {
+      const result = await cecagemApi.post<IUser>(
+        ENDPOINTS.userComplete, 
+        data as unknown as Record<string, unknown>
+      );
+      console.log('✅ Usuario creado correctamente:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error al crear usuario:', error);
+      throw error;
+    }
+  },
 
-  deleteUser: (userId: string) => userApiService.deleteUser(userId),
-} as const;
+  // Actualizar datos de usuario (email, role, isActive)
+  async updateUserData(id: string, data: {
+    email?: string;
+    role?: string;
+    isActive?: boolean;
+  }): Promise<IUser> {
+    console.log('📝 Actualizando datos de usuario:', { id, data });
+    try {
+      const result = await cecagemApi.patch<IUser>(
+        ENDPOINTS.user(id), 
+        data as unknown as Record<string, unknown>
+      );
+      console.log('✅ Datos de usuario actualizados correctamente:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error al actualizar datos de usuario:', error);
+      throw error;
+    }
+  },
+
+  // Actualizar perfil de usuario
+  async updateUserProfile(id: string, profileData: {
+    firstName?: string;
+    lastName?: string;
+    documentType?: string;
+    documentNumber?: string;
+    phone?: string;
+    university?: string;
+    faculty?: string;
+    career?: string;
+    academicDegree?: string;
+    salaryMonth?: number;
+    paymentDate?: string;
+  }): Promise<IUser> {
+    console.log('📝 Actualizando perfil de usuario:', { id, profileData });
+    try {
+      const result = await cecagemApi.patch<IUser>(
+        ENDPOINTS.userProfile(id), 
+        profileData as unknown as Record<string, unknown>
+      );
+      console.log('✅ Perfil actualizado correctamente:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error al actualizar perfil:', error);
+      throw error;
+    }
+  },
+
+  // Actualizar usuario completo
+  async updateUser(id: string, data: IUpdateUserDto): Promise<IUser> {
+    console.log('📝 Actualizando usuario completo:', { id, data });
+    try {
+      // Usar el endpoint completo para actualizar todo de una vez
+      const result = await cecagemApi.patch<IUser>(
+        ENDPOINTS.userCompleteUpdate(id), 
+        data as unknown as Record<string, unknown>
+      );
+      
+      console.log('✅ Usuario actualizado correctamente:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error al actualizar usuario completo:', error);
+      throw error;
+    }
+  },
+
+  // Eliminar usuario
+  async deleteUser(id: string): Promise<void> {
+    console.log('🗑️ Eliminando usuario:', id);
+    try {
+      await cecagemApi.delete(ENDPOINTS.user(id));
+      console.log('✅ Usuario eliminado correctamente');
+    } catch (error) {
+      console.error('❌ Error al eliminar usuario:', error);
+      throw error;
+    }
+  },
+
+  // Validar disponibilidad de email
+  async validateEmail(email: string, excludeId?: string): Promise<{ available: boolean }> {
+    const params = new URLSearchParams();
+    params.append("email", email);
+    if (excludeId) params.append("excludeId", excludeId);
+
+    console.log('✉️ Validando disponibilidad de email:', email);
+    try {
+      const result = await cecagemApi.get<{ available: boolean }>(
+        `/users/validate-email?${params.toString()}`
+      );
+      console.log('✅ Validación de email:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error al validar email:', error);
+      return { available: false };
+    }
+  }
+};

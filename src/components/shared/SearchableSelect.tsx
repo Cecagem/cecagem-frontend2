@@ -1,0 +1,168 @@
+"use client";
+
+import { useState, useMemo, forwardRef, useRef, useEffect } from "react";
+import { Check, ChevronDown, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export interface SearchableSelectOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+interface SearchableSelectProps {
+  options: SearchableSelectOption[];
+  value?: string;
+  onValueChange?: (value: string) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  disabled?: boolean;
+  className?: string;
+  error?: boolean;
+  emptyMessage?: string;
+}
+
+export const SearchableSelect = forwardRef<HTMLButtonElement, SearchableSelectProps>(
+  ({ 
+    options = [], 
+    value, 
+    onValueChange, 
+    placeholder = "Seleccionar...", 
+    searchPlaceholder = "Buscar...",
+    disabled,
+    className,
+    error,
+    emptyMessage = "No se encontraron opciones"
+  }, ref) => {
+    const [open, setOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Filtrar opciones basado en el término de búsqueda
+    const filteredOptions = useMemo(() => {
+      if (!searchTerm) return options;
+      
+      return options.filter(option =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        option.value.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }, [options, searchTerm]);
+
+    // Encontrar la opción seleccionada
+    const selectedOption = options.find(option => option.value === value);
+
+    const handleSelect = (optionValue: string) => {
+      onValueChange?.(optionValue);
+      setOpen(false);
+      setSearchTerm("");
+    };
+
+    const handleToggle = () => {
+      if (!disabled) {
+        setOpen(!open);
+        setSearchTerm("");
+      }
+    };
+
+    // Cerrar dropdown al hacer click fuera
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setOpen(false);
+          setSearchTerm("");
+        }
+      };
+
+      if (open) {
+        document.addEventListener('mousedown', handleClickOutside);
+        // Focus en el input de búsqueda cuando se abre
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      }
+
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, [open]);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        {/* Trigger Button */}
+        <button
+          ref={ref}
+          type="button"
+          onClick={handleToggle}
+          disabled={disabled}
+          className={cn(
+            "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            disabled && "cursor-not-allowed opacity-50",
+            !selectedOption && "text-muted-foreground",
+            error && "border-red-500 focus:ring-red-500",
+            className
+          )}
+        >
+          <span className="truncate">
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+          <ChevronDown className={cn(
+            "ml-2 h-4 w-4 shrink-0 opacity-50 transition-transform",
+            open && "rotate-180"
+          )} />
+        </button>
+
+        {/* Dropdown */}
+        {open && (
+          <div className="absolute top-full left-0 z-50 mt-1 w-full rounded-md border bg-popover shadow-md animate-in fade-in-0 zoom-in-95">
+            {/* Search Input */}
+            <div className="flex items-center border-b px-3 py-2">
+              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={searchPlaceholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+
+            {/* Options List */}
+            <div className="max-h-60 overflow-auto p-1">
+              {filteredOptions.length === 0 ? (
+                <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                  {emptyMessage}
+                </div>
+              ) : (
+                filteredOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => !option.disabled && handleSelect(option.value)}
+                    disabled={option.disabled}
+                    className={cn(
+                      "flex w-full items-center rounded-sm px-2 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none",
+                      option.disabled && "cursor-not-allowed opacity-50",
+                      value === option.value && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="truncate">{option.label}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+);
+
+SearchableSelect.displayName = "SearchableSelect";

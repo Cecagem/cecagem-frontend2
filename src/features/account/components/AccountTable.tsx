@@ -4,13 +4,7 @@ import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/shared/data-table";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash, Eye, RefreshCw } from "lucide-react";
+import { Edit, Trash, Eye, RefreshCw } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ITransaction, TransactionType, TransactionStatus } from "../types/account.types";
 import { TransactionType as TType, TransactionStatus as TStatus } from "../types/account.types";
@@ -132,37 +126,44 @@ export const AccountTable = ({
       id: "actions",
       header: "Acciones",
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Abrir menú</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onView(row.original)}>
-              <Eye className="mr-2 h-4 w-4" />
-              Ver detalles
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(row.original)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onChangeStatus(row.original.id)}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Cambiar Estado
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDelete(row.original.id)}
-              className="text-red-600"
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              Eliminar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onView(row.original)}
+            className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            title="Ver detalles"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(row.original)}
+            className="h-8 px-2"
+            title="Editar"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onChangeStatus(row.original.id)}
+            className="h-8 px-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+            title="Cambiar Estado"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onDelete(row.original.id)}
+            className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+            title="Eliminar"
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
       ),
     },
   ], [onEdit, onDelete, onView, onChangeStatus]);

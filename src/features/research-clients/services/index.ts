@@ -1,0 +1,1 @@
+export { researchClientsService } from './research-clients.service';
