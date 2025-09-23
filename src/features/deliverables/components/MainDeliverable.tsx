@@ -14,7 +14,7 @@ import {
 import { FileText as DeliverableIcon } from "lucide-react";
 import { deliverableColumns } from "./deliverable-columns";
 import { DeliverableFilters } from "./DeliverableFilters";
-import { CreateDeliverableDialog } from "./DreateDeliverable";
+import { CreateDeliverableDialog } from "./CreateDeliverable";
 import { EditDeliverableDialog } from "./EditDeliverable";
 import { ViewDeliverableDialog } from "./ViewDeliverable";
 import { DeleteDeliverableDialog } from "./DeleteDeliverable";
@@ -63,6 +63,32 @@ export const DeliverablesPage = () => {
   const handleDelete = (deliverable: IDeliverable) => {
     setSelectedDeliverable(deliverable);
     setDeleteDialogOpen(true);
+  };
+
+  // Dialog close handlers
+  const handleCloseView = (open: boolean) => {
+    setViewDialogOpen(open);
+    if (!open) {
+      setSelectedDeliverable(null);
+    }
+  };
+
+  const handleCloseEdit = (open: boolean) => {
+    setEditDialogOpen(open);
+    if (!open) {
+      setSelectedDeliverable(null);
+    }
+  };
+
+  const handleCloseDelete = (open: boolean) => {
+    setDeleteDialogOpen(open);
+    if (!open) {
+      setSelectedDeliverable(null);
+    }
+  };
+
+  const handleCloseCreate = (open: boolean) => {
+    setCreateDialogOpen(open);
   };
 
   const handleFiltersChange = (
@@ -127,7 +153,7 @@ export const DeliverablesPage = () => {
       {/* Dialogs */}
       <CreateDeliverableDialog
         open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        onOpenChange={handleCloseCreate}
         services={services}
       />
 
@@ -137,19 +163,19 @@ export const DeliverablesPage = () => {
             deliverable={selectedDeliverable}
             services={services}
             open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
+            onOpenChange={handleCloseEdit}
           />
 
           <ViewDeliverableDialog
             deliverable={selectedDeliverable}
             open={viewDialogOpen}
-            onOpenChange={setViewDialogOpen}
+            onOpenChange={handleCloseView}
           />
 
           <DeleteDeliverableDialog
             deliverable={selectedDeliverable}
             open={deleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
+            onOpenChange={handleCloseDelete}
           />
         </>
       )}

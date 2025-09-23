@@ -7,6 +7,7 @@ import type {
   DeleteServiceResponse,
   CreateServiceRequest,
   UpdateServiceRequest,
+  DeliverablesResponse,
 } from "../types/engagements.type";
 
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +19,9 @@ export const engagementKeys = {
     [...engagementKeys.lists(), filters] as const,
   details: () => [...engagementKeys.all, "detail"] as const,
   detail: (id: string) => [...engagementKeys.details(), id] as const,
+  deliverables: () => [...engagementKeys.all, "deliverables"] as const,
+  deliverablesList: (serviceId: string) =>
+    [...engagementKeys.deliverables(), serviceId] as const,
 } as const;
 
 export const useServices = (filters?: Partial<ServiceFilters>) => {
@@ -104,4 +108,14 @@ export const useRefreshServices = () => {
   return () => {
     queryClient.invalidateQueries({ queryKey: engagementKeys.lists() });
   };
+};
+
+export const useDeliverablesByService = (serviceId: string) => {
+  return useQuery<DeliverablesResponse, Error>({
+    queryKey: engagementKeys.deliverablesList(serviceId),
+    queryFn: () => engagementService.getDeliverablesByServiceId(serviceId),
+    enabled: !!serviceId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 };
