@@ -315,7 +315,7 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                               >
                                 <CheckCircle className="h-4 w-4" />
                                 {updateDeliverableMutation.isPending ? 'Verificando...' : 
-                                 canVerify ? 'Verificar' : 
+                                 canVerify ? 'Aprobar' : 
                                  isApproved ? 'Aprobado' : 'No Disponible'}
                               </Button>
                             </div>

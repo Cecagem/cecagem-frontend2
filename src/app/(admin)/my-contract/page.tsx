@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import ModeToggle from "@/components/themes/mode-toggle";
 import {
   Breadcrumb,
@@ -12,7 +13,47 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell } from "lucide-react";
 
+// Importar hooks de contratos (reutilizando desde features/contract)
+import { useContracts } from "@/features/contract/hooks/useContracts";
+import { IContract } from "@/features/contract/types/contract.types";
+
+// Importar componentes de my-contract
+import { 
+  ProjectSearchCard, 
+  ProjectCards, 
+  ProjectDetailView 
+} from "@/features/my-contract/components";
+
 export default function MyContractsPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedContract, setSelectedContract] = useState<IContract | null>(null);
+  const [isDetailView, setIsDetailView] = useState(false);
+
+  // Hook para obtener contratos (reutilizando del módulo contract)
+  const { data: contractsData, isLoading: isLoadingContracts } = useContracts({
+    search: searchTerm.length >= 2 ? searchTerm : undefined,
+    limit: 50,
+  });
+
+  const userContracts = contractsData?.data || [];
+
+  const handleSearch = (search: string) => {
+    setSearchTerm(search);
+  };
+
+  const handleProjectClick = (contractId: string) => {
+    const contract = userContracts.find(c => c.id === contractId);
+    if (contract) {
+      setSelectedContract(contract);
+      setIsDetailView(true);
+    }
+  };
+
+  const handleBackToList = () => {
+    setIsDetailView(false);
+    setSelectedContract(null);
+  };
+
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="bg-background/60 backdrop-blur-md sticky top-0 z-50 flex h-12 shrink-0 items-center gap-2 border-b px-4">
@@ -22,7 +63,9 @@ export default function MyContractsPage() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>Gestión de Proyectos</BreadcrumbPage>
+                <BreadcrumbPage>
+                  {isDetailView ? 'Detalle del Proyecto' : 'Mis Proyectos'}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -41,6 +84,29 @@ export default function MyContractsPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+        {!isDetailView ? (
+          <>
+            {/* Buscador */}
+            <ProjectSearchCard 
+              searchTerm={searchTerm}
+              onSearch={handleSearch}
+            />
+
+            {/* Lista de proyectos */}
+            <ProjectCards
+              contracts={userContracts}
+              onProjectClick={handleProjectClick}
+              isLoading={isLoadingContracts}
+            />
+          </>
+        ) : (
+          /* Vista detalle del proyecto */
+          <ProjectDetailView
+            contract={selectedContract}
+            onBack={handleBackToList}
+            isLoading={false}
+          />
+        )}
       </div>
     </div>
   );
