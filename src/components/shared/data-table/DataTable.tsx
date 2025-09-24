@@ -34,6 +34,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  X,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -51,7 +52,8 @@ export interface DataTableProps<TData> {
   selectedItem?: TData | null;
   detailComponent?: (data: TData) => React.ReactNode;
   detailTitle?: (data: TData) => string;
-  onRowClick?: (data: TData) => void;
+  onRowClick?: (data: TData | null) => void;
+  getItemId?: (data: TData) => string | number;
 }
 
 export function DataTable<TData>({
@@ -69,6 +71,7 @@ export function DataTable<TData>({
   detailComponent,
   detailTitle,
   onRowClick,
+  getItemId = (item: TData) => (item as { id: string | number }).id,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -76,6 +79,7 @@ export function DataTable<TData>({
     pageSize: pageSize,
   });
   const detailRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   // Scroll automático cuando se selecciona un item
   useEffect(() => {
@@ -83,11 +87,26 @@ export function DataTable<TData>({
       setTimeout(() => {
         detailRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
-          block: 'start' 
+          block: 'start',
+          inline: 'nearest' 
         });
-      }, 100);
+      }, 150);
     }
   }, [selectedItem]);
+
+  // Función para cerrar el detalle y volver arriba
+  const handleCloseDetail = () => {
+    onRowClick?.(null); // Cerrar el detalle
+    
+    // Hacer scroll hacia arriba después de un breve delay para permitir que se cierre el detalle
+    setTimeout(() => {
+      tableRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest' 
+      });
+    }, 150);
+  };
 
   const table = useReactTable({
     data,
@@ -149,7 +168,7 @@ export function DataTable<TData>({
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card ref={tableRef}>
         {/* {title && (
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
@@ -193,7 +212,7 @@ export function DataTable<TData>({
                         className={`
                           hover:bg-muted/50 
                           ${onRowClick ? 'cursor-pointer' : ''} 
-                          ${selectedItem === row.original ? 'bg-muted/30 border-l-4 border-l-primary' : ''}
+                          ${selectedItem && getItemId(selectedItem) === getItemId(row.original) ? 'bg-muted/30 border-l-4 border-l-primary' : ''}
                         `}
                         onClick={() => onRowClick?.(row.original)}
                       >
@@ -201,6 +220,12 @@ export function DataTable<TData>({
                           <TableCell
                             key={cell.id}
                             className="px-4 sm:px-6 py-3 sm:py-4"
+                            onClick={(e) => {
+                              // Prevenir propagación si es la columna de acciones
+                              if (cell.column.id === 'actions') {
+                                e.stopPropagation();
+                              }
+                            }}
                           >
                             {flexRender(
                               cell.column.columnDef.cell,
@@ -314,12 +339,26 @@ export function DataTable<TData>({
 
       {/* Componente de detalle - card separada con título */}
       {selectedItem && detailComponent && (
-        <div ref={detailRef}>
+        <div 
+          ref={detailRef}
+          className="animate-in slide-in-from-top-4 duration-300"
+        >
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">
-                {detailTitle ? detailTitle(selectedItem) : 'Detalles'}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl">
+                  {detailTitle ? detailTitle(selectedItem) : 'Detalles'}
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCloseDetail}
+                  className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                  title="Cerrar detalles y volver arriba"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {detailComponent(selectedItem)}

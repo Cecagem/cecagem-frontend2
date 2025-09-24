@@ -45,7 +45,7 @@ export const useCompaniesStats = () => {
       
       // Calcular ingresos totales sumando monthlyPayment de todas las relaciones activas
       const totalRevenue = companies.reduce((acc, company) => {
-        const activeRelations = company.userRelations.filter(relation => relation.isActive);
+        const activeRelations = company.contract.filter(relation => relation.isActive);
         const companyRevenue = activeRelations.reduce((sum, relation) => sum + relation.monthlyPayment, 0);
         return acc + companyRevenue;
       }, 0);
@@ -201,7 +201,7 @@ export const useCollaboratorOptions = (search?: string): {
   
   const options: ICollaboratorOption[] = data?.data?.map((collaborator) => ({
     value: collaborator.id,
-    label: `${collaborator.profile.firstName} ${collaborator.profile.lastName}`,
+    label: `${collaborator.profile.documentNumber} - ${collaborator.profile.firstName} ${collaborator.profile.lastName}`,
     email: collaborator.email,
   })) || [];
 

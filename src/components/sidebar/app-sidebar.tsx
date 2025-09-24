@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   // Bell,
   Users,
-  CreditCard,
   BarChart3,
   Building2,
   DollarSign,
@@ -161,16 +160,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "Mis Proyectos",
-            url: "/my-project",
+            url: "/my-contract",
             icon: FolderOpen,
             collapsible: false,
-          },
-          {
-            title: "Mis Pagos",
-            url: "/my-payments",
-            icon: CreditCard,
-            collapsible: false,
-          },
+          }
           // {
           //   title: "Calendario Personal",
           //   url: "#",

@@ -1,12 +1,12 @@
 // Tipos y interfaces
 export type {
   IUser,
-  IUserRelation,
+  IContract,
   ICompany,
   ICollaboratorInternal,
-  ICreateUserRelationDto,
+  ICreateContractDto,
   ICreateCompanyDto,
-  IUpdateUserRelationDto,
+  IUpdateContractDto,
   IUpdateCompanyDto,
   ICompaniesResponse,
   ICollaboratorsResponse,

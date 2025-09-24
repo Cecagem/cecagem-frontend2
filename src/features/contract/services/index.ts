@@ -1,1 +1,1 @@
-export * from "./contract.service";
+export { contractService } from './contract.service';

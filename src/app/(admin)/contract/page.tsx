@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell } from "lucide-react";
-import { MainContracts } from "@/features/contract-new";
+import { MainContracts } from "@/features/contract";
 
 export default function ContractsPage() {
   return (

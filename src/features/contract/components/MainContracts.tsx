@@ -4,14 +4,15 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useContracts, useDeleteContract } from '../hooks/useContracts';
 import { ContractFilters } from './ContractFilters';
 import { ContractTable } from './ContractTable';
 import { ContractStatsCards } from './ContractStatsCards';
 import { DeleteContractDialog } from './DeleteContractDialog';
+import { NewContractForm } from './NewContractForm';
 import type { 
-  IContractFilters, 
-  IContract 
+  IContractFilters 
 } from '../types';
 
 export function MainContracts() {
@@ -30,6 +31,11 @@ export function MainContracts() {
     open: false,
     contractId: null,
     contractName: null,
+  });
+
+  // Estado para el modal de crear contrato
+  const [createContractModal, setCreateContractModal] = useState({
+    open: false,
   });
 
   // Obtener datos
@@ -63,15 +69,23 @@ export function MainContracts() {
 
   // Handler para crear nuevo contrato
   const handleCreateContract = () => {
-    // TODO: Implementar modal de creación
-    console.log('Crear nuevo contrato');
+    setCreateContractModal({
+      open: true,
+    });
   };
 
-  // Handler para editar contrato
-  const handleEditContract = useCallback((contract: IContract) => {
-    // TODO: Implementar modal de edición
-    console.log('Editar contrato:', contract.id);
-  }, []);
+  // Handler para cerrar modal de contrato
+  const handleCloseContractModal = () => {
+    setCreateContractModal({
+      open: false,
+    });
+  };
+
+  // Handler adicional para cuando el formulario se complete exitosamente
+  const handleContractSuccess = () => {
+    handleCloseContractModal();
+    refetch(); // Refrescar la lista de contratos
+  };
 
   // Handler para eliminar contrato
   const handleDeleteContract = useCallback((contractId: string) => {
@@ -154,7 +168,7 @@ export function MainContracts() {
         <ContractTable
           data={contracts}
           isLoading={isLoading}
-          onEdit={handleEditContract}
+
           onDelete={handleDeleteContract}
         />
       </div>
@@ -169,6 +183,29 @@ export function MainContracts() {
         contractName={deleteDialog.contractName || undefined}
         isLoading={deleteContractMutation.isPending}
       />
+
+      {/* Modal de crear/editar contrato */}
+      <Dialog 
+        open={createContractModal.open} 
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseContractModal();
+          }
+        }}
+      >
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[85vh] overflow-y-auto" style={{ width: '80vw', maxWidth: '70vw' }}>
+          <DialogHeader>
+            <DialogTitle>
+              Nuevo Contrato
+            </DialogTitle>
+          </DialogHeader>
+          
+          <NewContractForm
+            onSuccess={handleContractSuccess}
+            onCancel={handleCloseContractModal}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

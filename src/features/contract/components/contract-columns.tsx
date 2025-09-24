@@ -1,100 +1,91 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Edit, Trash2, ArrowUpDown } from "lucide-react";
-import { IContract } from "../types/contract.type";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { formatCurrency } from "../utils";
+import type { IContract } from "../types";
 
 interface ContractColumnsProps {
-  onView: (contract: IContract) => void;
-  onEdit: (contract: IContract) => void;
-  onDelete: (contractId: string) => void;
+  onDelete?: (contractId: string) => void;
 }
 
-export const contractColumns = ({
-  onView,
-  onEdit,
-  onDelete,
-}: ContractColumnsProps): ColumnDef<IContract>[] => [
+export const getContractColumns = ({ 
+  onDelete 
+}: ContractColumnsProps = {}): ColumnDef<IContract>[] => [
   {
     accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 p-0 font-semibold"
-        >
-          Nombre
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Nombre del Contrato",
     cell: ({ row }) => {
       const contract = row.original;
       return (
-        <div className="max-w-[200px]">
+        <div className="space-y-1">
           <div className="font-medium">{contract.name}</div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {contract.university}
           </div>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "career",
-    header: "Carrera",
-    cell: ({ row }) => {
-      const contract = row.original;
-      return (
-        <div className="max-w-[150px]">
-          <div className="text-sm">{contract.career || "Sin carrera"}</div>
+          {contract.career && (
+            <div className="text-xs text-muted-foreground">
+              {contract.career}
+            </div>
+          )}
         </div>
       );
     },
   },
   {
     accessorKey: "costTotal",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 p-0 font-semibold"
-        >
-          Costo Total
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Costo Total",
     cell: ({ row }) => {
       const contract = row.original;
       return (
-        <div className="text-right font-medium">
-          {contract.currency} {contract.costTotal?.toFixed(2) || "0.00"}
+        <div>
+          <div className="font-medium">
+            {formatCurrency(contract.costTotal, contract.currency)}
+          </div>
         </div>
       );
     },
   },
   {
     accessorKey: "overallProgress",
-    header: "Progreso",
+    header: "Progreso General",
     cell: ({ row }) => {
-      const contract = row.original;
-      const progress = contract.overallProgress || 0;
-      
-      const getProgressVariant = (progress: number) => {
-        if (progress === 100) return "default";
-        if (progress >= 75) return "secondary";
-        if (progress >= 50) return "outline";
-        return "destructive";
-      };
-
+      const progress = row.getValue("overallProgress") as number;
       return (
-        <Badge variant={getProgressVariant(progress)}>
-          {progress.toFixed(0)}%
+        <div className="space-y-1">
+          <div className="text-sm font-medium">{progress}%</div>
+          <div className="w-full bg-secondary rounded-full h-2">
+            <div
+              className="bg-primary h-2 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "deliverablesPercentage",
+    header: "Entregables",
+    cell: ({ row }) => {
+      const percentage = row.getValue("deliverablesPercentage") as number;
+      return (
+        <Badge variant={percentage === 100 ? "default" : "secondary"}>
+          {percentage}%
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "paymentPercentage",
+    header: "Pagos",
+    cell: ({ row }) => {
+      const percentage = row.getValue("paymentPercentage") as number;
+      return (
+        <Badge variant={percentage === 100 ? "default" : "destructive"}>
+          {percentage}%
         </Badge>
       );
     },
@@ -103,42 +94,47 @@ export const contractColumns = ({
     accessorKey: "startDate",
     header: "Fecha Inicio",
     cell: ({ row }) => {
-      const contract = row.original;
+      const date = new Date(row.getValue("startDate"));
       return (
         <div className="text-sm">
-          {contract.startDate ? new Date(contract.startDate).toLocaleDateString() : "-"}
+          {date.toLocaleDateString("es-PE", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "endDate",
+    header: "Fecha Fin",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("endDate"));
+      return (
+        <div className="text-sm">
+          {date.toLocaleDateString("es-PE", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
         </div>
       );
     },
   },
   {
     id: "actions",
+    header: "Acciones",
     cell: ({ row }) => {
       const contract = row.original;
 
       return (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <Button
-            variant="ghost"
             size="sm"
-            onClick={() => onView(contract)}
-            className="h-8 w-8 p-0"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onEdit(contract)}
-            className="h-8 w-8 p-0"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(contract.id)}
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            variant="outline"
+            onClick={() => onDelete?.(contract.id)}
+            className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

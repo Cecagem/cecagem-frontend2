@@ -43,10 +43,21 @@ export const SearchableSelect = forwardRef<HTMLButtonElement, SearchableSelectPr
     const filteredOptions = useMemo(() => {
       if (!searchTerm) return options;
       
-      return options.filter(option =>
-        option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        option.value.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const searchLower = searchTerm.toLowerCase();
+      
+      return options.filter(option => {
+        const labelLower = option.label.toLowerCase();
+        const valueLower = option.value.toLowerCase();
+        
+        // Buscar en el label completo, value, y también extraer el DNI si está en formato "DNI - Nombre"
+        const labelMatch = labelLower.includes(searchLower);
+        const valueMatch = valueLower.includes(searchLower);
+        
+        // Si el label tiene formato "DNI - Nombre", también buscar solo en el DNI
+        const dniMatch = labelLower.split(' - ')[0]?.includes(searchLower);
+        
+        return labelMatch || valueMatch || dniMatch;
+      });
     }, [options, searchTerm]);
 
     // Encontrar la opción seleccionada

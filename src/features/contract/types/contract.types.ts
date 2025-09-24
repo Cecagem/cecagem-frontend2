@@ -1,19 +1,22 @@
-// RESPONSE
+// Interfaces para Contratos
+export interface IContractPayment {
+  id: string;
+  installmentId: string;
+  amount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface IContractInstallment {
   id: string;
   contractId: string;
+  userCompanyId: string | null;
   description: string;
   amount: number;
   dueDate: string;
   createdAt: string;
   updatedAt: string;
-  payments?: {
-    id: string;
-    installmentId: string;
-    amount: number;
-    createdAt: string;
-    updatedAt: string;
-  };
+  payments: IContractPayment[];
 }
 
 export interface IContractUser {
@@ -29,6 +32,7 @@ export interface IContractDeliverable {
   deliverableId: string;
   notes: string | null;
   isCompleted: boolean;
+  isAproved: boolean;
   completedAt: string | null;
   assignedAt: string;
 }
@@ -42,9 +46,9 @@ export interface IContract {
   observation: string;
   costTotal: number;
   currency: "PEN" | "USD";
-  deliverablesPercentage?: number;
-  paymentPercentage?: number;
-  overallProgress?: number;
+  deliverablesPercentage: number;
+  paymentPercentage: number;
+  overallProgress: number;
   startDate: string;
   endDate: string;
   createdAt: string;
@@ -68,51 +72,70 @@ export interface IContractResponse {
   meta: IContractMeta;
 }
 
-// filters
+// Filtros para contratos
 export interface IContractFilters {
   page?: number;
   limit?: number;
   search?: string;
   serviceId?: string;
-  sortBy?: "createdAt" | "updatedAt" | "startDate" | "endDate";
+  sortBy?: "createdAt" | "updatedAt" | "startDate" | "endDate" | "name";
   sortOrder?: "asc" | "desc";
 }
 
-// CREATE CONTRACT
+// Estados para filtros
+export interface ContractFiltersState {
+  search?: string;
+  serviceId?: string;
+  page: number;
+  limit: number;
+}
 
-export interface ICreateConctract {
+// DTOs para actualizar entregables
+export interface IUpdateDeliverableDto {
+  notes?: string;
+  isCompleted?: boolean;
+  isAproved?: boolean;
+  [key: string]: unknown;
+}
+
+// DTOs para crear contratos
+export interface ICreateContractDto {
   serviceId: string;
   name: string;
+  university: string;
+  career: string;
   observation?: string;
-  university?: string;
-  career?: string;
   costTotal: number;
   currency: "PEN" | "USD";
   startDate: string;
   endDate: string;
-  installments: ICreateContractInstallment[];
   userIds: string[];
   deliverableIds: string[];
+  installments: {
+    description: string;
+    amount: number;
+    dueDate: string;
+  }[];
+  [key: string]: unknown;
 }
 
-export interface ICreateContractInstallment {
-  description: string;
-  amount: number;
-  dueDate: string;
-}
-
-// UPDATE CONTRACT
-export interface IUpdateContract {
+// DTOs para actualizar contratos
+export interface IUpdateContractDto {
   serviceId?: string;
   name?: string;
-  observation?: string;
   university?: string;
   career?: string;
+  observation?: string;
   costTotal?: number;
   currency?: "PEN" | "USD";
   startDate?: string;
   endDate?: string;
-  userIds: string[];
-  deliverableIds: string[];
-  installments: ICreateContractInstallment[];
+  userIds?: string[];
+  deliverableIds?: string[];
+  installments?: {
+    description: string;
+    amount: number;
+    dueDate: string;
+  }[];
+  [key: string]: unknown;
 }

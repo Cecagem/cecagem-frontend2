@@ -131,7 +131,7 @@ export function CompanyForm({
   // Cargar datos de la empresa para edición
   useEffect(() => {
     if (mode === 'edit' && company && open) {
-      const activeRelation = company.userRelations.find(r => r.isActive);
+      const activeRelation = company.contract.find(r => r.isActive);
       
       form.reset({
         ruc: company.ruc,

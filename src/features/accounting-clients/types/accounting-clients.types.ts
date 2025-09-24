@@ -5,12 +5,19 @@ export interface IUser {
   fullName: string;
 }
 
-export interface IUserRelation {
+export interface IContract {
   id: string;
   monthlyPayment: number;
   paymentDate: string;
   isActive: boolean;
   user: IUser;
+}
+
+export interface IInstallment {
+  id: string;
+  amount: number;
+  dueDate: string;
+  status: 'PENDING' | 'PAID' | 'OVERDUE';
 }
 
 export interface ICompany {
@@ -25,7 +32,8 @@ export interface ICompany {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  userRelations: IUserRelation[];
+  contract: IContract[];
+  installments: IInstallment[];
 }
 
 // Interfaces para colaboradores internos
@@ -37,11 +45,12 @@ export interface ICollaboratorInternal {
   profile: {
     firstName: string;
     lastName: string;
+    documentNumber: string;
   };
 }
 
 // DTOs para crear empresa
-export interface ICreateUserRelationDto {
+export interface ICreateContractDto {
   userId: string;
   monthlyPayment: number;
   paymentDate: string;
@@ -57,11 +66,11 @@ export interface ICreateCompanyDto {
   contactPhone: string;
   contactEmail: string;
   isActive: boolean;
-  userRelation: ICreateUserRelationDto;
+  userRelation: ICreateContractDto;
 }
 
 // DTOs para actualizar
-export interface IUpdateUserRelationDto {
+export interface IUpdateContractDto {
   userId?: string;
   monthlyPayment?: number;
   paymentDate?: string;
@@ -77,7 +86,7 @@ export interface IUpdateCompanyDto {
   contactPhone?: string;
   contactEmail?: string;
   isActive?: boolean;
-  userRelation?: IUpdateUserRelationDto;
+  userRelation?: IUpdateContractDto;
 }
 
 // Response types

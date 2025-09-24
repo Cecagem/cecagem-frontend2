@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import ModeToggle from "@/components/themes/mode-toggle";
 import {
   Breadcrumb,
@@ -8,19 +7,12 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import { Bell } from "lucide-react";
-import { ProyectosList } from "@/features/my-project";
 
-export default function MisProyectosPage() {
-  const router = useRouter();
-
-  const handleProjectClick = (projectId: string) => {
-    router.push(`/my-project/${projectId}`);
-  };
-
+export default function MyContractsPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="bg-background/60 backdrop-blur-md sticky top-0 z-50 flex h-12 shrink-0 items-center gap-2 border-b px-4">
@@ -30,7 +22,7 @@ export default function MisProyectosPage() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>Mis Proyectos</BreadcrumbPage>
+                <BreadcrumbPage>Gestión de Proyectos</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -47,18 +39,8 @@ export default function MisProyectosPage() {
           </Button>
         </div>
       </header>
-      
-      <div className="flex-1 space-y-4 p-4 md:p-6 lg:p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Mis Proyectos</h1>
-            <p className="text-muted-foreground">
-              Gestiona y da seguimiento a todos tus proyectos asignados
-            </p>
-          </div>
-        </div>
 
-        <ProyectosList onProjectClick={handleProjectClick} />
+      <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       </div>
     </div>
   );

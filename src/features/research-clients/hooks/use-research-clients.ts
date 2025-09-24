@@ -82,8 +82,8 @@ export const useCreateResearchClient = () => {
       researchClientsService.createResearchClient(data),
     onSuccess: () => {
       toast.success('Cliente de investigación creado exitosamente');
-      queryClient.invalidateQueries({ queryKey: RESEARCH_CLIENTS_QUERY_KEYS.researchClients });
-      queryClient.invalidateQueries({ queryKey: RESEARCH_CLIENTS_QUERY_KEYS.researchClientsStats });
+      // Invalidar todas las queries de research-clients (incluye las filtradas)
+      queryClient.invalidateQueries({ queryKey: ['research-clients'] });
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       console.error('Error creating research client:', error);
@@ -113,13 +113,12 @@ export const useUpdateResearchClient = () => {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: IUpdateResearchClientDto }) => {
-      console.log('🔄 Hook useUpdateResearchClient ejecutándose:', { id, data });
       return researchClientsService.updateResearchClient(id, data);
     },
     onSuccess: () => {
       toast.success('Cliente de investigación actualizado exitosamente');
-      queryClient.invalidateQueries({ queryKey: RESEARCH_CLIENTS_QUERY_KEYS.researchClients });
-      queryClient.invalidateQueries({ queryKey: RESEARCH_CLIENTS_QUERY_KEYS.researchClientsStats });
+      // Invalidar todas las queries de research-clients (incluye las filtradas)
+      queryClient.invalidateQueries({ queryKey: ['research-clients'] });
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       console.error('Error updating research client:', error);
@@ -153,9 +152,9 @@ export const useDeleteResearchClient = () => {
   return useMutation({
     mutationFn: (id: string) => researchClientsService.deleteResearchClient(id),
     onSuccess: () => {
-      toast.success('🗑️ Cliente de investigación eliminado correctamente');
-      queryClient.invalidateQueries({ queryKey: RESEARCH_CLIENTS_QUERY_KEYS.researchClients });
-      queryClient.invalidateQueries({ queryKey: RESEARCH_CLIENTS_QUERY_KEYS.researchClientsStats });
+      toast.success('Cliente de investigación eliminado correctamente');
+      // Invalidar todas las queries de research-clients (incluye las filtradas)
+      queryClient.invalidateQueries({ queryKey: ['research-clients'] });
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       console.error('Error deleting research client:', error);

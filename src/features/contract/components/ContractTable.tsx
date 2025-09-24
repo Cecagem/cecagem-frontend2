@@ -10,21 +10,23 @@ import type { IContract } from "../types";
 interface ContractTableProps {
   data: IContract[];
   isLoading?: boolean;
-  onEdit?: (contract: IContract) => void;
   onDelete?: (contractId: string) => void;
 }
 
 export const ContractTable = ({
   data,
   isLoading = false,
-  onEdit,
   onDelete,
 }: ContractTableProps) => {
-  const [selectedContract, setSelectedContract] = useState<IContract | null>(null);
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+
+  // Encontrar el contrato seleccionado por ID para mantener la selección tras updates
+  const selectedContract = selectedContractId 
+    ? data.find(contract => contract.id === selectedContractId) || null 
+    : null;
 
   // Generar columnas con los handlers
   const columns = getContractColumns({
-    onEdit,
     onDelete,
   });
 
@@ -42,8 +44,15 @@ export const ContractTable = ({
       selectedItem={selectedContract}
       detailComponent={(contract: IContract) => <ContractExpandedView contract={contract} />}
       detailTitle={(contract: IContract) => contract.name}
-      onRowClick={(contract: IContract) => {
-        setSelectedContract(selectedContract?.id === contract.id ? null : contract);
+      getItemId={(contract: IContract) => contract.id}
+      onRowClick={(contract: IContract | null) => {
+        if (!contract) {
+          // Cerrar el detalle
+          setSelectedContractId(null);
+        } else {
+          // Toggle del detalle usando ID
+          setSelectedContractId(selectedContractId === contract.id ? null : contract.id);
+        }
       }}
     />
   );
