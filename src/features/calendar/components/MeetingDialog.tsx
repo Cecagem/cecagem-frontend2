@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useCreateMeeting, useUpdateMeeting } from '../hooks/use-calendar';
+import { useContracts } from '@/features/contract/hooks/useContracts';
+import { SearchableSelect } from '@/components/shared/SearchableSelect';
 import { toast } from 'sonner';
 import { MeetingType, MeetingMode, ICreateMeetingDto, IUpdateMeetingDto, IAttendee, IMeeting } from '../types/calendar.types';
 import { Plus, Trash2 } from 'lucide-react';
@@ -29,6 +31,7 @@ const meetingFormSchema = z.object({
   ubicacion: z.string()
     .min(1, 'La ubicación es obligatoria')
     .max(200, 'La ubicación no puede exceder 200 caracteres'),
+  contractId: z.string().optional(),
   asistentes: z.array(z.object({
     email: z.string().email('Email inválido'),
     nombre: z.string().min(1, 'El nombre es requerido')
@@ -41,6 +44,15 @@ const meetingFormSchema = z.object({
 }, {
   message: 'La fecha debe ser futura',
   path: ['startDate']
+}).refine((data) => {
+  // Validar que si el tipo es PROYECTO, debe tener contractId
+  if (data.tipo === MeetingType.PROYECTO && !data.contractId) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Debe seleccionar un proyecto',
+  path: ['contractId']
 });
 
 type MeetingFormData = z.infer<typeof meetingFormSchema>;
@@ -62,6 +74,8 @@ export function MeetingDialog({
 }: MeetingDialogProps) {
   const createMeetingMutation = useCreateMeeting();
   const updateMeetingMutation = useUpdateMeeting();
+  const { data: contractsResponse } = useContracts({ limit: 100 }); // Obtener todos los contratos
+  
   const [duration, setDuration] = useState<number>(30);
   const [newAttendeeEmail, setNewAttendeeEmail] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -73,8 +87,15 @@ export function MeetingDialog({
     tipo: MeetingType.PERSONAL,
     modo: MeetingMode.OFFICE,
     ubicacion: '',
+    contractId: '',
     asistentes: [],
   });
+
+  // Preparar opciones de contratos para el SearchableSelect
+  const contractOptions = contractsResponse?.data?.map(contract => ({
+    value: contract.id,
+    label: `${contract.name} - ${contract.university}`,
+  })) || [];
 
   // Cargar datos de la reunión para edición
   useEffect(() => {
@@ -100,6 +121,7 @@ export function MeetingDialog({
         tipo: meeting.tipo,
         modo: meeting.modo,
         ubicacion: meeting.ubicacion || '',
+        contractId: meeting.contractId || '',
         asistentes: meeting.asistentes || [],
       });
       setDuration(duration);
@@ -112,6 +134,7 @@ export function MeetingDialog({
         tipo: MeetingType.PERSONAL,
         modo: MeetingMode.OFFICE,
         ubicacion: '',
+        contractId: '',
         asistentes: [],
       });
       setDuration(30);
@@ -119,6 +142,38 @@ export function MeetingDialog({
       setErrors({});
     }
   }, [mode, meeting, open]);
+
+  // Efecto para actualizar asistentes cuando se selecciona un proyecto
+  useEffect(() => {
+    if (formData.tipo === MeetingType.PROYECTO && formData.contractId && contractsResponse?.data) {
+      const selectedContract = contractsResponse.data.find(contract => contract.id === formData.contractId);
+      
+      if (selectedContract && selectedContract.contractUsers) {
+        // Extraer emails y nombres de los usuarios del contrato
+        const contractAttendees: IAttendee[] = selectedContract.contractUsers.map(contractUser => ({
+          email: contractUser.user.email,
+          nombre: `${contractUser.user.profile.firstName} ${contractUser.user.profile.lastName}`
+        }));
+        
+        // Actualizar los asistentes
+        setFormData(prev => ({
+          ...prev,
+          asistentes: contractAttendees
+        }));
+      }
+    }
+  }, [formData.contractId, formData.tipo, contractsResponse?.data]);
+
+  // Efecto para limpiar contractId y asistentes cuando se cambia a PERSONAL
+  useEffect(() => {
+    if (formData.tipo === MeetingType.PERSONAL) {
+      setFormData(prev => ({
+        ...prev,
+        contractId: '',
+        asistentes: []
+      }));
+    }
+  }, [formData.tipo]);
 
   const validateForm = (data: Partial<MeetingFormData>): boolean => {
     try {
@@ -171,6 +226,7 @@ export function MeetingDialog({
         tipo: formData.tipo!,
         modo: formData.modo!,
         ubicacion: formData.ubicacion || '',
+        contractId: formData.tipo === MeetingType.PROYECTO ? formData.contractId || null : null,
         asistentes: formData.asistentes || [],
       };
       
@@ -195,6 +251,7 @@ export function MeetingDialog({
         tipo: MeetingType.PERSONAL,
         modo: MeetingMode.OFFICE,
         ubicacion: '',
+        contractId: '',
         asistentes: [],
       });
       setDuration(30);
@@ -357,6 +414,23 @@ export function MeetingDialog({
             </div>
           </div>
 
+          {/* Selección de Proyecto - Solo visible cuando tipo es PROYECTO */}
+          {formData.tipo === MeetingType.PROYECTO && (
+            <div className="space-y-2">
+              <Label>Proyecto *</Label>
+              <SearchableSelect
+                options={contractOptions}
+                value={formData.contractId || ''}
+                onValueChange={(value) => handleInputChange('contractId', value)}
+                placeholder="Seleccionar proyecto..."
+                searchPlaceholder="Buscar proyecto..."
+                emptyMessage="No se encontraron proyectos"
+                className={errors.contractId ? 'border-red-500' : ''}
+              />
+              {errors.contractId && <p className="text-sm text-red-500">{errors.contractId}</p>}
+            </div>
+          )}
+
           {/* Ubicación */}
           <div className="space-y-2">
             <Label htmlFor="ubicacion">Ubicación *</Label>
@@ -374,30 +448,42 @@ export function MeetingDialog({
           <div className="space-y-3">
             <Label>Asistentes</Label>
             
-            {/* Agregar nuevo asistente */}
-            <div className="flex gap-2">
-              <Input
-                value={newAttendeeEmail}
-                onChange={(e) => setNewAttendeeEmail(e.target.value)}
-                placeholder="email@ejemplo.com"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAttendee())}
-              />
-              <Button 
-                type="button" 
-                onClick={addAttendee}
-                size="sm"
-                className="shrink-0"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Agregar
-              </Button>
-            </div>
+            {/* Agregar nuevo asistente - Solo visible si no es tipo PROYECTO o si es PROYECTO pero ya se seleccionó uno */}
+            {(formData.tipo === MeetingType.PERSONAL || (formData.tipo === MeetingType.PROYECTO && formData.contractId)) && (
+              <div className="flex gap-2">
+                <Input
+                  value={newAttendeeEmail}
+                  onChange={(e) => setNewAttendeeEmail(e.target.value)}
+                  placeholder="email@ejemplo.com"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAttendee())}
+                />
+                <Button 
+                  type="button" 
+                  onClick={addAttendee}
+                  size="sm"
+                  className="shrink-0"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Agregar
+                </Button>
+              </div>
+            )}
+
+            {/* Mensaje informativo para proyectos */}
+            {formData.tipo === MeetingType.PROYECTO && !formData.contractId && (
+              <p className="text-sm text-muted-foreground">
+                Selecciona un proyecto para cargar automáticamente los asistentes del equipo.
+              </p>
+            )}
 
             {/* Lista de asistentes */}
             {formData.asistentes && formData.asistentes.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
                   Asistentes agregados ({formData.asistentes.length}):
+                  {formData.tipo === MeetingType.PROYECTO && formData.contractId && (
+                    <span className="text-blue-600 ml-1">(Cargados automáticamente del proyecto)</span>
+                  )}
                 </p>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {formData.asistentes.map((attendee, index) => (
