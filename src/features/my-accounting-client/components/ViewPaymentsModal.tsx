@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Calendar, 
   CreditCard, 
@@ -18,62 +16,38 @@ import {
   X,
   Clock,
   AlertCircle 
-} from 'lucide-react';
-import type { IContractPayment } from '../types';
-import { useUpdatePayment } from '../hooks/useContracts';
+} from "lucide-react";
+import { PaymentStatus, PaymentMethod } from "../types/payment.types";
+import type { IPayment } from "@/features/accounting-clients/types/accounting-clients.types";
 
-interface PaymentModalProps {
+interface ViewPaymentsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  payments: IContractPayment[];
+  payments: IPayment[];
   installmentDescription?: string;
-  canManagePayments?: boolean;
 }
 
-export const PaymentModal = ({
+const statusLabels = {
+  [PaymentStatus.PENDING]: "En Verificación",
+  [PaymentStatus.COMPLETED]: "Aprobado",
+  [PaymentStatus.FAILED]: "Rechazado",
+};
+
+const paymentMethodLabels = {
+  [PaymentMethod.CASH]: "Efectivo",
+  [PaymentMethod.BANK_TRANSFER]: "Transferencia Bancaria",
+  [PaymentMethod.CARD]: "Tarjeta",
+  [PaymentMethod.YAPE]: "Yape",
+  [PaymentMethod.PLIN]: "Plin",
+  [PaymentMethod.OTHER]: "Otro",
+};
+
+export function ViewPaymentsModal({
   open,
   onOpenChange,
   payments,
   installmentDescription = "Cuota",
-  canManagePayments = false
-}: PaymentModalProps) => {
-  const [processingPayment, setProcessingPayment] = useState<string | null>(null);
-  const updatePaymentMutation = useUpdatePayment();
-
-  const handleApprovePayment = async (paymentId: string) => {
-    setProcessingPayment(paymentId);
-    try {
-      await updatePaymentMutation.mutateAsync({
-        paymentId,
-        data: { status: "COMPLETED" }
-      });
-
-      // Actualizar la lista de pagos después de aprobar
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error al aprobar pago:', error);
-    } finally {
-      setProcessingPayment(null);
-    }
-  };
-
-  const handleRejectPayment = async (paymentId: string) => {
-    setProcessingPayment(paymentId);
-    try {
-      await updatePaymentMutation.mutateAsync({
-        paymentId,
-        data: { status: "FAILED" }
-      });
-
-      // Actualizar la lista de pagos después de rechazar
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error al rechazar pago:', error);
-    } finally {
-      setProcessingPayment(null);
-    }
-  };
-
+}: ViewPaymentsModalProps) {
   const getPaymentStatusIcon = (status: string) => {
     switch (status) {
       case 'COMPLETED':
@@ -84,19 +58,6 @@ export const PaymentModal = ({
         return <Clock className="h-4 w-4 text-yellow-600" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  const getPaymentStatusText = (status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'Aprobado';
-      case 'FAILED':
-        return 'Rechazado';
-      case 'PENDING':
-        return 'Pendiente';
-      default:
-        return status;
     }
   };
 
@@ -113,10 +74,10 @@ export const PaymentModal = ({
     }
   };
   
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency: string = 'PEN') => {
     return new Intl.NumberFormat('es-PE', {
       style: 'currency',
-      currency: 'PEN',
+      currency: currency,
       minimumFractionDigits: 2,
     }).format(amount);
   };
@@ -145,7 +106,6 @@ export const PaymentModal = ({
         </DialogHeader>
 
         <div className="space-y-4">
-
           {/* Lista de pagos */}
           <div className="space-y-3">
             <h4 className="font-medium text-sm text-muted-foreground">
@@ -183,7 +143,7 @@ export const PaymentModal = ({
                           </div>
                           <div className="text-right">
                             <Badge className={getPaymentStatusColor(payment.status)}>
-                              {getPaymentStatusText(payment.status)}
+                              {statusLabels[payment.status as keyof typeof statusLabels]}
                             </Badge>
                           </div>
                         </div>
@@ -192,11 +152,11 @@ export const PaymentModal = ({
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                           <div>
                             <p className="text-muted-foreground">Monto</p>
-                            <p className="font-semibold">{formatCurrency(payment.amount)}</p>
+                            <p className="font-semibold">{formatCurrency(payment.amount, payment.currency)}</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Método</p>
-                            <p className="font-medium">{payment.method}</p>
+                            <p className="font-medium">{paymentMethodLabels[payment.method as keyof typeof paymentMethodLabels] || payment.method}</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Nro. Operación</p>
@@ -206,28 +166,13 @@ export const PaymentModal = ({
                           </div>
                         </div>
 
-                        {/* Botones de acción para administradores */}
-                        {canManagePayments && payment.status === 'PENDING' && (
-                          <div className="flex gap-2 pt-2 border-t">
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprovePayment(payment.id)}
-                              disabled={processingPayment === payment.id}
-                              className="flex-1 bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              {processingPayment === payment.id ? 'Aprobando...' : 'Aprobar'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleRejectPayment(payment.id)}
-                              disabled={processingPayment === payment.id}
-                              className="flex-1"
-                            >
-                              <X className="h-4 w-4 mr-2" />
-                              {processingPayment === payment.id ? 'Rechazando...' : 'Rechazar'}
-                            </Button>
+                        {/* Fecha de aprobación si existe */}
+                        {payment.paidAt && (
+                          <div className="pt-3 border-t text-sm">
+                            <span className="text-muted-foreground">Fecha de aprobación: </span>
+                            <span className="font-medium">
+                              {formatDate(payment.paidAt)}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -246,4 +191,4 @@ export const PaymentModal = ({
       </DialogContent>
     </Dialog>
   );
-};
+}

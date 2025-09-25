@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { accountingClientsService } from '../services/accounting-clients.service';
 import type { 
   ICompanyFilters, 
@@ -210,4 +211,40 @@ export const useCollaboratorOptions = (search?: string): {
     isLoading,
     error: error as Error | null,
   };
+};
+
+// Hook para actualizar pagos
+export const useUpdatePayment = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ paymentId, data }: { paymentId: string; data: { status: string } }) => 
+      accountingClientsService.updatePayment(paymentId, data),
+    onSuccess: async (response: { status: string; id: string }) => {
+      // Invalidar todas las queries de empresas para refrescar la lista principal
+      await queryClient.invalidateQueries({ queryKey: ACCOUNTING_CLIENTS_QUERY_KEYS.companies });
+      
+      // Refrescar los datos inmediatamente para actualización en tiempo real
+      await queryClient.refetchQueries({ 
+        queryKey: ACCOUNTING_CLIENTS_QUERY_KEYS.companies,
+        exact: false 
+      });
+      
+      // Mostrar notificación de éxito
+      const statusText = response.status === "COMPLETED" ? "aprobado" : 
+                        response.status === "FAILED" ? "rechazado" : "actualizado";
+      showSuccess("updated", { 
+        title: "Pago actualizado",
+        description: `El pago ha sido ${statusText} exitosamente`
+      });
+    },
+    onError: (error: Error) => {
+      // Mostrar notificación de error
+      showError("error", {
+        title: "Error al actualizar pago",
+        description: error?.message || "No se pudo actualizar el pago"
+      });
+    },
+  });
 };

@@ -157,6 +157,78 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                 </div>
               </div>
 
+              {/* Colaboradores y Clientes */}
+              <div className="mt-6 pt-4 border-t space-y-4">
+                <h4 className="font-semibold">Equipo del Proyecto</h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Colaboradores */}
+                  <div>
+                    <h5 className="text-sm font-medium text-muted-foreground mb-3">Colaborador Asignado</h5>
+                    <div className="space-y-2">
+                      {contract.contractUsers && contract.contractUsers.length > 0 ? (
+                        contract.contractUsers
+                          .filter(cu => cu.user.role === 'COLLABORATOR_INTERNAL' || cu.user.role === 'COLLABORATOR_EXTERNAL')
+                          .map((contractUser) => (
+                            <div key={contractUser.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                              <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary">
+                                  {contractUser.user.profile.firstName.charAt(0)}{contractUser.user.profile.lastName.charAt(0)}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">
+                                  {contractUser.user.profile.firstName} {contractUser.user.profile.lastName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {contractUser.user.role === 'COLLABORATOR_INTERNAL' ? 'Colaborador Interno' : 'Colaborador Externo'}
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                {contractUser.user.profile.career}
+                              </Badge>
+                            </div>
+                          ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No hay colaboradores asignados</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Clientes de Investigación */}
+                  <div>
+                    <h5 className="text-sm font-medium text-muted-foreground mb-3">Clientes de Investigación</h5>
+                    <div className="space-y-2">
+                      {contract.contractUsers && contract.contractUsers.length > 0 ? (
+                        contract.contractUsers
+                          .filter(cu => cu.user.role === 'CLIENT')
+                          .map((contractUser) => (
+                            <div key={contractUser.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                              <div className="h-8 w-8 bg-blue-500/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">
+                                  {contractUser.user.profile.firstName.charAt(0)}{contractUser.user.profile.lastName.charAt(0)}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">
+                                  {contractUser.user.profile.firstName} {contractUser.user.profile.lastName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {contractUser.user.profile.university}
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                Cliente
+                              </Badge>
+                            </div>
+                          ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No hay clientes asignados</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Observaciones */}
               {contract.observation && (
                 <div className="mt-6 pt-4 border-t">
@@ -189,9 +261,11 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
               ) : (
                 <div className="space-y-3">
                   {contract.installments.map((installment, index) => {
-                    const hasPaidAmount = installment.payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
-                    const isPaid = hasPaidAmount > 0;
+                    const approvedAmount = installment.payments?.reduce((sum, p) => 
+                      p.status === 'COMPLETED' ? sum + (p.amount || 0) : sum, 0) || 0;
+                    const isPaid = approvedAmount >= installment.amount;
                     const hasPayments = installment.payments && installment.payments.length > 0;
+                    const hasPendingPayments = installment.payments?.some(p => p.status === 'PENDING') || false;
 
                     return (
                       <Card key={installment.id} className={`${isPaid ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-muted-foreground'}`}>
@@ -208,15 +282,21 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                                 </div>
                                 {isPaid && (
                                   <div className="text-sm text-primary font-medium">
-                                    Pagado: {formatCurrency(hasPaidAmount, contract.currency)}
+                                    Pagado: {formatCurrency(approvedAmount, contract.currency)}
+                                  </div>
+                                )}
+                                {hasPendingPayments && !isPaid && (
+                                  <div className="text-sm text-yellow-600 font-medium">
+                                    En verificación
                                   </div>
                                 )}
                               </div>
                             </div>
                             
                             <div className="flex items-center gap-3">
-                              <Badge variant={isPaid ? "default" : "secondary"}>
-                                {isPaid ? "Pagado" : "Pendiente"}
+                              <Badge variant={isPaid ? "default" : hasPendingPayments ? "outline" : "secondary"} 
+                                     className={hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : ""}>
+                                {isPaid ? "Pagado" : hasPendingPayments ? "En Verificación" : "Pendiente"}
                               </Badge>
                               
                               <Button
@@ -277,8 +357,11 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                                 {index + 1}
                               </div>
                               <div>
-                                <div className="font-medium">Entregable #{deliverable.deliverableId || `${index + 1}`}</div>
+                                <div className="font-medium">{deliverable.deliverable?.name || `Entregable #${index + 1}`}</div>
                                 <div className="text-sm text-muted-foreground">
+                                  {deliverable.deliverable?.description || 'Sin descripción'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
                                   Asignado: {formatDate(deliverable.assignedAt)}
                                 </div>
                                 {deliverable.completedAt && (
@@ -337,6 +420,7 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
         onOpenChange={(open) => setPaymentModal(prev => ({ ...prev, open }))}
         payments={paymentModal.payments}
         installmentDescription={paymentModal.description}
+        canManagePayments={true} // Los administradores pueden gestionar pagos
       />
     </div>
   );

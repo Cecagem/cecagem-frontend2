@@ -4,8 +4,10 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, CreditCard, DollarSign, Calendar} from "lucide-react";
-import { IContract } from "@/features/contract/types/contract.types";
+import { Upload, CreditCard, Calendar, Eye } from "lucide-react";
+import { IContract, IContractInstallment, IContractPayment } from "@/features/contract/types/contract.types";
+import { UploadPaymentModal } from "./UploadPaymentModal";
+import { ViewPaymentsModal } from "./ViewPaymentsModal";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -13,174 +15,142 @@ interface ProjectPaymentTabProps {
   contract: IContract;
 }
 
-export const ProjectPaymentTab = ({ contract }: ProjectPaymentTabProps) => {
-  const [uploadingInstallment, setUploadingInstallment] = useState<string | null>(null);
+// Definir interfaces específicas para el estado local
+interface SelectedInstallment {
+  id: string;
+  amount: number;
+  currency: string;
+  description: string;
+  payments: IContractPayment[];
+}
 
-  const handleUploadPayment = (installmentId: string) => {
-    setUploadingInstallment(installmentId);
-    // TODO: Implementar lógica de subida de pagos por cuota específica
-    setTimeout(() => {
-      setUploadingInstallment(null);
-    }, 2000);
+export const ProjectPaymentTab = ({ contract }: ProjectPaymentTabProps) => {
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedInstallment, setSelectedInstallment] = useState<SelectedInstallment | null>(null);
+
+  const handleUploadPayment = (installment: IContractInstallment) => {
+    setSelectedInstallment({
+      id: installment.id,
+      amount: installment.amount,
+      currency: contract.currency,
+      description: installment.description || `Cuota ${contract.installments.indexOf(installment) + 1}`,
+      payments: installment.payments
+    });
+    setUploadModalOpen(true);
   };
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'paid':
-      case 'pagado':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-      case 'pendiente':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'overdue':
-      case 'vencido':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const handleViewPayments = (installment: IContractInstallment) => {
+    setSelectedInstallment({
+      id: installment.id,
+      amount: installment.amount,
+      currency: contract.currency,
+      description: installment.description || `Cuota ${contract.installments.indexOf(installment) + 1}`,
+      payments: installment.payments
+    });
+    setViewModalOpen(true);
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-PE', {
       style: 'currency',
-      currency: 'PEN'
+      currency: contract.currency || 'PEN'
     }).format(amount);
   };
 
   return (
     <div className="space-y-6">
-      {/* Header con botón de subir pago */}
+      {/* Lista de cuotas */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Gestión de Pagos
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Sube tus comprobantes de pago para mantener actualizado tu proyecto
-              </p>
-            </div>
-            <Button
-              onClick={() => handleUploadPayment('general')}
-              disabled={uploadingInstallment === 'general'}
-              className="flex items-center gap-2"
-            >
-              <Upload className="h-4 w-4" />
-              {uploadingInstallment === 'general' ? 'Subiendo...' : 'Subir Pago'}
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Resumen financiero */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total del Proyecto</p>
-                <p className="text-2xl font-bold">{formatCurrency(contract.costTotal || 0)}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pagado</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {contract.installments ? 
-                    formatCurrency(
-                      contract.installments.reduce((total, installment) => 
-                        total + installment.payments.reduce((payTotal, payment) => payTotal + payment.amount, 0), 0
-                      )
-                    ) : 
-                    formatCurrency(0)
-                  }
-                </p>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pendiente</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {contract.installments ? 
-                    formatCurrency(
-                      contract.costTotal - contract.installments.reduce((total, installment) => 
-                        total + installment.payments.reduce((payTotal, payment) => payTotal + payment.amount, 0), 0
-                      )
-                    ) : 
-                    formatCurrency(contract.costTotal)
-                  }
-                </p>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Historial de cuotas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Cuotas del Proyecto</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Cuotas del Proyecto
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Gestiona los pagos de cada cuota de tu proyecto
+          </p>
         </CardHeader>
         <CardContent>
           {contract.installments && contract.installments.length > 0 ? (
             <div className="space-y-4">
               {contract.installments.map((installment, index) => {
-                const totalPaid = installment.payments.reduce((sum, payment) => sum + payment.amount, 0);
-                const isPaid = totalPaid >= installment.amount;
-                const status = isPaid ? 'paid' : 'pending';
+                // Lógica actualizada siguiendo ContractExpandedView
+                const approvedAmount = installment.payments?.reduce((sum, p) => 
+                  p.status === 'COMPLETED' ? sum + (p.amount || 0) : sum, 0) || 0;
+                const isPaid = approvedAmount >= installment.amount;
+                const hasPayments = installment.payments && installment.payments.length > 0;
+                const hasPendingPayments = installment.payments?.some(p => p.status === 'PENDING') || false;
                 
                 return (
-                  <div key={installment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                  <div key={installment.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-4">
+                    <div className="flex items-center space-x-4 flex-1 min-w-0">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 flex-shrink-0">
                         <span className="text-sm font-medium text-primary">#{index + 1}</span>
                       </div>
-                      <div>
-                        <p className="font-medium">{installment.description || `Cuota ${index + 1}`}</p>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {format(new Date(installment.dueDate), 'dd MMM yyyy', { locale: es })}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{installment.description || `Cuota ${index + 1}`}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-muted-foreground mt-1">
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
+                            <span>{format(new Date(installment.dueDate), 'dd MMM yyyy', { locale: es })}</span>
+                          </div>
+                          {hasPayments && (
+                            <span className="text-xs text-muted-foreground">
+                              {installment.payments.length} pago{installment.payments.length !== 1 ? 's' : ''} registrado{installment.payments.length !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1">
+                          {isPaid && (
+                            <div className="text-sm text-primary font-medium">
+                              Pagado: {formatCurrency(approvedAmount)}
+                            </div>
+                          )}
+                          {hasPendingPayments && !isPaid && (
+                            <div className="text-sm text-yellow-600 font-medium">
+                              En verificación
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="text-right flex items-center space-x-2">
-                      <div>
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      <div className="flex flex-col sm:text-right gap-2">
                         <p className="font-semibold">{formatCurrency(installment.amount)}</p>
-                        <Badge className={getPaymentStatusColor(status)}>
-                          {isPaid ? 'Pagado' : 'Pendiente'}
+                        <Badge 
+                          variant={isPaid ? "default" : hasPendingPayments ? "outline" : "secondary"} 
+                          className={`w-fit ${hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : isPaid ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}`}
+                        >
+                          {isPaid ? "Pagado" : hasPendingPayments ? "En Verificación" : "Pendiente"}
                         </Badge>
                       </div>
-                      {!isPaid && (
+                      
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        {hasPayments && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewPayments(installment)}
+                            className="flex items-center gap-1 w-full sm:w-auto"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span className="sm:hidden">Ver Pagos</span>
+                            <span className="hidden sm:inline">Ver</span>
+                          </Button>
+                        )}
+                        
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => handleUploadPayment(installment.id)}
-                          disabled={uploadingInstallment === installment.id}
-                          className="ml-2"
+                          variant={isPaid ? "outline" : "default"}
+                          onClick={() => handleUploadPayment(installment)}
+                          className="flex items-center gap-1 w-full sm:w-auto"
                         >
-                          <Upload className="w-4 h-4 mr-1" />
-                          {uploadingInstallment === installment.id ? 'Subiendo...' : 'Subir'}
+                          <Upload className="w-4 h-4" />
+                          Subir Pago
                         </Button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -197,6 +167,26 @@ export const ProjectPaymentTab = ({ contract }: ProjectPaymentTabProps) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modales */}
+      {selectedInstallment && (
+        <>
+          <UploadPaymentModal
+            open={uploadModalOpen}
+            onOpenChange={setUploadModalOpen}
+            installmentId={selectedInstallment.id}
+            installmentAmount={selectedInstallment.amount}
+            installmentCurrency={selectedInstallment.currency}
+          />
+          
+          <ViewPaymentsModal
+            open={viewModalOpen}
+            onOpenChange={setViewModalOpen}
+            payments={selectedInstallment.payments}
+            installmentDescription={selectedInstallment.description}
+          />
+        </>
+      )}
     </div>
   );
 };

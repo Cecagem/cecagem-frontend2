@@ -1,9 +1,10 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   Building2, 
   User, 
@@ -13,18 +14,31 @@ import {
   CreditCard,
   DollarSign,
   Calendar,
-  Clock
+  Clock,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import type { ICompany } from '../types/accounting-clients.types';
+import type { ICompany, IPayment } from '../types/accounting-clients.types';
+import { PaymentStatus } from '@/features/contract/types/contract.types';
+import { PaymentModal } from './PaymentModal';
 
 interface CompanyExpandedViewProps {
   company: ICompany;
 }
 
 export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ company }) => {
+  const [paymentModal, setPaymentModal] = useState<{
+    open: boolean;
+    payments: IPayment[];
+    description: string;
+  }>({
+    open: false,
+    payments: [],
+    description: "",
+  });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-PE', {
       style: 'currency',
@@ -41,8 +55,19 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
     }
   };
 
+  const handleViewPayments = (payments: IPayment[], description: string) => {
+    setPaymentModal({
+      open: true,
+      payments,
+      description,
+    });
+  };
+
   const activeContracts = company.contract.filter(contract => contract.isActive);
   const totalMonthlyRevenue = activeContracts.reduce((total, contract) => total + contract.monthlyPayment, 0);
+
+  // Obtener todas las cuotas de todos los contratos
+  const allInstallments = activeContracts.flatMap(contract => contract.installments || []);
 
   return (
     <div className="w-full">
@@ -136,30 +161,6 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
                   </div>
                 </div>
               </div>
-
-              {/* Colaboradores asignados */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-sm text-muted-foreground">Colaboradores Asignados</h4>
-                {activeContracts.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {activeContracts.map((contract) => (
-                      <div key={contract.id} className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="text-sm font-medium">{contract.user.fullName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            Pago mensual: {formatCurrency(contract.monthlyPayment)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground italic">
-                    No hay colaboradores asignados actualmente
-                  </div>
-                )}
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -174,8 +175,8 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Resumen financiero */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <div className="p-4 bg-muted rounded-lg">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm font-medium">Ingresos Mensuales</span>
@@ -184,31 +185,11 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
                     {formatCurrency(totalMonthlyRevenue)}
                   </div>
                 </div>
-                
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm font-medium">Colaboradores Activos</span>
-                  </div>
-                  <div className="text-2xl font-bold text-foreground mt-2">
-                    {activeContracts.length}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm font-medium">Fecha de Registro</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {formatDate(company.createdAt)}
-                  </div>
-                </div>
               </div>
 
-              {/* Detalle de pagos por colaborador */}
+              {/* Detalle del colaborador asignado */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-sm text-muted-foreground">Detalle de Pagos por Colaborador</h4>
+                <h4 className="font-semibold text-sm text-muted-foreground">Detalle del Colaborador Asignado</h4>
                 {activeContracts.length > 0 ? (
                   <div className="space-y-3">
                     {activeContracts.map((contract) => (
@@ -222,12 +203,6 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
                             <div className="text-xs text-muted-foreground">Colaborador asignado</div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-semibold text-foreground">
-                            {formatCurrency(contract.monthlyPayment)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">por mes</div>
-                        </div>
                       </div>
                     ))}
                   </div>
@@ -235,7 +210,7 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
                   <div className="text-center py-8 text-muted-foreground">
                     <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                     <div className="text-sm italic">
-                      No hay información de pagos disponible
+                      No hay información del colaborador asignado.
                     </div>
                   </div>
                 )}
@@ -249,91 +224,68 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
-                Cuotas Pendientes
+                Cuotas de Pago
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {company.installments && company.installments.length > 0 ? (
+              {allInstallments && allInstallments.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Resumen de cuotas */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-yellow-600" />
-                        <span className="text-sm font-medium text-yellow-800">Pendientes</span>
-                      </div>
-                      <div className="text-2xl font-bold text-yellow-700 mt-2">
-                        {company.installments.filter(i => i.status === 'PENDING').length}
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-5 w-5 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">Pagadas</span>
-                      </div>
-                      <div className="text-2xl font-bold text-green-700 mt-2">
-                        {company.installments.filter(i => i.status === 'PAID').length}
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-red-600" />
-                        <span className="text-sm font-medium text-red-800">Vencidas</span>
-                      </div>
-                      <div className="text-2xl font-bold text-red-700 mt-2">
-                        {company.installments.filter(i => i.status === 'OVERDUE').length}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Lista de cuotas */}
                   <div className="space-y-3">
                     <h4 className="font-semibold text-sm text-muted-foreground">Detalle de Cuotas</h4>
-                    {company.installments.map((installment) => {
-                      const getStatusColor = (status: string) => {
-                        switch (status) {
-                          case 'PAID': return 'bg-green-100 text-green-800 border-green-200';
-                          case 'OVERDUE': return 'bg-red-100 text-red-800 border-red-200';
-                          default: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-                        }
-                      };
-
-                      const getStatusLabel = (status: string) => {
-                        switch (status) {
-                          case 'PAID': return 'Pagada';
-                          case 'OVERDUE': return 'Vencida';
-                          default: return 'Pendiente';
-                        }
-                      };
+                    {allInstallments.map((installment, index) => {
+                      const approvedAmount = installment.payments?.reduce((sum, p) => 
+                        p.status === PaymentStatus.COMPLETED ? sum + (p.amount || 0) : sum, 0) || 0;
+                      const isPaid = approvedAmount >= installment.amount;
+                      const hasPayments = installment.payments && installment.payments.length > 0;
+                      const hasPendingPayments = installment.payments?.some(p => p.status === PaymentStatus.PENDING) || false;
 
                       return (
-                        <div key={installment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center">
-                              <Calendar className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <div>
-                              <div className="font-medium text-sm">
-                                Vence: {formatDate(installment.dueDate)}
+                        <Card key={installment.id} className={`${isPaid ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-muted-foreground'}`}>
+                          <CardContent>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${isPaid ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                                  {index + 1}
+                                </div>
+                                <div>
+                                  <div className="font-medium">{installment.description}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    Vence: {formatDate(installment.dueDate)} • {formatCurrency(installment.amount)}
+                                  </div>
+                                  {isPaid && (
+                                    <div className="text-sm text-primary font-medium">
+                                      Pagado: {formatCurrency(approvedAmount)}
+                                    </div>
+                                  )}
+                                  {hasPendingPayments && !isPaid && (
+                                    <div className="text-sm text-yellow-600 font-medium">
+                                      En verificación
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                Cuota #{installment.id.slice(-8)}
+                              
+                              <div className="flex items-center gap-3">
+                                <Badge variant={isPaid ? "default" : hasPendingPayments ? "outline" : "secondary"} 
+                                       className={hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : ""}>
+                                  {isPaid ? "Pagado" : hasPendingPayments ? "En Verificación" : "Pendiente"}
+                                </Badge>
+                                
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={!hasPayments}
+                                  onClick={() => handleViewPayments(installment.payments || [], installment.description)}
+                                  className="gap-2"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  Ver Pagos
+                                </Button>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="font-semibold text-foreground">
-                                {formatCurrency(installment.amount)}
-                              </div>
-                            </div>
-                            <Badge className={`text-xs ${getStatusColor(installment.status)}`}>
-                              {getStatusLabel(installment.status)}
-                            </Badge>
-                          </div>
-                        </div>
+                          </CardContent>
+                        </Card>
                       );
                     })}
                   </div>
@@ -350,6 +302,15 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal de pagos */}
+      <PaymentModal
+        open={paymentModal.open}
+        onOpenChange={(open) => setPaymentModal(prev => ({ ...prev, open }))}
+        payments={paymentModal.payments}
+        installmentDescription={paymentModal.description}
+        canManagePayments={true} // Los administradores pueden gestionar pagos
+      />
     </div>
   );
 };

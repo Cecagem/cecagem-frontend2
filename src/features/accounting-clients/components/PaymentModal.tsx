@@ -11,7 +11,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
+import { 
   Calendar, 
   CreditCard, 
   CheckCircle, 
@@ -19,13 +19,14 @@ import {
   Clock,
   AlertCircle 
 } from 'lucide-react';
-import type { IContractPayment } from '../types';
-import { useUpdatePayment } from '../hooks/useContracts';
+import type { IPayment } from '../types/accounting-clients.types';
+import { useUpdatePayment } from '../hooks/use-accounting-clients';
+import { PaymentStatus } from '@/features/contract/types/contract.types';
 
 interface PaymentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  payments: IContractPayment[];
+  payments: IPayment[];
   installmentDescription?: string;
   canManagePayments?: boolean;
 }
@@ -38,7 +39,7 @@ export const PaymentModal = ({
   canManagePayments = false
 }: PaymentModalProps) => {
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
-  const updatePaymentMutation = useUpdatePayment();
+  const updatePaymentMutation = useUpdatePayment(); // Usar el hook local
 
   const handleApprovePayment = async (paymentId: string) => {
     setProcessingPayment(paymentId);
@@ -74,49 +75,49 @@ export const PaymentModal = ({
     }
   };
 
-  const getPaymentStatusIcon = (status: string) => {
+  const getPaymentStatusIcon = (status: PaymentStatus) => {
     switch (status) {
-      case 'COMPLETED':
+      case PaymentStatus.COMPLETED:
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'FAILED':
+      case PaymentStatus.FAILED:
         return <X className="h-4 w-4 text-red-600" />;
-      case 'PENDING':
+      case PaymentStatus.PENDING:
         return <Clock className="h-4 w-4 text-yellow-600" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
     }
   };
 
-  const getPaymentStatusText = (status: string) => {
+  const getPaymentStatusText = (status: PaymentStatus) => {
     switch (status) {
-      case 'COMPLETED':
+      case PaymentStatus.COMPLETED:
         return 'Aprobado';
-      case 'FAILED':
+      case PaymentStatus.FAILED:
         return 'Rechazado';
-      case 'PENDING':
+      case PaymentStatus.PENDING:
         return 'Pendiente';
       default:
         return status;
     }
   };
 
-  const getPaymentStatusColor = (status: string) => {
+  const getPaymentStatusColor = (status: PaymentStatus) => {
     switch (status) {
-      case 'COMPLETED':
+      case PaymentStatus.COMPLETED:
         return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300';
-      case 'FAILED':
+      case PaymentStatus.FAILED:
         return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300';
-      case 'PENDING':
+      case PaymentStatus.PENDING:
         return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300';
       default:
         return 'bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-300';
     }
   };
   
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency: string = 'PEN') => {
     return new Intl.NumberFormat('es-PE', {
       style: 'currency',
-      currency: 'PEN',
+      currency: currency,
       minimumFractionDigits: 2,
     }).format(amount);
   };
@@ -145,7 +146,6 @@ export const PaymentModal = ({
         </DialogHeader>
 
         <div className="space-y-4">
-
           {/* Lista de pagos */}
           <div className="space-y-3">
             <h4 className="font-medium text-sm text-muted-foreground">
@@ -155,9 +155,9 @@ export const PaymentModal = ({
               <div className="space-y-3">
                 {payments.map((payment, index) => (
                   <Card key={payment.id} className={`border-l-4 ${
-                    payment.status === 'COMPLETED' ? 'border-l-green-500' : 
-                    payment.status === 'FAILED' ? 'border-l-red-500' :
-                    payment.status === 'PENDING' ? 'border-l-yellow-500' : 'border-l-gray-500'
+                    payment.status === PaymentStatus.COMPLETED ? 'border-l-green-500' : 
+                    payment.status === PaymentStatus.FAILED ? 'border-l-red-500' :
+                    payment.status === PaymentStatus.PENDING ? 'border-l-yellow-500' : 'border-l-gray-500'
                   }`}>
                     <CardContent className="p-4">
                       <div className="space-y-3">
@@ -165,9 +165,9 @@ export const PaymentModal = ({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                              payment.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-900/30' :
-                              payment.status === 'FAILED' ? 'bg-red-100 dark:bg-red-900/30' :
-                              payment.status === 'PENDING' ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-gray-100 dark:bg-gray-900/30'
+                              payment.status === PaymentStatus.COMPLETED ? 'bg-green-100 dark:bg-green-900/30' :
+                              payment.status === PaymentStatus.FAILED ? 'bg-red-100 dark:bg-red-900/30' :
+                              payment.status === PaymentStatus.PENDING ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-gray-100 dark:bg-gray-900/30'
                             }`}>
                               {getPaymentStatusIcon(payment.status)}
                             </div>
@@ -192,7 +192,7 @@ export const PaymentModal = ({
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                           <div>
                             <p className="text-muted-foreground">Monto</p>
-                            <p className="font-semibold">{formatCurrency(payment.amount)}</p>
+                            <p className="font-semibold">{formatCurrency(payment.amount, payment.currency)}</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Método</p>
@@ -207,7 +207,7 @@ export const PaymentModal = ({
                         </div>
 
                         {/* Botones de acción para administradores */}
-                        {canManagePayments && payment.status === 'PENDING' && (
+                        {canManagePayments && payment.status === PaymentStatus.PENDING && (
                           <div className="flex gap-2 pt-2 border-t">
                             <Button
                               size="sm"

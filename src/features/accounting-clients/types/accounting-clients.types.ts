@@ -1,3 +1,6 @@
+// Importar tipos de payment del módulo contract
+import { PaymentStatus, PaymentMethod } from '@/features/contract/types/contract.types';
+
 // Interfaces principales
 export interface IUser {
   id: string;
@@ -11,13 +14,28 @@ export interface IContract {
   paymentDate: string;
   isActive: boolean;
   user: IUser;
+  installments: IInstallment[];
+}
+
+// Interface para pagos (similar a IContractPayment)
+export interface IPayment {
+  id: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  method: PaymentMethod;
+  reference: string | null;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface IInstallment {
   id: string;
   amount: number;
   dueDate: string;
-  status: 'PENDING' | 'PAID' | 'OVERDUE';
+  description: string;
+  payments: IPayment[];
 }
 
 export interface ICompany {

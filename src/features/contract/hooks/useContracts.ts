@@ -168,3 +168,40 @@ export const useUpdateContract = () => {
     },
   });
 };
+
+// Hook para actualizar pagos
+export const useUpdatePayment = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ paymentId, data }: { paymentId: string; data: { status: string } }) => 
+      contractService.updatePayment(paymentId, data),
+    onSuccess: async (response: { status: string; id: string }) => {
+      // Invalidar todas las queries de contratos para refrescar la lista principal
+      await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.all });
+      await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.lists() });
+      
+      // Refrescar los datos inmediatamente para actualización en tiempo real
+      await queryClient.refetchQueries({ 
+        queryKey: CONTRACT_QUERY_KEYS.lists(),
+        exact: false 
+      });
+      
+      // Mostrar notificación de éxito
+      const statusText = response.status === "COMPLETED" ? "aprobado" : 
+                        response.status === "FAILED" ? "rechazado" : "actualizado";
+      showSuccess("updated", { 
+        title: "Pago actualizado",
+        description: `El pago ha sido ${statusText} exitosamente`
+      });
+    },
+    onError: (error: Error) => {
+      // Mostrar notificación de error
+      showError("error", {
+        title: "Error al actualizar pago",
+        description: error?.message || "No se pudo actualizar el pago"
+      });
+    },
+  });
+};

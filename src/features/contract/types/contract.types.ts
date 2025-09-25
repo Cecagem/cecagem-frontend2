@@ -1,8 +1,63 @@
+// Enums
+export enum PaymentStatus {
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED", 
+  FAILED = "FAILED",
+  CANCELLED = "CANCELLED"
+}
+
+export enum PaymentMethod {
+  CARD = "CARD",
+  CASH = "CASH", 
+  PLIN = "PLIN",
+  YAPE = "YAPE",
+  BANK_TRANSFER = "BANK_TRANSFER",
+  OTHER = "OTHER"
+}
+
+export enum UserRole {
+  COLLABORATOR_EXTERNAL = "COLLABORATOR_EXTERNAL",
+  COLLABORATOR_INTERNAL = "COLLABORATOR_INTERNAL",
+  CLIENT = "CLIENT"
+}
+
+// Interfaces básicas
+export interface IUserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  documentType: string;
+  documentNumber: string;
+  phone: string;
+  university: string;
+  faculty: string;
+  career: string;
+}
+
+export interface IUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  profile: IUserProfile;
+}
+
+export interface IDeliverable {
+  id: string;
+  name: string;
+  description: string;
+}
+
 // Interfaces para Contratos
 export interface IContractPayment {
   id: string;
   installmentId: string;
   amount: number;
+  currency: string;
+  status: PaymentStatus;
+  method: PaymentMethod;
+  reference: string | null;
+  paidAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +78,7 @@ export interface IContractUser {
   id: string;
   contractId: string;
   userId: string;
+  user: IUser;
   assignedAt: string;
 }
 
@@ -30,6 +86,7 @@ export interface IContractDeliverable {
   id: string;
   contractId: string;
   deliverableId: string;
+  deliverable: IDeliverable;
   notes: string | null;
   isCompleted: boolean;
   isAproved: boolean;
@@ -138,4 +195,23 @@ export interface IUpdateContractDto {
     dueDate: string;
   }[];
   [key: string]: unknown;
+}
+
+// DTOs para actualizar pagos
+export interface IUpdatePaymentDto {
+  status: PaymentStatus;
+}
+
+// Respuesta de actualización de pagos
+export interface IUpdatePaymentResponse {
+  id: string;
+  installmentId: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  method: PaymentMethod;
+  reference: string | null;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

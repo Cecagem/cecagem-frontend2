@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, User, Users, ChevronRight } from "lucide-react";
+import { Building2, Calendar, User, ChevronRight } from "lucide-react";
 import { IContract } from "@/features/contract/types/contract.types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -49,8 +49,6 @@ export const ProjectCards = ({ contracts, onProjectClick, isLoading }: ProjectCa
     );
   }
 
-
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {contracts.map((contract) => (
@@ -66,7 +64,7 @@ export const ProjectCards = ({ contracts, onProjectClick, isLoading }: ProjectCa
               </CardTitle>
               <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 ml-2" />
             </div>
-            <Badge className="w-fit bg-green-100 text-green-800">
+            <Badge variant="default">
               Activo
             </Badge>
           </CardHeader>
@@ -79,11 +77,6 @@ export const ProjectCards = ({ contracts, onProjectClick, isLoading }: ProjectCa
             <div className="flex items-center text-sm text-muted-foreground">
               <User className="h-4 w-4 mr-2 flex-shrink-0" />
               <span className="line-clamp-1">{contract.career}</span>
-            </div>
-
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="line-clamp-1">Por asignar</span>
             </div>
 
             <div className="flex items-center text-sm text-muted-foreground">

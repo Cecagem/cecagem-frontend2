@@ -124,7 +124,10 @@ export const ProjectDeliverablesTab = ({ contract }: ProjectDeliverablesTabProps
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium">Entregable #{index + 1}</h3>
+                      <h3 className="font-medium">{deliverable.deliverable?.name || `Entregable #${index + 1}`}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {deliverable.deliverable?.description || 'Sin descripción disponible'}
+                      </p>
                       <div className="flex items-center text-sm text-muted-foreground mt-1">
                         <Calendar className="h-4 w-4 mr-1" />
                         Asignado: {format(new Date(deliverable.assignedAt), 'dd MMM yyyy', { locale: es })}

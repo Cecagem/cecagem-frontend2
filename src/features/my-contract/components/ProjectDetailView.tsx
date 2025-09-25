@@ -7,13 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
-  Building2, 
-  User, 
+  Building2,
   Calendar, 
   FileText, 
   CreditCard,
   GraduationCap,
-  Eye
 } from "lucide-react";
 import { IContract } from "@/features/contract/types/contract.types";
 import { useContract } from "@/features/contract/hooks/useContracts";
@@ -33,7 +31,7 @@ export const ProjectDetailView = ({
   onBack, 
   isLoading: initialLoading 
 }: ProjectDetailViewProps) => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("deliverables");
   
   // Usar hook para obtener datos actualizados del contrato
   const { data: freshContract, isLoading: contractLoading } = useContract(
@@ -70,8 +68,6 @@ export const ProjectDetailView = ({
     );
   }
 
-
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-PE', {
       style: 'currency',
@@ -89,7 +85,7 @@ export const ProjectDetailView = ({
             Volver a mis proyectos
           </Button>
         </div>
-        <Badge className="bg-green-100 text-green-800">
+        <Badge variant="default">
           Activo
         </Badge>
       </div>
@@ -114,14 +110,6 @@ export const ProjectDetailView = ({
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Carrera</p>
                 <p className="font-medium">{contract.career}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <User className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Colaborador</p>
-                <p className="font-medium">Por asignar</p>
               </div>
             </div>
 
@@ -165,11 +153,7 @@ export const ProjectDetailView = ({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <Eye className="h-4 w-4" />
-            Resumen
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="deliverables" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Entregables
@@ -179,94 +163,6 @@ export const ProjectDetailView = ({
             Pagos
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          {/* Estadísticas del proyecto */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{contract.overallProgress}%</p>
-                  <p className="text-sm text-muted-foreground">Progreso general</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">{contract.deliverablesPercentage}%</p>
-                  <p className="text-sm text-muted-foreground">Entregables</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">{contract.paymentPercentage}%</p>
-                  <p className="text-sm text-muted-foreground">Pagos</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-orange-600">{contract.contractDeliverables.length}</p>
-                  <p className="text-sm text-muted-foreground">Total entregables</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Progreso visual */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Progreso del Proyecto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Progreso general</span>
-                  <span className="font-medium">{contract.overallProgress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${contract.overallProgress}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Entregables completados</span>
-                  <span className="font-medium">{contract.deliverablesPercentage}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${contract.deliverablesPercentage}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Pagos realizados</span>
-                  <span className="font-medium">{contract.paymentPercentage}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${contract.paymentPercentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="deliverables">
           <ProjectDeliverablesTab 

@@ -73,6 +73,15 @@ export class ContractService {
     );
     return response;
   }
+
+  // Actualizar estado de un pago
+  async updatePayment(paymentId: string, data: { status: string }): Promise<{ status: string; id: string }> {
+    const response = await cecagemApi.patch<{ status: string; id: string }>(
+      `/payments/${paymentId}`,
+      data
+    );
+    return response;
+  }
 }
 
 export const contractService = new ContractService();
