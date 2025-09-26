@@ -49,7 +49,7 @@ export const TransactionDetailsModal = ({
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-PE", {
       style: "currency",
-      currency: "PEN",
+      currency: transaction.currency,
     }).format(amount);
   };
 

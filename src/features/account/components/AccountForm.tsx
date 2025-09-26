@@ -52,6 +52,7 @@ const getAvailableCategories = (tipo: string) => {
 const transactionSchema = z.object({
   tipo: z.string().min(1, "Seleccione un tipo de transacción"),
   categoria: z.string().min(1, "Seleccione una categoría"),
+  currency: z.string().min(1, "Seleccione una moneda"),
   monto: z.string().min(1, "El monto es requerido").refine((val) => {
     const num = parseFloat(val);
     return !isNaN(num) && num > 0;
@@ -75,6 +76,7 @@ export const AccountForm = ({
     defaultValues: {
       tipo: transaction?.tipo || TType.INCOME,
       categoria: transaction?.categoria || INCOME_CATEGORIES[0],
+      currency: transaction?.currency || "PEN",
       monto: transaction?.monto || "",
       descripcion: transaction?.descripcion || "",
       fecha: transaction?.fecha ? new Date(transaction.fecha).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -90,6 +92,7 @@ export const AccountForm = ({
       form.reset({
         tipo: transaction.tipo,
         categoria: transaction.categoria,
+        currency: transaction.currency || "PEN",
         monto: transaction.monto?.toString() || "",
         descripcion: transaction.descripcion,
         fecha: new Date(transaction.fecha).toISOString().split('T')[0],
@@ -102,6 +105,7 @@ export const AccountForm = ({
     const submitData = {
       tipo: data.tipo as TransactionType,
       categoria: data.categoria,
+      currency: data.currency,
       monto: data.monto,
       descripcion: data.descripcion,
       fecha: data.fecha,
@@ -183,6 +187,28 @@ export const AccountForm = ({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Moneda */}
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Moneda *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Seleccione una moneda" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="PEN">PEN</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               {/* Monto */}
               <FormField
                 control={form.control}
@@ -204,22 +230,22 @@ export const AccountForm = ({
                   </FormItem>
                 )}
               />
-
-              {/* Fecha */}
-              <FormField
-                control={form.control}
-                name="fecha"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Fecha *</FormLabel>
-                    <FormControl>
-                      <Input type="date" className="w-full" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
+            
+            {/* Fecha */}
+            <FormField
+              control={form.control}
+              name="fecha"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Fecha *</FormLabel>
+                  <FormControl>
+                    <Input type="date" className="w-full" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Estado */}
             <FormField

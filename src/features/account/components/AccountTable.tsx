@@ -57,10 +57,10 @@ export const AccountTable = ({
   onView,
   onChangeStatus,
 }: AccountTableProps) => {
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("es-PE", {
       style: "currency",
-      currency: "PEN",
+      currency,
     }).format(amount);
   };
 
@@ -105,11 +105,16 @@ export const AccountTable = ({
       ),
     },
     {
+      accessorKey: "currency",
+      header: "Moneda",
+      cell: ({ row }) => row.original.currency,
+    },
+    {
       accessorKey: "monto",
       header: "Monto",
       cell: ({ row }) => (
         <span className={row.original.tipo === TType.INCOME ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-          {formatCurrency(parseFloat(row.original.monto))}
+          {formatCurrency(parseFloat(row.original.monto), row.original.currency)}
         </span>
       ),
     },

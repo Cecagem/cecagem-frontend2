@@ -121,7 +121,7 @@ export const ProjectPaymentTab = ({ contract }: ProjectPaymentTabProps) => {
                         <p className="font-semibold">{formatCurrency(installment.amount)}</p>
                         <Badge 
                           variant={isPaid ? "default" : hasPendingPayments ? "outline" : "secondary"} 
-                          className={`w-fit ${hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : isPaid ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}`}
+                          className={`w-fit ${hasPendingPayments && !isPaid ? "bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800/30 text-yellow-800 dark:text-yellow-200" : isPaid ? "bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/30 text-green-800 dark:text-green-300" : ""}`}
                         >
                           {isPaid ? "Pagado" : hasPendingPayments ? "En Verificación" : "Pendiente"}
                         </Badge>

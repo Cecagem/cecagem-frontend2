@@ -91,10 +91,22 @@ export const useUpdateDeliverable = () => {
         exact: false 
       });
       
+      // Determinar el tipo de acción basado en el estado del entregable
+      let title = "Entregable actualizado";
+      let description = "El entregable ha sido actualizado exitosamente";
+      
+      if (response.isAproved === true && response.isCompleted === true) {
+        title = "Entregable aprobado";
+        description = "El entregable ha sido aprobado exitosamente";
+      } else if (response.isAproved === false && response.isCompleted === false) {
+        title = "Entregable rechazado";
+        description = "El entregable ha sido rechazado y vuelve a estar en progreso";
+      }
+      
       // Mostrar notificación de éxito
       showSuccess("updated", { 
-        title: "Entregable actualizado",
-        description: response.isAproved ? "El entregable ha sido aprobado exitosamente" : "El entregable ha sido actualizado exitosamente"
+        title,
+        description
       });
     },
     onError: (error: Error) => {

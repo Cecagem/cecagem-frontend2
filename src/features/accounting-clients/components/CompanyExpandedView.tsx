@@ -243,15 +243,17 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
                       return (
                         <Card key={installment.id} className={`${isPaid ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-muted-foreground'}`}>
                           <CardContent>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                               <div className="flex items-center gap-3">
                                 <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${isPaid ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                                   {index + 1}
                                 </div>
-                                <div>
-                                  <div className="font-medium">{installment.description}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">{installment.description}</div>
                                   <div className="text-sm text-muted-foreground">
-                                    Vence: {formatDate(installment.dueDate)} • {formatCurrency(installment.amount)}
+                                    <span className="block sm:inline">Vence: {formatDate(installment.dueDate)}</span>
+                                    <span className="hidden sm:inline"> • </span>
+                                    <span className="block sm:inline">{formatCurrency(installment.amount)}</span>
                                   </div>
                                   {isPaid && (
                                     <div className="text-sm text-primary font-medium">
@@ -266,9 +268,9 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
                                 </div>
                               </div>
                               
-                              <div className="flex items-center gap-3">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                                 <Badge variant={isPaid ? "default" : hasPendingPayments ? "outline" : "secondary"} 
-                                       className={hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : ""}>
+                                       className={`self-start sm:self-center ${hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : ""}`}>
                                   {isPaid ? "Pagado" : hasPendingPayments ? "En Verificación" : "Pendiente"}
                                 </Badge>
                                 
@@ -277,10 +279,10 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
                                   variant="outline"
                                   disabled={!hasPayments}
                                   onClick={() => handleViewPayments(installment.payments || [], installment.description)}
-                                  className="gap-2"
+                                  className="gap-2 w-full sm:w-auto"
                                 >
                                   <Eye className="h-4 w-4" />
-                                  Ver Pagos
+                                  <span className="sm:inline">Ver Pagos</span>
                                 </Button>
                               </div>
                             </div>

@@ -147,12 +147,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             icon: BarChart3,
             collapsible: false,
           },
-          {
-            title: "Configuración",
-            url: "/settings",
-            icon: Settings,
-            collapsible: false,
-          },
         ],
       },
       {

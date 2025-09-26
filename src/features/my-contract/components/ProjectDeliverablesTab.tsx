@@ -49,11 +49,11 @@ export const ProjectDeliverablesTab = ({ contract }: ProjectDeliverablesTabProps
 
   const getDeliverableStatusColor = (deliverable: IContractDeliverable) => {
     if (deliverable.isCompleted && deliverable.isAproved) {
-      return 'bg-green-100 text-green-800';
+      return 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/30 text-green-800 dark:text-green-300';
     } else if (deliverable.isCompleted && !deliverable.isAproved) {
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800/30 text-yellow-800 dark:text-yellow-200';
     } else {
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-gray-100 text-gray-800 dark:text-gray-100 dark:bg-gray-950/20 border border-gray-200 dark:border-gray-800/30';
     }
   };
 
@@ -162,7 +162,7 @@ export const ProjectDeliverablesTab = ({ contract }: ProjectDeliverablesTabProps
                 {!deliverable.isCompleted && (
                   <div className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                         Notas (opcional)
                       </label>
                       <Textarea

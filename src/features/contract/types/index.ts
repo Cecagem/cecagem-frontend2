@@ -12,3 +12,4 @@ export type {
   ICreateContractDto,
   IUpdateContractDto,
 } from './contract.types';
+export * from './payment.types';

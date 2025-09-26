@@ -15,6 +15,7 @@ export interface ITransaction {
   id: string;
   tipo: TransactionType;
   categoria: string;
+  currency: string;
   monto: string;
   fecha: string;
   estado: TransactionStatus;
@@ -28,6 +29,7 @@ export interface ITransaction {
 export interface ICreateTransactionDto {
   tipo: TransactionType;
   categoria: string;
+  currency: string;
   monto: string;
   fecha: string;
   estado: TransactionStatus;
@@ -38,6 +40,7 @@ export interface ICreateTransactionDto {
 export interface IUpdateTransactionDto {
   tipo?: TransactionType;
   categoria?: string;
+  currency?: string;
   monto?: string;
   fecha?: string;
   estado?: TransactionStatus;

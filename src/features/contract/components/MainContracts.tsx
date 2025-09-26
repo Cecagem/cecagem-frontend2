@@ -133,6 +133,8 @@ export function MainContracts() {
     );
   }
 
+  console.log(contracts)
+
   return (
     <div className="space-y-6">
       {/* Header con botón de crear */}

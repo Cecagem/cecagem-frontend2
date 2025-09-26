@@ -6,6 +6,8 @@ export { ContractTable } from './ContractTable';
 export { ContractExpandedView } from './ContractExpandedView';
 export { DeleteContractDialog } from './DeleteContractDialog';
 export { PaymentModal } from './PaymentModal';
+export { RejectDeliverableModal } from './RejectDeliverableModal';
+export { UploadPaymentModal } from './UploadPaymentModal';
 
 // Nuevos componentes del formulario
 export { NewContractForm } from './NewContractForm';
