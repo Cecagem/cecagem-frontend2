@@ -25,6 +25,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useDeleteResearchClient } from '../hooks/use-research-clients';
 import type { IResearchClient } from '../types/research-clients.types';
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 interface ResearchClientTableProps {
   clients: IResearchClient[];
@@ -51,9 +52,17 @@ export function ResearchClientTable({
     }
   };
 
+  const getStatusBadge = (isActive: boolean) => {
+    return (
+      <Badge variant={isActive ? 'default' : 'destructive'}>
+        {isActive ? 'Activo' : 'Inactivo'}
+      </Badge>
+    );
+  };
+
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'dd/MM/yyyy HH:mm', { locale: es });
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
     } catch {
       return 'Fecha inválida';
     }
@@ -109,6 +118,11 @@ export function ResearchClientTable({
     {
       accessorKey: "profile.academicDegree",
       header: "Grado",
+    },
+    {
+      accessorKey: "isActive",
+      header: "Estado",
+      cell: ({ row }) => getStatusBadge(row.original.isActive),
     },
     {
       accessorKey: "createdAt",

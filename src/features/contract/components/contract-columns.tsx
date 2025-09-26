@@ -16,7 +16,7 @@ export const getContractColumns = ({
 }: ContractColumnsProps = {}): ColumnDef<IContract>[] => [
   {
     accessorKey: "name",
-    header: "Nombre del Contrato",
+    header: "Nombre del Proyecto",
     cell: ({ row }) => {
       const contract = row.original;
       return (

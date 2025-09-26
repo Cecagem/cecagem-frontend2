@@ -56,7 +56,7 @@ export function MainContracts() {
     setFilters(prev => ({
       ...prev,
       ...newFilters,
-      page: 1, // Reset a la primera página cuando cambian los filtros
+      page: 1,
     }));
   }, []);
 
@@ -84,7 +84,7 @@ export function MainContracts() {
   // Handler adicional para cuando el formulario se complete exitosamente
   const handleContractSuccess = () => {
     handleCloseContractModal();
-    refetch(); // Refrescar la lista de contratos
+    refetch();
   };
 
   // Handler para eliminar contrato
@@ -115,7 +115,7 @@ export function MainContracts() {
     totalContracts: contracts.length,
     activeContracts: contracts.filter(c => c.overallProgress < 100).length,
     completedContracts: contracts.filter(c => c.overallProgress === 100).length,
-    thisMonthContracts: 0, // TODO: Calcular basado en fecha
+    thisMonthContracts: 0,
     totalRevenue: contracts.reduce((sum, c) => sum + c.costTotal, 0),
     avgProgress: contracts.length > 0 ? Math.round(contracts.reduce((sum, c) => sum + c.overallProgress, 0) / contracts.length) : 0,
   };
@@ -139,7 +139,7 @@ export function MainContracts() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Gestión de Contratos
+            Gestión de Proyectos
           </h1>
           <p className="text-muted-foreground">
             Administra y supervisa todos los contratos de proyectos
@@ -147,7 +147,7 @@ export function MainContracts() {
         </div>
         <Button onClick={handleCreateContract} className="text-white">
           <Plus className="mr-2 h-4 w-4" />
-          Nuevo Contrato
+          Nuevo Proyecto
         </Button>
       </div>
       

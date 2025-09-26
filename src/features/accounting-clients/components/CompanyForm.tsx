@@ -103,7 +103,7 @@ export function CompanyForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Hook para obtener colaboradores
-  const { options: collaboratorOptions } = useCollaboratorOptions();
+  const { options: collaboratorOptions, refetch: refetchCollaborators } = useCollaboratorOptions();
 
   // Convertir opciones de colaboradores al formato SearchableSelectOption
   const collaboratorSelectOptions: SearchableSelectOption[] = collaboratorOptions.map(option => ({
@@ -131,7 +131,7 @@ export function CompanyForm({
   // Cargar datos de la empresa para edición
   useEffect(() => {
     if (mode === 'edit' && company && open) {
-      const activeRelation = company.contract.find(r => r.isActive);
+      const activeRelation = company.contract?.find(r => r.isActive);
       
       form.reset({
         ruc: company.ruc,
@@ -161,7 +161,12 @@ export function CompanyForm({
         paymentDate: new Date(),
       });
     }
-  }, [mode, company, open, form]);
+    
+    // Refrescar colaboradores cuando se abra el modal
+    if (open) {
+      refetchCollaborators();
+    }
+  }, [mode, company, open, form, refetchCollaborators]);
 
   const handleSubmit = async (data: CompanyFormData) => {
     if (isSubmitting) return;

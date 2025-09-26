@@ -197,8 +197,9 @@ export const useCollaboratorOptions = (search?: string): {
   options: ICollaboratorOption[];
   isLoading: boolean;
   error: Error | null;
+  refetch: () => void;
 } => {
-  const { data, isLoading, error } = useCollaborators(search);
+  const { data, isLoading, error, refetch } = useCollaborators(search);
   
   const options: ICollaboratorOption[] = data?.data?.map((collaborator) => ({
     value: collaborator.id,
@@ -210,6 +211,7 @@ export const useCollaboratorOptions = (search?: string): {
     options,
     isLoading,
     error: error as Error | null,
+    refetch,
   };
 };
 
