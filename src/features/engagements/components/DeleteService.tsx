@@ -27,7 +27,7 @@ export function DeleteServiceDialog({
 }: DeleteServiceDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="sm:max-w-[500px] max-w-[95vw]">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Trash2 className="h-5 w-5 text-red-600" />
@@ -41,7 +41,7 @@ export function DeleteServiceDialog({
             <strong>¿Estás seguro de que deseas continuar?</strong>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="gap-2">
           <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}

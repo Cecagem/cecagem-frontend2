@@ -30,8 +30,6 @@ export const researchClientsService = {
     if (filters.search) params.append("search", filters.search);
     if (filters.role) params.append("role", filters.role);
     if (filters.isActive !== undefined) params.append("isActive", filters.isActive.toString());
-
-    console.log('🔍 Obteniendo clientes de investigación:', `${ENDPOINTS.users}?${params.toString()}`);
     
     return await cecagemApi.get<IResearchClientResponse>(
       `${ENDPOINTS.users}?${params.toString()}`
@@ -40,19 +38,16 @@ export const researchClientsService = {
 
   // Obtener cliente por ID
   async getResearchClientById(id: string): Promise<IResearchClient> {
-    console.log('👤 Obteniendo cliente por ID:', id);
     return await cecagemApi.get<IResearchClient>(ENDPOINTS.user(id));
   },
 
   // Crear nuevo cliente de investigación
   async createResearchClient(data: ICreateResearchClientDto): Promise<IResearchClient> {
-    console.log('➕ Creando cliente de investigación:', data);
     try {
       const result = await cecagemApi.post<IResearchClient>(
         ENDPOINTS.userComplete, 
         data as unknown as Record<string, unknown>
       );
-      console.log('Cliente creado correctamente:', result);
       return result;
     } catch (error) {
       console.error('❌ Error al crear cliente:', error);
@@ -67,13 +62,11 @@ export const researchClientsService = {
     role?: string;
     isActive?: boolean;
   }): Promise<IResearchClient> {
-    console.log('📝 Actualizando datos de usuario:', { id, data });
     try {
       const result = await cecagemApi.patch<IResearchClient>(
         ENDPOINTS.user(id), 
         data as unknown as Record<string, unknown>
       );
-      console.log('Datos de usuario actualizados correctamente:', result);
       return result;
     } catch (error) {
       console.error('❌ Error al actualizar datos de usuario:', error);
@@ -95,13 +88,11 @@ export const researchClientsService = {
     salaryMonth?: number;
     paymentDate?: string;
   }): Promise<IResearchClient> {
-    console.log('📝 Actualizando perfil de usuario:', { id, data });
     try {
       const result = await cecagemApi.patch<IResearchClient>(
         ENDPOINTS.userProfile(id), 
         data as unknown as Record<string, unknown>
       );
-      console.log('Perfil de usuario actualizado correctamente:', result);
       return result;
     } catch (error) {
       console.error('❌ Error al actualizar perfil de usuario:', error);
@@ -111,7 +102,6 @@ export const researchClientsService = {
 
   // Actualizar cliente completo (usa ambas APIs secuencialmente)
   async updateResearchClient(id: string, data: IUpdateResearchClientDto): Promise<IResearchClient> {
-    console.log('📝 Actualizando cliente completo:', { id, data });
     try {
       let result: IResearchClient | null = null;
 
@@ -130,7 +120,6 @@ export const researchClientsService = {
         result = await this.getResearchClientById(id);
       }
       
-      console.log('Cliente actualizado completamente:', result);
       return result;
     } catch (error) {
       console.error('❌ Error al actualizar cliente completo:', error);
@@ -140,10 +129,8 @@ export const researchClientsService = {
 
   // Eliminar cliente de investigación
   async deleteResearchClient(id: string): Promise<void> {
-    console.log('🗑️ Eliminando cliente:', id);
     try {
       await cecagemApi.delete(ENDPOINTS.user(id));
-      console.log('Cliente eliminado correctamente');
     } catch (error) {
       console.error('❌ Error al eliminar cliente:', error);
       throw error;

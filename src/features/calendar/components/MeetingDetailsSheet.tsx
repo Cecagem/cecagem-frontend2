@@ -77,6 +77,15 @@ export function MeetingDetailsSheet({
     return variants[isCompleted.toString() as keyof typeof variants];
   };
 
+  const isValidUrl = (string: string): boolean => {
+    try {
+      new URL(string);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="w-[400px] sm:w-[500px] p-0">
@@ -140,13 +149,24 @@ export function MeetingDetailsSheet({
                     <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
                   )}
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     {meeting.modo === 'VIRTUAL' ? 'Reunión virtual' : 'Reunión presencial'}
                   </h4>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {meeting.ubicacion}
-                  </p>
+                  {meeting.modo === 'VIRTUAL' && isValidUrl(meeting.ubicacion) ? (
+                    <a
+                      href={meeting.ubicacion}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline break-all transition-colors"
+                    >
+                      {meeting.ubicacion}
+                    </a>
+                  ) : (
+                    <p className="text-sm text-gray-700 dark:text-gray-300 break-all">
+                      {meeting.ubicacion}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

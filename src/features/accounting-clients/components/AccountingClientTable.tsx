@@ -26,7 +26,8 @@ import { Badge } from '@/components/ui/badge';
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { useDeleteCompany } from '../hooks/use-accounting-clients';
-import type { ICompany, IUserRelation } from "../types/accounting-clients.types";
+import type { ICompany, IContract } from "../types/accounting-clients.types";
+import { CompanyExpandedView } from './CompanyExpandedView';
 
 interface AccountingClientTableProps {
   data: ICompany[];
@@ -41,7 +42,13 @@ export const AccountingClientTable = ({
   onEdit,
 }: AccountingClientTableProps) => {
   const [companyToDelete, setCompanyToDelete] = useState<ICompany | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const deleteCompanyMutation = useDeleteCompany();
+
+  // Encontrar la empresa seleccionada por ID para mantener la selección tras updates
+  const selectedCompany = selectedCompanyId 
+    ? data.find(company => company.id === selectedCompanyId) || null 
+    : null;
 
   const handleDeleteCompany = async () => {
     if (!companyToDelete) return;
@@ -70,10 +77,10 @@ export const AccountingClientTable = ({
     }
   };
 
-  const calculateTotalRevenue = (userRelations: IUserRelation[]) => {
-    return userRelations
-      .filter(relation => relation.isActive)
-      .reduce((total, relation) => total + relation.monthlyPayment, 0);
+  const calculateTotalRevenue = (contracts: IContract[]) => {
+    return contracts
+      .filter(contract => contract.isActive)
+      .reduce((total, contract) => total + contract.monthlyPayment, 0);
   };
 
   const getStatusBadge = (isActive: boolean) => {
@@ -85,8 +92,8 @@ export const AccountingClientTable = ({
   };
 
   const columns = useMemo<ColumnDef<ICompany>[]>(() => {
-    const renderUserRelations = (userRelations: IUserRelation[]) => {
-      if (userRelations.length === 0) {
+    const renderContracts = (contracts: IContract[]) => {
+      if (contracts.length === 0) {
         return (
           <div className="text-sm text-muted-foreground italic">
             Sin colaborador asignado
@@ -94,21 +101,21 @@ export const AccountingClientTable = ({
         );
       }
 
-      const activeRelations = userRelations.filter(relation => relation.isActive);
+      const activeContracts = contracts.filter(contract => contract.isActive);
       
       return (
         <div className="space-y-1">
-          {activeRelations.slice(0, 2).map((relation) => (
-            <div key={relation.id} className="flex items-center gap-1 text-sm">
+          {activeContracts.slice(0, 2).map((contract) => (
+            <div key={contract.id} className="flex items-center gap-1 text-sm">
               <User className="h-3 w-3 text-green-500" />
               <span className="font-medium truncate max-w-[120px]">
-                {relation.user.fullName}
+                {contract.user.fullName}
               </span>
             </div>
           ))}
-          {activeRelations.length > 2 && (
+          {activeContracts.length > 2 && (
             <div className="text-xs text-muted-foreground">
-              +{activeRelations.length - 2} más
+              +{activeContracts.length - 2} más
             </div>
           )}
         </div>
@@ -154,15 +161,15 @@ export const AccountingClientTable = ({
         ),
       },
       {
-        accessorKey: "userRelations",
+        accessorKey: "contract",
         header: "Colaboradores",
-        cell: ({ row }) => renderUserRelations(row.original.userRelations),
+        cell: ({ row }) => renderContracts(row.original.contract),
       },
       {
         accessorKey: "revenue",
         header: "Ingresos",
         cell: ({ row }) => {
-          const totalRevenue = calculateTotalRevenue(row.original.userRelations);
+          const totalRevenue = calculateTotalRevenue(row.original.contract);
           return (
             <div className="text-sm">
               {totalRevenue > 0 ? (
@@ -196,7 +203,10 @@ export const AccountingClientTable = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onEdit?.(row.original)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(row.original);
+              }}
               className="h-8 px-2"
             >
               <Edit className="h-4 w-4" />
@@ -204,7 +214,10 @@ export const AccountingClientTable = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCompanyToDelete(row.original)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCompanyToDelete(row.original);
+              }}
               className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
             >
               <Trash2 className="h-4 w-4" />
@@ -227,6 +240,19 @@ export const AccountingClientTable = ({
         enablePagination={true}
         enableSorting={true}
         pageSize={10}
+        selectedItem={selectedCompany}
+        detailComponent={(company: ICompany) => <CompanyExpandedView company={company} />}
+        detailTitle={(company: ICompany) => company.businessName}
+        getItemId={(company: ICompany) => company.id}
+        onRowClick={(company: ICompany | null) => {
+          if (!company) {
+            // Cerrar el detalle
+            setSelectedCompanyId(null);
+          } else {
+            // Toggle del detalle usando ID
+            setSelectedCompanyId(selectedCompanyId === company.id ? null : company.id);
+          }
+        }}
       />
 
       {/* Modal de confirmación para eliminar */}

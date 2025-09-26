@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell } from "lucide-react";
-import { MainContract } from "@/features/contract";
+import { MainContracts } from "@/features/contract";
 
-export default function Deliverables() {
+export default function ContractsPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="bg-background/60 backdrop-blur-md sticky top-0 z-50 flex h-12 shrink-0 items-center gap-2 border-b px-4">
@@ -42,7 +42,7 @@ export default function Deliverables() {
       </header>
 
       <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-        <MainContract />
+        <MainContracts />
       </div>
     </div>
   );

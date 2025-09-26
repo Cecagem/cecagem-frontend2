@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   // Bell,
   Users,
-  CreditCard,
   BarChart3,
   Building2,
   DollarSign,
@@ -37,6 +36,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     RRHH: "Recursos Humanos",
     SUPER_ADMIN: "Super Administrador",
     COLLABRATOR_INTERNAL: "Colaborador Interno",
+    COLLABORATOR_EXTERNAL: "Colaborador Externo",
   };
 
   const currentUserRole = user?.role || "";
@@ -161,16 +161,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "Mis Proyectos",
-            url: "/my-project",
+            url: "/my-contract",
             icon: FolderOpen,
             collapsible: false,
           },
-          {
-            title: "Mis Pagos",
-            url: "/my-payments",
-            icon: CreditCard,
-            collapsible: false,
-          },
+          ...(currentUserRole.includes("COLLABORATOR_INTERNAL") ? [
+            {
+              title: "Mis Empresas",
+              url: "/my-accounting-client",
+              icon: Building,
+              collapsible: false,
+            }
+          ] : [])
           // {
           //   title: "Calendario Personal",
           //   url: "#",

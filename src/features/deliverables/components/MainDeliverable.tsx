@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Package } from "lucide-react";
+import { Plus } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import {
   useDeliverables,
@@ -11,7 +10,6 @@ import {
   IDeliverable,
   IDeliverableTableFilters,
 } from "@/features/deliverables";
-import { FileText as DeliverableIcon } from "lucide-react";
 import { deliverableColumns } from "./deliverable-columns";
 import { DeliverableFilters } from "./DeliverableFilters";
 import { CreateDeliverableDialog } from "./CreateDeliverable";
@@ -97,6 +95,16 @@ export const DeliverablesPage = () => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
+  const handleClearFilters = () => {
+    setFilters({
+      search: "",
+      serviceId: "",
+      isActive: "",
+      page: 1,
+      limit: 10,
+    });
+  };
+
   // Columns with actions
   const columns = useMemo(
     () =>
@@ -111,13 +119,19 @@ export const DeliverablesPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Package className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Entregables</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Entregables</h1>
+          <p className="text-muted-foreground">
+            Gestiona los entregables asociados a los servicios de consultoría
+          </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        
+        <Button 
+          onClick={() => setCreateDialogOpen(true)}
+          className="w-full sm:w-auto"
+        >
+          <Plus className="mr-2 h-4 w-4" />
           Crear Entregable
         </Button>
       </div>
@@ -127,28 +141,19 @@ export const DeliverablesPage = () => {
         filters={filters}
         services={services}
         onFiltersChange={handleFiltersChange}
+        onClearFilters={handleClearFilters}
       />
 
       {/* Data Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <DeliverableIcon className="h-5 w-5" />
-            <span>Lista de Entregables</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            data={deliverables}
-            columns={columns}
-            isLoading={isLoading}
-            noDataMessage="No se encontraron entregables"
-            enablePagination={true}
-            enableSorting={true}
-            pageSize={filters.limit}
-          />
-        </CardContent>
-      </Card>
+      <DataTable
+        data={deliverables}
+        columns={columns}
+        isLoading={isLoading}
+        noDataMessage="No se encontraron entregables"
+        enablePagination={true}
+        enableSorting={true}
+        pageSize={filters.limit}
+      />
 
       {/* Dialogs */}
       <CreateDeliverableDialog

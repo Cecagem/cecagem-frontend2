@@ -1,3 +1,6 @@
+// Importar tipos de payment del módulo contract
+import { PaymentStatus, PaymentMethod } from '@/features/contract/types/contract.types';
+
 // Interfaces principales
 export interface IUser {
   id: string;
@@ -5,12 +8,34 @@ export interface IUser {
   fullName: string;
 }
 
-export interface IUserRelation {
+export interface IContract {
   id: string;
   monthlyPayment: number;
   paymentDate: string;
   isActive: boolean;
   user: IUser;
+  installments: IInstallment[];
+}
+
+// Interface para pagos (similar a IContractPayment)
+export interface IPayment {
+  id: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  method: PaymentMethod;
+  reference: string | null;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IInstallment {
+  id: string;
+  amount: number;
+  dueDate: string;
+  description: string;
+  payments: IPayment[];
 }
 
 export interface ICompany {
@@ -25,7 +50,8 @@ export interface ICompany {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  userRelations: IUserRelation[];
+  contract: IContract[];
+  installments: IInstallment[];
 }
 
 // Interfaces para colaboradores internos
@@ -37,11 +63,12 @@ export interface ICollaboratorInternal {
   profile: {
     firstName: string;
     lastName: string;
+    documentNumber: string;
   };
 }
 
 // DTOs para crear empresa
-export interface ICreateUserRelationDto {
+export interface ICreateContractDto {
   userId: string;
   monthlyPayment: number;
   paymentDate: string;
@@ -57,11 +84,11 @@ export interface ICreateCompanyDto {
   contactPhone: string;
   contactEmail: string;
   isActive: boolean;
-  userRelation: ICreateUserRelationDto;
+  userRelation: ICreateContractDto;
 }
 
 // DTOs para actualizar
-export interface IUpdateUserRelationDto {
+export interface IUpdateContractDto {
   userId?: string;
   monthlyPayment?: number;
   paymentDate?: string;
@@ -77,7 +104,7 @@ export interface IUpdateCompanyDto {
   contactPhone?: string;
   contactEmail?: string;
   isActive?: boolean;
-  userRelation?: IUpdateUserRelationDto;
+  userRelation?: IUpdateContractDto;
 }
 
 // Response types

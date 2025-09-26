@@ -63,6 +63,13 @@ export function ServicesPage() {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
+  const handleClearFilters = () => {
+    setFilters({
+      ...DEFAULT_SERVICE_FILTERS,
+      isActive: undefined,
+    });
+  };
+
   const handleEdit = (service: Service) => {
     setSelectedService(service);
     setSelectedServiceId(service.id);
@@ -138,38 +145,27 @@ export function ServicesPage() {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Servicios</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Servicios</h1>
             <p className="text-muted-foreground">
               Gestiona los servicios de consultoría disponibles
             </p>
           </div>
-          <Button disabled>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button 
+            disabled 
+            className="w-full sm:w-auto"
+          >
+            <Plus className="mr-2 h-4 w-4" />
             Nuevo Servicio
           </Button>
         </div>
 
-        {/* Filters Skeleton */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-end">
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="w-full sm:w-[160px] space-y-2">
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="flex gap-2">
-                <Skeleton className="h-10 w-20" />
-                <Skeleton className="h-10 w-24" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Filters */}
+        <ServiceFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+        />
 
         {/* Services Skeleton */}
         <ServicesSkeleton />
@@ -181,15 +177,18 @@ export function ServicesPage() {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Servicios</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Servicios</h1>
             <p className="text-muted-foreground">
               Gestiona los servicios de consultoría disponibles
             </p>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button 
+            onClick={() => setCreateDialogOpen(true)}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="mr-2 h-4 w-4" />
             Nuevo Servicio
           </Button>
         </div>
@@ -224,28 +223,28 @@ export function ServicesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Servicios</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Servicios</h1>
           <p className="text-muted-foreground">
             Gestiona los servicios de consultoría disponibles
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button 
+          onClick={() => setCreateDialogOpen(true)}
+          className="w-full sm:w-auto"
+        >
+          <Plus className="mr-2 h-4 w-4" />
           Nuevo Servicio
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-end">
-        <div className="flex-1">
-          <ServiceFilters
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-          />
-        </div>
-      </div>
+      <ServiceFilters
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        onClearFilters={handleClearFilters}
+      />
 
       {/* Services Grid */}
       {services.length === 0 ? (
@@ -343,40 +342,37 @@ export function ServicesPage() {
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <Card>
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Mostrando {services.length} de {pagination.total} servicios
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    handleFiltersChange({ page: filters.page - 1 })
-                  }
-                  disabled={pagination.page <= 1}
-                >
-                  Anterior
-                </Button>
-                <span className="flex items-center px-3 text-sm">
-                  {pagination.page} de {pagination.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    handleFiltersChange({ page: filters.page + 1 })
-                  }
-                  disabled={pagination.page >= pagination.totalPages}
-                >
-                  Siguiente
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {((pagination.page - 1) * filters.limit) + 1} a{' '}
+            {Math.min(pagination.page * filters.limit, pagination.total)} de {pagination.total} servicios
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                handleFiltersChange({ page: filters.page - 1 })
+              }
+              disabled={pagination.page <= 1}
+            >
+              Anterior
+            </Button>
+            <span className="flex items-center px-3 text-sm">
+              {pagination.page} de {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                handleFiltersChange({ page: filters.page + 1 })
+              }
+              disabled={pagination.page >= pagination.totalPages}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Dialogs */}

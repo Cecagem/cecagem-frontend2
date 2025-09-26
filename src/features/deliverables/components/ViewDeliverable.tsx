@@ -9,10 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Calendar, CheckCircle2, XCircle } from "lucide-react";
+import { Package, CheckCircle2, XCircle } from "lucide-react";
 import { IDeliverable } from "../types/deliverable.types";
 import {
-  formatDateTime,
   getStatusVariant,
   getStatusText,
 } from "../utils/deliverable.utils";
@@ -30,8 +29,8 @@ export const ViewDeliverableDialog = ({
 }: ViewDeliverableDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2">
             <Package className="h-5 w-5" />
             <span>Detalles del Entregable</span>
@@ -41,148 +40,95 @@ export const ViewDeliverableDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Información General</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Nombre
-                </label>
-                <p className="text-base font-medium">{deliverable.name}</p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Descripción
-                </label>
-                <p className="text-base">{deliverable.description}</p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Estado:
-                </label>
-                <Badge variant={getStatusVariant(deliverable.isActive)}>
-                  {deliverable.isActive ? (
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                  ) : (
-                    <XCircle className="h-3 w-3 mr-1" />
-                  )}
-                  {getStatusText(deliverable.isActive)}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Service Information */}
-          {deliverable.service && (
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
+          <div className="space-y-6">
+            {/* Basic Information */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Servicio Asociado</CardTitle>
+                <CardTitle className="text-lg">Información General</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Nombre del Servicio
+                    Nombre
                   </label>
-                  <p className="text-base font-medium">
-                    {deliverable.service.name}
-                  </p>
+                  <p className="text-base font-medium break-words">{deliverable.name}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Descripción del Servicio
+                    Descripción
                   </label>
-                  <p className="text-base">{deliverable.service.description}</p>
+                  <p className="text-base break-words">{deliverable.description}</p>
                 </div>
 
-                <div>
+                <div className="flex items-center space-x-2 flex-wrap">
                   <label className="text-sm font-medium text-muted-foreground">
-                    Precio
+                    Estado:
                   </label>
-                  <p className="text-base font-medium text-primary">
-                    ${deliverable.service.basePrice.toFixed(2)}
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Estado del Servicio:
-                  </label>
-                  <Badge
-                    variant={getStatusVariant(deliverable.service.isActive)}
-                  >
-                    {deliverable.service.isActive ? (
+                  <Badge variant={getStatusVariant(deliverable.isActive)}>
+                    {deliverable.isActive ? (
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                     ) : (
                       <XCircle className="h-3 w-3 mr-1" />
                     )}
-                    {getStatusText(deliverable.service.isActive)}
+                    {getStatusText(deliverable.isActive)}
                   </Badge>
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Dates */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center space-x-2">
-                <Calendar className="h-4 w-4" />
-                <span>Fechas</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Fecha de Creación
-                </label>
-                <p className="text-base">
-                  {formatDateTime(deliverable.createdAt)}
-                </p>
-              </div>
+            {/* Service Information */}
+            {deliverable.service && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Servicio Asociado</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Nombre del Servicio
+                    </label>
+                    <p className="text-base font-medium break-words">
+                      {deliverable.service.name}
+                    </p>
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Última Actualización
-                </label>
-                <p className="text-base">
-                  {formatDateTime(deliverable.updatedAt)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Descripción del Servicio
+                    </label>
+                    <p className="text-base break-words">{deliverable.service.description}</p>
+                  </div>
 
-          {/* ID Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Información Técnica</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  ID del Entregable
-                </label>
-                <p className="text-sm font-mono bg-muted p-2 rounded">
-                  {deliverable.id}
-                </p>
-              </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Precio
+                    </label>
+                    <p className="text-base font-medium text-primary">
+                      ${deliverable.service.basePrice.toFixed(2)}
+                    </p>
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  ID del Servicio
-                </label>
-                <p className="text-sm font-mono bg-muted p-2 rounded">
-                  {deliverable.serviceId}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="flex items-center space-x-2 flex-wrap">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Estado del Servicio:
+                    </label>
+                    <Badge
+                      variant={getStatusVariant(deliverable.service.isActive)}
+                    >
+                      {deliverable.service.isActive ? (
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                      ) : (
+                        <XCircle className="h-3 w-3 mr-1" />
+                      )}
+                      {getStatusText(deliverable.service.isActive)}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

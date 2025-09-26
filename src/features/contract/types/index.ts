@@ -1,1 +1,14 @@
-export * from "./contract.type";
+export type {
+  IContract,
+  IContractInstallment,
+  IContractUser,
+  IContractDeliverable,
+  IContractPayment,
+  IContractResponse,
+  IContractMeta,
+  IContractFilters,
+  ContractFiltersState,
+  IUpdateDeliverableDto,
+  ICreateContractDto,
+  IUpdateContractDto,
+} from './contract.types';

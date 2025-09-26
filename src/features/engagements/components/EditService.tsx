@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -21,10 +22,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useUpdateService } from "../hooks/useEngagements";
 import { updateServiceSchema } from "../utils/engagements.utils";
 import { UpdateServiceRequest, Service } from "../types/engagements.type";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditServiceDialogProps {
   open: boolean;
@@ -38,6 +39,7 @@ export function EditServiceDialog({
   service,
 }: EditServiceDialogProps) {
   const updateServiceMutation = useUpdateService();
+  const { showSuccess, showError } = useToast();
 
   const form = useForm<UpdateServiceRequest>({
     resolver: zodResolver(updateServiceSchema),
@@ -71,9 +73,17 @@ export function EditServiceDialog({
           basePrice: Number(data.basePrice),
         },
       });
+      showSuccess("updated", {
+        title: "Servicio actualizado",
+        description: "El servicio ha sido actualizado exitosamente.",
+      });
       onOpenChange(false);
     } catch (error) {
       console.error("Error updating service:", error);
+      showError("error", {
+        title: "Error",
+        description: "No se pudo actualizar el servicio. Inténtalo de nuevo.",
+      });
     }
   };
 
@@ -93,8 +103,12 @@ export function EditServiceDialog({
       }}
     >
       {" "}
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent 
+        className="sm:max-w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="border-b pb-4">
           <DialogTitle>Editar Servicio</DialogTitle>
           <DialogDescription>
             Modifica los datos del servicio seleccionado.
@@ -109,104 +123,95 @@ export function EditServiceDialog({
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre del Servicio</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ej: Plan de Tesis, Artículo Científico..."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Información del Servicio */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Información del Servicio</h3>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre del Servicio *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ej: Plan de Tesis, Artículo Científico..."
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descripción</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Describe el servicio que se ofrecerá..."
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descripción *</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe el servicio que se ofrecerá..."
+                            rows={4}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="basePrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Precio Base (S/.)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        value={field.value || ""}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          field.onChange(value === "" ? 0 : Number(value));
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  
+                    <FormField
+                      control={form.control}
+                      name="basePrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Precio Base (S/.) *</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              value={field.value || ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                field.onChange(value === "" ? 0 : Number(value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3">
-                    <FormControl>
-                      <Checkbox
-                        checked={Boolean(field.value)}
-                        onCheckedChange={(checked) =>
-                          field.onChange(Boolean(checked))
-                        }
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Servicio activo</FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
+                  </div>
+                </div>
 
-              <div className="flex justify-end space-x-2 pt-4">
+              <DialogFooter className="gap-2 border-t pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleClose}
                   disabled={updateServiceMutation.isPending}
+                  className="w-full sm:w-auto"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   disabled={updateServiceMutation.isPending}
+                  className="w-full sm:w-auto"
                 >
                   {updateServiceMutation.isPending
                     ? "Actualizando..."
                     : "Actualizar Servicio"}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
           </Form>
         )}

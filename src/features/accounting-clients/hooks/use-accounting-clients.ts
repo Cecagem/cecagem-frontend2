@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { accountingClientsService } from '../services/accounting-clients.service';
 import type { 
   ICompanyFilters, 
@@ -45,7 +46,7 @@ export const useCompaniesStats = () => {
       
       // Calcular ingresos totales sumando monthlyPayment de todas las relaciones activas
       const totalRevenue = companies.reduce((acc, company) => {
-        const activeRelations = company.userRelations.filter(relation => relation.isActive);
+        const activeRelations = company.contract.filter(relation => relation.isActive);
         const companyRevenue = activeRelations.reduce((sum, relation) => sum + relation.monthlyPayment, 0);
         return acc + companyRevenue;
       }, 0);
@@ -196,12 +197,13 @@ export const useCollaboratorOptions = (search?: string): {
   options: ICollaboratorOption[];
   isLoading: boolean;
   error: Error | null;
+  refetch: () => void;
 } => {
-  const { data, isLoading, error } = useCollaborators(search);
+  const { data, isLoading, error, refetch } = useCollaborators(search);
   
   const options: ICollaboratorOption[] = data?.data?.map((collaborator) => ({
     value: collaborator.id,
-    label: `${collaborator.profile.firstName} ${collaborator.profile.lastName}`,
+    label: `${collaborator.profile.documentNumber} - ${collaborator.profile.firstName} ${collaborator.profile.lastName}`,
     email: collaborator.email,
   })) || [];
 
@@ -209,5 +211,42 @@ export const useCollaboratorOptions = (search?: string): {
     options,
     isLoading,
     error: error as Error | null,
+    refetch,
   };
+};
+
+// Hook para actualizar pagos
+export const useUpdatePayment = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ paymentId, data }: { paymentId: string; data: { status: string } }) => 
+      accountingClientsService.updatePayment(paymentId, data),
+    onSuccess: async (response: { status: string; id: string }) => {
+      // Invalidar todas las queries de empresas para refrescar la lista principal
+      await queryClient.invalidateQueries({ queryKey: ACCOUNTING_CLIENTS_QUERY_KEYS.companies });
+      
+      // Refrescar los datos inmediatamente para actualización en tiempo real
+      await queryClient.refetchQueries({ 
+        queryKey: ACCOUNTING_CLIENTS_QUERY_KEYS.companies,
+        exact: false 
+      });
+      
+      // Mostrar notificación de éxito
+      const statusText = response.status === "COMPLETED" ? "aprobado" : 
+                        response.status === "FAILED" ? "rechazado" : "actualizado";
+      showSuccess("updated", { 
+        title: "Pago actualizado",
+        description: `El pago ha sido ${statusText} exitosamente`
+      });
+    },
+    onError: (error: Error) => {
+      // Mostrar notificación de error
+      showError("error", {
+        title: "Error al actualizar pago",
+        description: error?.message || "No se pudo actualizar el pago"
+      });
+    },
+  });
 };
