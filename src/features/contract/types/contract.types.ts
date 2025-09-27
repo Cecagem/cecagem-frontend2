@@ -74,12 +74,27 @@ export interface IContractInstallment {
   payments: IContractPayment[];
 }
 
+// Nueva interfaz para las cuotas de colaboradores
+export interface ICollaboratorInstallment {
+  id: string;
+  contractId: string | null;
+  userCompanyId: string | null;
+  contractUserId: string;
+  description: string;
+  amount: number;
+  dueDate: string;
+  createdAt: string;
+  updatedAt: string;
+  payments: IContractPayment[];
+}
+
 export interface IContractUser {
   id: string;
   contractId: string;
   userId: string;
   user: IUser;
   assignedAt: string;
+  installments?: ICollaboratorInstallment[] | null;
 }
 
 export interface IContractDeliverable {
@@ -155,6 +170,14 @@ export interface IUpdateDeliverableDto {
   [key: string]: unknown;
 }
 
+// Nuevo tipo para pagos de colaboradores
+export interface ICollaboratorPayment {
+  userId: string;
+  amount: number;
+  dueDate: string;
+  description: string;
+}
+
 // DTOs para crear contratos
 export interface ICreateContractDto {
   serviceId: string;
@@ -173,6 +196,7 @@ export interface ICreateContractDto {
     amount: number;
     dueDate: string;
   }[];
+  collaboratorPayments?: ICollaboratorPayment[];
   [key: string]: unknown;
 }
 
@@ -194,6 +218,7 @@ export interface IUpdateContractDto {
     amount: number;
     dueDate: string;
   }[];
+  collaboratorPayments?: ICollaboratorPayment[];
   [key: string]: unknown;
 }
 

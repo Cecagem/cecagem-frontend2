@@ -42,7 +42,23 @@ export function MainResearchClients() {
   } = useResearchClientsStats();
 
   const clients = clientsData?.data || [];
-  const meta = clientsData?.meta;
+  const paginationMeta = clientsData?.meta;
+
+  // Handlers para paginación
+  const handlePageChange = useCallback((page: number) => {
+    setFilters(prev => ({
+      ...prev,
+      page,
+    }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((pageSize: number) => {
+    setFilters(prev => ({
+      ...prev,
+      limit: pageSize,
+      page: 1, // Reset a la primera página cuando cambia el tamaño
+    }));
+  }, []);
 
   // Handlers para filtros
   const handleFiltersChange = useCallback((newFilters: Partial<IResearchClientFilters>) => {
@@ -50,6 +66,7 @@ export function MainResearchClients() {
       ...prev,
       ...newFilters,
       type: 'clients', // Mantener siempre el tipo
+      page: 1, // Reset a la primera página cuando cambian los filtros
     }));
   }, []);
 
@@ -146,19 +163,12 @@ export function MainResearchClients() {
         clients={clients}
         isLoading={isLoading}
         onEditClient={handleEditClient}
+        // Props para paginación del servidor
+        serverPagination={true}
+        paginationMeta={paginationMeta}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
       />
-
-      {/* Paginación */}
-      {meta && meta.totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="text-sm text-muted-foreground">
-            Mostrando {((meta.page - 1) * meta.limit) + 1} a{' '}
-            {Math.min(meta.page * meta.limit, meta.total)} de {meta.total} clientes
-          </div>
-          
-          
-        </div>
-      )}
 
       {/* Formulario de creación */}
       <ResearchClientForm

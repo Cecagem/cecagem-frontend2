@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/shared/data-table";
 import { Edit, Trash, Eye, RefreshCw } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { ITransaction, TransactionType, TransactionStatus } from "../types/account.types";
+import type { ITransaction, TransactionType, TransactionStatus, ITransactionMeta } from "../types/account.types";
 import { TransactionType as TType, TransactionStatus as TStatus } from "../types/account.types";
 
 interface AccountTableProps {
@@ -16,6 +16,10 @@ interface AccountTableProps {
   onDelete: (id: string) => void;
   onView: (transaction: ITransaction) => void;
   onChangeStatus: (id: string) => void;
+  // Nuevas props para paginación del servidor
+  paginationMeta?: ITransactionMeta;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 const getCategoryLabel = (category: string): string => {
@@ -56,6 +60,9 @@ export const AccountTable = ({
   onDelete,
   onView,
   onChangeStatus,
+  paginationMeta,
+  onPageChange,
+  onPageSizeChange,
 }: AccountTableProps) => {
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("es-PE", {
@@ -182,7 +189,11 @@ export const AccountTable = ({
       noDataMessage="No se encontraron transacciones"
       enablePagination={true}
       enableSorting={true}
-      pageSize={10}
+      pageSize={paginationMeta?.limit || 10}
+      serverPagination={true}
+      paginationMeta={paginationMeta}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
     />
   );
 };

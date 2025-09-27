@@ -111,23 +111,20 @@ export interface ITransactionStats {
   transactionCount: number;
 }
 
-// CATEGORIES (predefined options)
-export const INCOME_CATEGORIES = [
-  "Salario",
-  "Freelance", 
-  "Inversión",
-  "Negocio",
-  "Otros Ingresos"
-];
+// STATS POR MONEDA
+export interface ICurrencyStats {
+  currency: string;
+  totalBalance: number;
+  totalIncome: number;
+  totalExpenses: number;
+  transactionCount: number;
+}
 
-export const EXPENSE_CATEGORIES = [
-  "Servicios",
-  "Comida",
-  "Transporte", 
-  "Entretenimiento",
-  "Salud",
-  "Educación",
-  "Compras",
-  "Alquiler",
-  "Otros Gastos"
-];
+export interface ITransactionStatsByCurrency {
+  pen: ICurrencyStats;
+  usd: ICurrencyStats;
+  overall: {
+    totalTransactions: number;
+    activeCurrencies: string[];
+  };
+}

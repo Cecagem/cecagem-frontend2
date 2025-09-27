@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FileText } from 'lucide-react';
-import { DataTable } from '@/components/shared/data-table';
+import { DataTable, ServerPaginationMeta } from '@/components/shared/data-table';
 import { getContractColumns } from './contract-columns';
 import { ContractExpandedView } from './ContractExpandedView';
 import type { IContract } from "../types";
@@ -11,12 +11,21 @@ interface ContractTableProps {
   data: IContract[];
   isLoading?: boolean;
   onDelete?: (contractId: string) => void;
+  // Props para paginación del servidor
+  serverPagination?: boolean;
+  paginationMeta?: ServerPaginationMeta;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 export const ContractTable = ({
   data,
   isLoading = false,
   onDelete,
+  serverPagination = false,
+  paginationMeta,
+  onPageChange,
+  onPageSizeChange,
 }: ContractTableProps) => {
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
 
@@ -54,6 +63,11 @@ export const ContractTable = ({
           setSelectedContractId(selectedContractId === contract.id ? null : contract.id);
         }
       }}
+      // Props para paginación del servidor
+      serverPagination={serverPagination}
+      paginationMeta={paginationMeta}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
     />
   );
 };

@@ -31,11 +31,11 @@ const getRoleBadgeVariant = (role: string) => {
     case "ADMIN":
       return "bg-primary hover:bg-primary/90 text-primary-foreground";
     case "RRHH":
-      return "bg-blue-500 hover:bg-blue-600 text-white";
+      return "bg-primary hover:bg-primary/90 text-primary-foreground";
     case "COLLABRATOR_INTERNAL":
-      return "bg-green-500 hover:bg-green-600 text-white";
+      return "bg-primary hover:bg-primary/90 text-primary-foreground";
     case "COLLABORATOR_EXTERNAL":
-      return "bg-orange-500 hover:bg-orange-600 text-white";
+      return "bg-primary hover:bg-primary/90 text-primary-foreground";
     default:
       return "bg-muted hover:bg-muted/80 text-muted-foreground";
   }

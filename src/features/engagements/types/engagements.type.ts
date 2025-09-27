@@ -43,11 +43,13 @@ export interface ServiceResponse {
 export interface ServicesResponse {
   success: boolean;
   data: Service[];
-  pagination: {
+  meta: {
     page: number;
     limit: number;
     total: number;
     totalPages: number;
+    hasNext?: boolean;
+    hasPrevious?: boolean;
   };
   message: string;
 }

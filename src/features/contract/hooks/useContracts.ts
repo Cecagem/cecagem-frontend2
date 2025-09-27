@@ -19,8 +19,8 @@ export const useContracts = (filters: Partial<IContractFilters> = {}) => {
     queryKey: CONTRACT_QUERY_KEYS.list(filters),
     queryFn: () => contractService.getContracts(filters),
     retry: 1,
-    refetchOnWindowFocus: false,
-    staleTime: 30000, // 30 segundos
+    refetchOnWindowFocus: true, // Actualizar cuando regrese a la ventana
+    staleTime: 0, // Siempre considerar los datos como obsoletos
   });
 };
 

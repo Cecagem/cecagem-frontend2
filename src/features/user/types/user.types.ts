@@ -94,13 +94,20 @@ export interface IUpdateUserDto {
   };
 }
 
-// Response del backend
-export interface IUserResponse {
-  data: IUser[];
+// Interface para la metadata de paginación
+export interface IUserMeta {
   total: number;
   page: number;
   limit: number;
   totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
+// Response del backend
+export interface IUserResponse {
+  data: IUser[];
+  meta: IUserMeta;
 }
 
 // Filtros para búsqueda

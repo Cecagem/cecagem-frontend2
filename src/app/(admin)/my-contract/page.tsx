@@ -15,7 +15,7 @@ import { Bell } from "lucide-react";
 
 // Importar hooks de contratos (reutilizando desde features/contract)
 import { useContracts } from "@/features/contract/hooks/useContracts";
-import { IContract } from "@/features/contract/types/contract.types";
+import { IContract, IContractFilters } from "@/features/contract/types/contract.types";
 
 // Importar componentes de my-contract
 import { 
@@ -25,20 +25,36 @@ import {
 } from "@/features/my-contract/components";
 
 export default function MyContractsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedContract, setSelectedContract] = useState<IContract | null>(null);
   const [isDetailView, setIsDetailView] = useState(false);
-
-  // Hook para obtener contratos (reutilizando del módulo contract)
-  const { data: contractsData, isLoading: isLoadingContracts } = useContracts({
-    search: searchTerm.length >= 2 ? searchTerm : undefined,
-    limit: 50,
+  
+  // Estado para filtros con paginación
+  const [filters, setFilters] = useState<Partial<IContractFilters>>({
+    page: 1,
+    limit: 6,
+    search: undefined,
   });
 
+  // Hook para obtener contratos con filtros
+  const { data: contractsData, isLoading: isLoadingContracts } = useContracts(filters);
+
   const userContracts = contractsData?.data || [];
+  const paginationMeta = contractsData?.meta;
 
   const handleSearch = (search: string) => {
-    setSearchTerm(search);
+    setFilters(prev => ({
+      ...prev,
+      search: search.length >= 2 ? search : undefined,
+      page: 1
+    }));
+  };
+
+  const handlePageChange = (page: number) => {
+    setFilters(prev => ({ ...prev, page }));
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setFilters(prev => ({ ...prev, limit: pageSize, page: 1 }));
   };
 
   const handleProjectClick = (contractId: string) => {
@@ -88,15 +104,19 @@ export default function MyContractsPage() {
           <>
             {/* Buscador */}
             <ProjectSearchCard 
-              searchTerm={searchTerm}
+              searchTerm={filters.search || ""}
               onSearch={handleSearch}
             />
 
-            {/* Lista de proyectos */}
+            {/* Lista de proyectos con paginación */}
             <ProjectCards
               contracts={userContracts}
               onProjectClick={handleProjectClick}
               isLoading={isLoadingContracts}
+              paginationMeta={paginationMeta}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              filters={filters}
             />
           </>
         ) : (

@@ -41,6 +41,23 @@ export function MainAccountingClients() {
   } = useCompaniesStats();
 
   const companies = companiesData?.data || [];
+  const paginationMeta = companiesData?.pagination;
+
+  // Handlers para paginación
+  const handlePageChange = useCallback((page: number) => {
+    setFilters(prev => ({
+      ...prev,
+      page,
+    }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((pageSize: number) => {
+    setFilters(prev => ({
+      ...prev,
+      limit: pageSize,
+      page: 1, // Reset a la primera página cuando cambia el tamaño
+    }));
+  }, []);
 
   // Handlers para filtros
   const handleFiltersChange = useCallback((newFilters: Partial<ICompanyFilters>) => {
@@ -142,6 +159,11 @@ export function MainAccountingClients() {
           isLoading={isLoading}
           onEdit={handleEditCompany}
           onDelete={handleDeleteCompany}
+          // Props para paginación del servidor
+          serverPagination={true}
+          paginationMeta={paginationMeta}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
         />
       </div>
 

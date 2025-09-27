@@ -8,7 +8,7 @@ import {
   Trash2,
 } from 'lucide-react';
 
-import { DataTable } from '@/components/shared/data-table';
+import { DataTable, ServerPaginationMeta } from '@/components/shared/data-table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,12 +31,21 @@ interface ResearchClientTableProps {
   clients: IResearchClient[];
   isLoading?: boolean;
   onEditClient: (client: IResearchClient) => void;
+  // Props para paginación del servidor
+  serverPagination?: boolean;
+  paginationMeta?: ServerPaginationMeta;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 export function ResearchClientTable({ 
   clients, 
   isLoading = false, 
   onEditClient,
+  serverPagination = false,
+  paginationMeta,
+  onPageChange,
+  onPageSizeChange,
 }: ResearchClientTableProps) {
   const [clientToDelete, setClientToDelete] = useState<IResearchClient | null>(null);
   const deleteClientMutation = useDeleteResearchClient();
@@ -137,7 +146,10 @@ export function ResearchClientTable({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onEditClient(row.original)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditClient(row.original);
+            }}
             className="h-8 px-2"
           >
             <Edit className="h-4 w-4" />
@@ -145,7 +157,10 @@ export function ResearchClientTable({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setClientToDelete(row.original)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setClientToDelete(row.original);
+            }}
             className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 className="h-4 w-4" />
@@ -153,7 +168,7 @@ export function ResearchClientTable({
         </div>
       ),
     },
-  ], [onEditClient  ]);
+  ], [onEditClient]);
 
   return (
     <>
@@ -166,6 +181,11 @@ export function ResearchClientTable({
         enablePagination={true}
         enableSorting={true}
         pageSize={10}
+        // Props para paginación del servidor
+        serverPagination={serverPagination}
+        paginationMeta={paginationMeta}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
 
       {/* Modal de confirmación para eliminar */}

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calendar, DollarSign, CreditCard, Plus, Trash2 } from "lucide-react";
+import { Calendar, DollarSign, CreditCard, Plus, Trash2, User } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -21,6 +21,13 @@ const installmentSchema = z.object({
   dueDate: z.date(),
 });
 
+const collaboratorPaymentSchema = z.object({
+  userId: z.string().min(1, "El ID del colaborador es obligatorio"),
+  amount: z.number().min(1, "El monto debe ser mayor a 0"),
+  dueDate: z.date(),
+  description: z.string().min(1, "La descripción es obligatoria"),
+});
+
 const step3Schema = z.object({
   costTotal: z.number().min(1, "El costo total debe ser mayor a 0"),
   currency: z.enum(["PEN", "USD"]),
@@ -28,6 +35,7 @@ const step3Schema = z.object({
   endDate: z.date(),
   paymentType: z.enum(["cash", "installments"]),
   installments: z.array(installmentSchema).optional(),
+  collaboratorPayments: z.array(collaboratorPaymentSchema).optional(),
 }).refine((data) => {
   if (data.startDate && data.endDate) {
     return data.startDate < data.endDate;
@@ -40,20 +48,38 @@ const step3Schema = z.object({
 
 export type Step3FormData = z.infer<typeof step3Schema>;
 export type InstallmentData = z.infer<typeof installmentSchema>;
+export type CollaboratorPaymentData = z.infer<typeof collaboratorPaymentSchema>;
 
 interface ContractFormStep3Props {
   initialData?: Partial<Step3FormData>;
   onNext: (data: Step3FormData) => void;
   onBack: () => void;
+  // Nuevas props para manejar colaboradores externos
+  collaboratorId?: string;
+  collaboratorRole?: string;
+  contractName?: string;
 }
 
-export const ContractFormStep3 = ({ initialData, onNext, onBack }: ContractFormStep3Props) => {
+export const ContractFormStep3 = ({ 
+  initialData, 
+  onNext, 
+  onBack, 
+  collaboratorId, 
+  collaboratorRole, 
+  contractName 
+}: ContractFormStep3Props) => {
   const [installments, setInstallments] = useState<InstallmentData[]>(
     initialData?.installments || []
   );
   const [numberOfInstallments, setNumberOfInstallments] = useState<number>(
     initialData?.installments?.length || 2
   );
+  const [collaboratorPayments, setCollaboratorPayments] = useState<CollaboratorPaymentData[]>(
+    initialData?.collaboratorPayments || []
+  );
+
+  // Verificar si el colaborador es externo
+  const isExternalCollaborator = collaboratorRole === "COLLABORATOR_EXTERNAL";
 
   const form = useForm<Step3FormData>({
     resolver: zodResolver(step3Schema),
@@ -64,6 +90,7 @@ export const ContractFormStep3 = ({ initialData, onNext, onBack }: ContractFormS
       endDate: initialData?.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días después
       paymentType: initialData?.paymentType || "cash",
       installments: installments,
+      collaboratorPayments: collaboratorPayments,
     },
   });
 
@@ -71,6 +98,30 @@ export const ContractFormStep3 = ({ initialData, onNext, onBack }: ContractFormS
   const watchedStartDate = form.watch("startDate");
   const watchedEndDate = form.watch("endDate");
   const watchedCostTotal = form.watch("costTotal");
+
+  // Inicializar pago de colaborador externo cuando cambie la fecha final
+  useEffect(() => {
+    if (isExternalCollaborator && collaboratorId && contractName && watchedEndDate) {
+      if (collaboratorPayments.length === 0) {
+        const newCollaboratorPayment: CollaboratorPaymentData = {
+          userId: collaboratorId,
+          amount: 0,
+          dueDate: watchedEndDate,
+          description: `Pago colaborador - ${contractName}`,
+        };
+        setCollaboratorPayments([newCollaboratorPayment]);
+        form.setValue("collaboratorPayments", [newCollaboratorPayment]);
+      } else {
+        // Actualizar la fecha de vencimiento si ya existe
+        const updatedPayments = collaboratorPayments.map(payment => ({
+          ...payment,
+          dueDate: watchedEndDate,
+        }));
+        setCollaboratorPayments(updatedPayments);
+        form.setValue("collaboratorPayments", updatedPayments);
+      }
+    }
+  }, [isExternalCollaborator, collaboratorId, contractName, watchedEndDate, form]);
 
   // Calcular cuotas automáticamente
   const calculateInstallments = useCallback(() => {
@@ -140,6 +191,13 @@ export const ContractFormStep3 = ({ initialData, onNext, onBack }: ContractFormS
     form.setValue("installments", newInstallments);
   };
 
+  const updateCollaboratorPayment = (index: number, field: keyof CollaboratorPaymentData, value: string | number | Date) => {
+    const newPayments = [...collaboratorPayments];
+    newPayments[index] = { ...newPayments[index], [field]: value };
+    setCollaboratorPayments(newPayments);
+    form.setValue("collaboratorPayments", newPayments);
+  };
+
   const handleSubmit = (data: Step3FormData) => {
     // Si es pago en cuotas, usar las cuotas configuradas
     if (data.paymentType === "installments") {
@@ -151,6 +209,11 @@ export const ContractFormStep3 = ({ initialData, onNext, onBack }: ContractFormS
         amount: data.costTotal,
         dueDate: data.endDate,
       }];
+    }
+    
+    // Agregar pagos de colaborador si es externo
+    if (isExternalCollaborator) {
+      data.collaboratorPayments = collaboratorPayments;
     }
     
     onNext(data);
@@ -273,6 +336,53 @@ export const ContractFormStep3 = ({ initialData, onNext, onBack }: ContractFormS
               </div>
             </CardContent>
           </Card>
+
+          {/* Pago de Colaborador Externo */}
+          {isExternalCollaborator && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Pago de Colaborador Externo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {collaboratorPayments.map((payment, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Monto del Pago *</label>
+                        <Input
+                          type="number"
+                          value={payment.amount}
+                          onChange={(e) => updateCollaboratorPayment(index, "amount", Number(e.target.value))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium">Fecha de Pago *</label>
+                        <DateInput
+                          value={payment.dueDate}
+                          onChange={(date) => updateCollaboratorPayment(index, "dueDate", date)}
+                          placeholder="Seleccionar fecha"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">Descripción *</label>
+                      <Input
+                        value={payment.description}
+                        onChange={(e) => updateCollaboratorPayment(index, "description", e.target.value)}
+                        placeholder="Descripción del pago"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Configuración de Pagos */}
           <Card>

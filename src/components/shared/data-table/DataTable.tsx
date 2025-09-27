@@ -4,13 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   useReactTable,
   getCoreRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   getFilteredRowModel,
   ColumnDef,
   flexRender,
   SortingState,
-  PaginationState,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -38,6 +36,15 @@ import {
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
+export interface ServerPaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
 export interface DataTableProps<TData> {
   data: TData[];
   columns: ColumnDef<TData>[];
@@ -54,6 +61,11 @@ export interface DataTableProps<TData> {
   detailTitle?: (data: TData) => string;
   onRowClick?: (data: TData | null) => void;
   getItemId?: (data: TData) => string | number;
+  // Nuevas props para paginación del servidor
+  serverPagination?: boolean;
+  paginationMeta?: ServerPaginationMeta;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 export function DataTable<TData>({
@@ -72,12 +84,12 @@ export function DataTable<TData>({
   detailTitle,
   onRowClick,
   getItemId = (item: TData) => (item as { id: string | number }).id,
+  serverPagination = false,
+  paginationMeta,
+  onPageChange,
+  onPageSizeChange,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: pageSize,
-  });
   const detailRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -113,17 +125,14 @@ export function DataTable<TData>({
     columns,
     onSortingChange: enableSorting ? setSorting : undefined,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: enablePagination
-      ? getPaginationRowModel()
-      : undefined,
+    // Solo usar paginación del cliente si no es paginación del servidor
+    getPaginationRowModel: !serverPagination ? undefined : undefined,
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
-    getFilteredRowModel: enableColumnFilters
-      ? getFilteredRowModel()
-      : undefined,
-    onPaginationChange: enablePagination ? setPagination : undefined,
+    getFilteredRowModel: enableColumnFilters ? getFilteredRowModel() : undefined,
+    // Para paginación del servidor, no manejamos el estado aquí
+    manualPagination: serverPagination,
     state: {
       ...(enableSorting && { sorting }),
-      ...(enablePagination && { pagination }),
     },
   });
 
@@ -166,17 +175,59 @@ export function DataTable<TData>({
     );
   }
 
+  // Funciones para manejar paginación del servidor
+  const handlePageSizeChange = (newPageSize: string) => {
+    const size = Number(newPageSize);
+    if (serverPagination && onPageSizeChange) {
+      onPageSizeChange(size);
+    } else {
+      table.setPageSize(size);
+    }
+  };
+
+  const handleFirstPage = () => {
+    if (serverPagination && onPageChange) {
+      onPageChange(1);
+    } else {
+      table.setPageIndex(0);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (serverPagination && onPageChange && paginationMeta) {
+      onPageChange(paginationMeta.page - 1);
+    } else {
+      table.previousPage();
+    }
+  };
+
+  const handleNextPage = () => {
+    if (serverPagination && onPageChange && paginationMeta) {
+      onPageChange(paginationMeta.page + 1);
+    } else {
+      table.nextPage();
+    }
+  };
+
+  const handleLastPage = () => {
+    if (serverPagination && onPageChange && paginationMeta) {
+      onPageChange(paginationMeta.totalPages);
+    } else {
+      table.setPageIndex(table.getPageCount() - 1);
+    }
+  };
+
+  // Determinar valores de paginación según el tipo
+  const currentPage = serverPagination ? paginationMeta?.page || 1 : table.getState().pagination.pageIndex + 1;
+  const totalPages = serverPagination ? paginationMeta?.totalPages || 1 : table.getPageCount();
+  const currentPageSize = serverPagination ? paginationMeta?.limit || pageSize : table.getState().pagination.pageSize;
+  const canPreviousPage = serverPagination ? paginationMeta?.hasPrevious || false : table.getCanPreviousPage();
+  const canNextPage = serverPagination ? paginationMeta?.hasNext || false : table.getCanNextPage();
+  const totalItems = serverPagination ? paginationMeta?.total || 0 : data.length;
+
   return (
     <div className="space-y-6">
       <Card ref={tableRef}>
-        {/* {title && (
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              {Icon && <Icon className="h-5 w-5" />}
-              {title}
-            </CardTitle>
-          </CardHeader>
-        )} */}
         <CardContent className="px-5">
           {/* Table Container - Responsive */}
           <div className="border rounded-md overflow-hidden">
@@ -251,33 +302,44 @@ export function DataTable<TData>({
           </div>
 
           {/* Paginación */}
-          {enablePagination && data.length > 0 && (
+          {enablePagination && totalItems > 0 && (
             <div className="mt-4 pt-4 border-t">
-              {/* Controles de paginación y selector */}
+              {/* Información de registros */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {/* Selector de cantidad por página */}
-                <div className="flex items-center gap-2 order-2 sm:order-1">
-                  <span className="text-sm text-muted-foreground">Mostrar:</span>
-                  <Select
-                    value={table.getState().pagination.pageSize.toString()}
-                    onValueChange={(value) => {
-                      table.setPageSize(Number(value));
-                    }}
-                  >
-                    <SelectTrigger className="w-16 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5</SelectItem>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span className="text-sm text-muted-foreground">
-                    por página
-                  </span>
+                {/* Información de registros y selector de página */}
+                <div className="flex items-center gap-4 order-2 sm:order-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Mostrar:</span>
+                    <Select
+                      value={currentPageSize.toString()}
+                      onValueChange={handlePageSizeChange}
+                    >
+                      <SelectTrigger className="w-16 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">por página</span>
+                  </div>
+                  
+                  {/* Mostrar información de registros */}
+                  <div className="text-sm text-muted-foreground">
+                    {serverPagination ? (
+                      <>
+                        Mostrando {((currentPage - 1) * currentPageSize) + 1} a {Math.min(currentPage * currentPageSize, totalItems)} de {totalItems} registros
+                      </>
+                    ) : (
+                      <>
+                        Mostrando {data.length} registros
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Controles de navegación */}
@@ -285,8 +347,8 @@ export function DataTable<TData>({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => table.setPageIndex(0)}
-                    disabled={!table.getCanPreviousPage()}
+                    onClick={handleFirstPage}
+                    disabled={!canPreviousPage}
                     className="h-8 w-8 p-0"
                   >
                     <ChevronsLeft className="h-4 w-4" />
@@ -295,8 +357,8 @@ export function DataTable<TData>({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
+                    onClick={handlePreviousPage}
+                    disabled={!canPreviousPage}
                     className="h-8 px-2"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -305,15 +367,14 @@ export function DataTable<TData>({
                   </Button>
 
                   <div className="flex items-center justify-center min-w-[100px] text-sm font-medium">
-                    Página {table.getState().pagination.pageIndex + 1} de{" "}
-                    {table.getPageCount()}
+                    Página {currentPage} de {totalPages}
                   </div>
 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
+                    onClick={handleNextPage}
+                    disabled={!canNextPage}
                     className="h-8 px-2"
                   >
                     <span className="hidden sm:inline mr-1">Siguiente</span>
@@ -323,8 +384,8 @@ export function DataTable<TData>({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                    disabled={!table.getCanNextPage()}
+                    onClick={handleLastPage}
+                    disabled={!canNextPage}
                     className="h-8 w-8 p-0"
                   >
                     <ChevronsRight className="h-4 w-4" />

@@ -28,8 +28,8 @@ export const useServices = (filters?: Partial<ServiceFilters>) => {
   return useQuery<ServicesResponse, Error>({
     queryKey: engagementKeys.list(filters),
     queryFn: () => engagementService.getServices(filters),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };
 

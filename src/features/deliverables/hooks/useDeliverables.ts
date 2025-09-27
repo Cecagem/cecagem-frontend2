@@ -21,7 +21,8 @@ export const useDeliverables = (filters?: IDeliverableFilters) => {
   return useQuery({
     queryKey: deliverableKeys.list(filters),
     queryFn: () => deliverableService.getAll(filters),
-    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };
 

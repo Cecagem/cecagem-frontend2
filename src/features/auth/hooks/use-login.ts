@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authService, useAuthStore, type LoginRequest } from "@/features/auth";
+import { UserRole } from "@/features/user/types/user.types";
 
 export function useLogin() {
   const { setSession, markHydrated } = useAuthStore();
@@ -24,7 +25,16 @@ export function useLogin() {
 
         toast.success("¡Bienvenido! Has iniciado sesión correctamente.");
 
-        const redirectUrl = searchParams.get("redirect") || "/dashboard";
+        // Determinar la URL de redirección basada en el rol del usuario
+        let redirectUrl = searchParams.get("redirect");
+        
+        if (!redirectUrl) {
+          if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
+            redirectUrl = "/dashboard";
+          } else {
+            redirectUrl = "/my-profile";
+          }
+        }
 
         setTimeout(() => {
           router.push(redirectUrl);

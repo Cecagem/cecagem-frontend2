@@ -5,7 +5,6 @@ import {
   ITransactionFilters,
   ITransactionsResponse,
   ITransactionResponse,
-  ITransactionStats,
 } from "../types/account.types";
 
 export class TransactionService {
@@ -56,43 +55,6 @@ export class TransactionService {
     return await cecagemApi.delete<{ message: string }>(
       `/transactions/${id}`
     );
-  }
-
-  async getStats(): Promise<ITransactionStats> {
-    try {
-      // Intentar obtener stats del endpoint específico
-      return await cecagemApi.get<ITransactionStats>("/transactions/stats");
-    } catch {
-      // Si el endpoint no existe, calcular localmente
-      console.warn("Endpoint /transactions/stats no disponible, calculando localmente");
-      return await this.calculateStatsLocally();
-    }
-  }
-
-  private async calculateStatsLocally(): Promise<ITransactionStats> {
-    // Obtener todas las transacciones
-    const response = await this.getAll();
-    const transactions = response.data || [];
-    
-    // Filtrar solo las transacciones completadas
-    const completedTransactions = transactions.filter(t => t.estado === "COMPLETED");
-    
-    const totalIncome = completedTransactions
-      .filter(t => t.tipo === "INCOME")
-      .reduce((sum, t) => sum + parseFloat(t.monto || "0"), 0);
-      
-    const totalExpenses = completedTransactions
-      .filter(t => t.tipo === "EXPENSE")
-      .reduce((sum, t) => sum + parseFloat(t.monto || "0"), 0);
-      
-    const totalBalance = totalIncome - totalExpenses;
-    
-    return {
-      totalBalance,
-      totalIncome,
-      totalExpenses,
-      transactionCount: completedTransactions.length,
-    };
   }
 }
 

@@ -18,9 +18,7 @@ import type {
 } from "../types/account.types";
 import { 
   TransactionType as TType, 
-  TransactionStatus as TStatus,
-  INCOME_CATEGORIES,
-  EXPENSE_CATEGORIES
+  TransactionStatus as TStatus
 } from "../types/account.types";
 
 interface AccountFormProps {
@@ -31,11 +29,6 @@ interface AccountFormProps {
   mode: "create" | "edit";
 }
 
-const getCategoryLabel = (category: string): string => {
-  // Como ahora las categorías son strings, no necesitamos mapeo complejo
-  return category;
-};
-
 const getStatusLabel = (status: TransactionStatus): string => {
   const labels: Record<TransactionStatus, string> = {
     [TStatus.PENDING]: "Pendiente",
@@ -45,13 +38,9 @@ const getStatusLabel = (status: TransactionStatus): string => {
   return labels[status];
 };
 
-const getAvailableCategories = (tipo: string) => {
-  return tipo === TType.INCOME ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-};
-
 const transactionSchema = z.object({
   tipo: z.string().min(1, "Seleccione un tipo de transacción"),
-  categoria: z.string().min(1, "Seleccione una categoría"),
+  categoria: z.string().min(1, "La categoría es requerida").max(50, "La categoría no puede exceder 50 caracteres"),
   currency: z.string().min(1, "Seleccione una moneda"),
   monto: z.string().min(1, "El monto es requerido").refine((val) => {
     const num = parseFloat(val);
@@ -75,7 +64,7 @@ export const AccountForm = ({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       tipo: transaction?.tipo || TType.INCOME,
-      categoria: transaction?.categoria || INCOME_CATEGORIES[0],
+      categoria: transaction?.categoria || "",
       currency: transaction?.currency || "PEN",
       monto: transaction?.monto || "",
       descripcion: transaction?.descripcion || "",
@@ -83,8 +72,6 @@ export const AccountForm = ({
       estado: transaction?.estado || TStatus.COMPLETED,
     },
   });
-
-  const watchedTipo = form.watch("tipo");
 
   // Actualizar el formulario cuando cambie la transacción
   useEffect(() => {
@@ -135,15 +122,7 @@ export const AccountForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Tipo *</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        // Reset category when type changes
-                        const newCategories = getAvailableCategories(value as TransactionType);
-                        form.setValue("categoria", newCategories[0]);
-                      }} 
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Seleccione un tipo" />
@@ -166,20 +145,13 @@ export const AccountForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Categoría *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Seleccione una categoría" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {getAvailableCategories(watchedTipo).map(category => (
-                          <SelectItem key={category} value={category}>
-                            {getCategoryLabel(category)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input
+                        placeholder="Ej: Salario, Comida, Transporte..."
+                        className="w-full"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

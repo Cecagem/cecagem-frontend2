@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -10,6 +11,13 @@ interface CompanySearchCardProps {
 }
 
 export const CompanySearchCard = ({ searchTerm, onSearch }: CompanySearchCardProps) => {
+  const [localSearch, setLocalSearch] = useState(searchTerm);
+
+  const handleSearchChange = (value: string) => {
+    setLocalSearch(value);
+    onSearch(value);
+  };
+
   return (
     <Card className="w-full">
       <CardContent className="">
@@ -18,8 +26,8 @@ export const CompanySearchCard = ({ searchTerm, onSearch }: CompanySearchCardPro
           <Input
             type="text"
             placeholder="Buscar empresas por nombre, RUC o razón social..."
-            value={searchTerm}
-            onChange={(e) => onSearch(e.target.value)}
+            value={localSearch}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 h-12 text-base"
           />
         </div>

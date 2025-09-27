@@ -14,7 +14,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell } from "lucide-react";
 
 // Importar hooks de accounting-clients
-import { useCompanies, useCompany } from "@/features/accounting-clients/hooks/use-accounting-clients";
+import { useCompanies} from "@/features/accounting-clients/hooks/use-accounting-clients";
+import { ICompany, ICompanyFilters } from "@/features/accounting-clients/types/accounting-clients.types";
 
 // Importar componentes de my-accounting-client
 import { 
@@ -24,36 +25,49 @@ import {
 } from "@/features/my-accounting-client/components";
 
 export default function MyAccountingClientPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<ICompany | null>(null);
   const [isDetailView, setIsDetailView] = useState(false);
-
-  // Hook para obtener empresas
-  const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies({
-    search: searchTerm.length >= 2 ? searchTerm : undefined,
-    limit: 50,
+  
+  // Estado para filtros con paginación
+  const [filters, setFilters] = useState<Partial<ICompanyFilters>>({
+    page: 1,
+    limit: 6,
+    search: undefined,
   });
 
-  // Hook para obtener empresa específica (solo cuando estamos en vista detalle)
-  const { data: selectedCompanyData, isLoading: isLoadingCompany } = useCompany(
-    selectedCompanyId || ""
-  );
+  // Hook para obtener empresas con filtros
+  const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(filters);
 
   const userCompanies = companiesData?.data || [];
-  const selectedCompany = selectedCompanyData || null;
+  const paginationMeta = companiesData?.pagination;
 
   const handleSearch = (search: string) => {
-    setSearchTerm(search);
+    setFilters(prev => ({
+      ...prev,
+      search: search.length >= 2 ? search : undefined,
+      page: 1
+    }));
+  };
+
+  const handlePageChange = (page: number) => {
+    setFilters(prev => ({ ...prev, page }));
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setFilters(prev => ({ ...prev, limit: pageSize, page: 1 }));
   };
 
   const handleCompanyClick = (companyId: string) => {
-    setSelectedCompanyId(companyId);
-    setIsDetailView(true);
+    const company = userCompanies.find(c => c.id === companyId);
+    if (company) {
+      setSelectedCompany(company);
+      setIsDetailView(true);
+    }
   };
 
   const handleBackToList = () => {
     setIsDetailView(false);
-    setSelectedCompanyId(null);
+    setSelectedCompany(null);
   };
 
   return (
@@ -90,15 +104,19 @@ export default function MyAccountingClientPage() {
           <>
             {/* Buscador */}
             <CompanySearchCard 
-              searchTerm={searchTerm}
+              searchTerm={filters.search || ""}
               onSearch={handleSearch}
             />
 
-            {/* Lista de empresas */}
+            {/* Lista de empresas con paginación */}
             <CompanyCards
               companies={userCompanies}
               onCompanyClick={handleCompanyClick}
               isLoading={isLoadingCompanies}
+              paginationMeta={paginationMeta}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              filters={filters}
             />
           </>
         ) : (
@@ -106,7 +124,7 @@ export default function MyAccountingClientPage() {
           <CompanyDetailView
             company={selectedCompany}
             onBack={handleBackToList}
-            isLoading={isLoadingCompany}
+            isLoading={false}
           />
         )}
       </div>
