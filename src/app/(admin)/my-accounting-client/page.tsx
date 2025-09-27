@@ -14,8 +14,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell } from "lucide-react";
 
 // Importar hooks de accounting-clients
-import { useCompanies} from "@/features/accounting-clients/hooks/use-accounting-clients";
-import { ICompany, ICompanyFilters } from "@/features/accounting-clients/types/accounting-clients.types";
+import { useCompanies, useCompany } from "@/features/accounting-clients/hooks/use-accounting-clients";
+import { ICompanyFilters } from "@/features/accounting-clients/types/accounting-clients.types";
 
 // Importar componentes de my-accounting-client
 import { 
@@ -25,7 +25,7 @@ import {
 } from "@/features/my-accounting-client/components";
 
 export default function MyAccountingClientPage() {
-  const [selectedCompany, setSelectedCompany] = useState<ICompany | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [isDetailView, setIsDetailView] = useState(false);
   
   // Estado para filtros con paginación
@@ -38,8 +38,14 @@ export default function MyAccountingClientPage() {
   // Hook para obtener empresas con filtros
   const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(filters);
 
+  // Hook para obtener la empresa seleccionada (se actualiza automáticamente)
+  const { data: selectedCompanyData, isLoading: isLoadingSelectedCompany } = useCompany(selectedCompanyId || "");
+
   const userCompanies = companiesData?.data || [];
   const paginationMeta = companiesData?.pagination;
+  
+  // Convertir undefined a null para compatibilidad con CompanyDetailView
+  const selectedCompany = selectedCompanyData || null;
 
   const handleSearch = (search: string) => {
     setFilters(prev => ({
@@ -58,16 +64,13 @@ export default function MyAccountingClientPage() {
   };
 
   const handleCompanyClick = (companyId: string) => {
-    const company = userCompanies.find(c => c.id === companyId);
-    if (company) {
-      setSelectedCompany(company);
-      setIsDetailView(true);
-    }
+    setSelectedCompanyId(companyId);
+    setIsDetailView(true);
   };
 
   const handleBackToList = () => {
     setIsDetailView(false);
-    setSelectedCompany(null);
+    setSelectedCompanyId(null);
   };
 
   return (
@@ -124,7 +127,7 @@ export default function MyAccountingClientPage() {
           <CompanyDetailView
             company={selectedCompany}
             onBack={handleBackToList}
-            isLoading={false}
+            isLoading={isLoadingSelectedCompany}
           />
         )}
       </div>

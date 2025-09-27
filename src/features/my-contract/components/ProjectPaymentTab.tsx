@@ -144,6 +144,7 @@ export const ProjectPaymentTab = ({ contract }: ProjectPaymentTabProps) => {
                         <Button
                           size="sm"
                           variant={isPaid ? "outline" : "default"}
+                          disabled={isPaid || hasPendingPayments}
                           onClick={() => handleUploadPayment(installment)}
                           className="flex items-center gap-1 w-full sm:w-auto"
                         >

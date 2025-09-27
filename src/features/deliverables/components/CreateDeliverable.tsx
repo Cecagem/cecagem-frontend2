@@ -20,24 +20,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCreateDeliverable } from "../hooks/useDeliverables";
-import { Service } from "@/features/engagements/types/engagements.type";
+import { SearchableSelect } from "@/components/shared/SearchableSelect";
+import { useCreateDeliverable, useAllServicesForSelect } from "../hooks/useDeliverables";
 
 interface CreateDeliverableDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  services: Service[];
 }
 
 const formSchema = z.object({
@@ -52,10 +44,10 @@ type FormData = z.infer<typeof formSchema>;
 export const CreateDeliverableDialog = ({
   open,
   onOpenChange,
-  services,
 }: CreateDeliverableDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createMutation = useCreateDeliverable();
+  const { data: serviceOptions = [], isLoading: servicesLoading } = useAllServicesForSelect();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -114,23 +106,17 @@ export const CreateDeliverableDialog = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Servicio *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un servicio" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {services.map((service) => (
-                            <SelectItem key={service.id} value={service.id}>
-                              {service.name} - ${service.basePrice}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableSelect
+                          options={serviceOptions}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Selecciona un servicio"
+                          searchPlaceholder="Buscar servicio..."
+                          emptyMessage="No se encontraron servicios"
+                          disabled={servicesLoading}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -209,7 +195,7 @@ export const CreateDeliverableDialog = ({
               </Button>
               <Button 
                 type="submit" 
-                disabled={isSubmitting}
+                disabled={isSubmitting || servicesLoading}
                 className="w-full sm:w-auto"
               >
                 {isSubmitting ? "Creando..." : "Crear Entregable"}

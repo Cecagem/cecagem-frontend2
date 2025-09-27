@@ -101,27 +101,28 @@ export const ContractFormStep3 = ({
 
   // Inicializar pago de colaborador externo cuando cambie la fecha final
   useEffect(() => {
-    if (isExternalCollaborator && collaboratorId && contractName && watchedEndDate) {
-      if (collaboratorPayments.length === 0) {
+  if (isExternalCollaborator && collaboratorId && contractName && watchedEndDate) {
+    setCollaboratorPayments(prevPayments => {
+      if (prevPayments.length === 0) {
         const newCollaboratorPayment: CollaboratorPaymentData = {
           userId: collaboratorId,
           amount: 0,
           dueDate: watchedEndDate,
           description: `Pago colaborador - ${contractName}`,
         };
-        setCollaboratorPayments([newCollaboratorPayment]);
         form.setValue("collaboratorPayments", [newCollaboratorPayment]);
+        return [newCollaboratorPayment];
       } else {
-        // Actualizar la fecha de vencimiento si ya existe
-        const updatedPayments = collaboratorPayments.map(payment => ({
+        const updatedPayments = prevPayments.map(payment => ({
           ...payment,
           dueDate: watchedEndDate,
         }));
-        setCollaboratorPayments(updatedPayments);
         form.setValue("collaboratorPayments", updatedPayments);
+        return updatedPayments;
       }
-    }
-  }, [isExternalCollaborator, collaboratorId, contractName, watchedEndDate, form]);
+    });
+  }
+}, [isExternalCollaborator, collaboratorId, contractName, watchedEndDate, form]);
 
   // Calcular cuotas automáticamente
   const calculateInstallments = useCallback(() => {

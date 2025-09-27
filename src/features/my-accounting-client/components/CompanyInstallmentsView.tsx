@@ -78,7 +78,7 @@ export const CompanyInstallmentsView = ({ company }: CompanyInstallmentsViewProp
     }
     if (hasPending) {
       return { 
-        status: "pending", 
+        status: "verification", 
         label: "En Verificación", 
         icon: Clock, 
         variant: "outline" as const,
@@ -160,6 +160,9 @@ export const CompanyInstallmentsView = ({ company }: CompanyInstallmentsViewProp
               const StatusIcon = status.icon;
               const overdue = isOverdue(installment.dueDate) && status.status === "pending";
               
+              // Determinar si el botón debe estar deshabilitado
+              const isUploadDisabled = status.status === "completed" || status.status === "verification";
+              
               return (
                 <div
                   key={installment.id}
@@ -213,16 +216,16 @@ export const CompanyInstallmentsView = ({ company }: CompanyInstallmentsViewProp
                         </Button>
                       )}
                       
-                      {status.status !== "completed" && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleUploadPayment(installment)}
-                          className="w-full sm:w-auto"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Subir Pago
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        variant={isUploadDisabled ? "outline" : "default"}
+                        onClick={() => handleUploadPayment(installment)}
+                        disabled={isUploadDisabled}
+                        className="w-full sm:w-auto"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {status.status === "verification" ? "En Verificación" : "Subir Pago"}
+                      </Button>
                     </div>
                   </div>
                 </div>

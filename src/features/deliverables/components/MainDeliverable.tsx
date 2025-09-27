@@ -187,14 +187,12 @@ export const DeliverablesPage = () => {
       <CreateDeliverableDialog
         open={createDialogOpen}
         onOpenChange={handleCloseCreate}
-        services={services}
       />
 
       {selectedDeliverable && (
         <>
           <EditDeliverableDialog
             deliverable={selectedDeliverable}
-            services={services}
             open={editDialogOpen}
             onOpenChange={handleCloseEdit}
           />

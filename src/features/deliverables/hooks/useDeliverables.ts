@@ -46,6 +46,13 @@ export const useCreateDeliverable = () => {
         response.message || "El entregable se ha creado correctamente"
       );
       queryClient.invalidateQueries({ queryKey: deliverableKeys.lists() });
+      // Invalidar también las queries de entregables por servicio que usa ContractFormStep2
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          return query.queryKey[0] === "engagements" && 
+                 query.queryKey[1] === "deliverables";
+        }
+      });
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -69,6 +76,13 @@ export const useUpdateDeliverable = () => {
       );
       queryClient.invalidateQueries({ queryKey: deliverableKeys.lists() });
       queryClient.invalidateQueries({ queryKey: deliverableKeys.detail(id) });
+      // Invalidar también las queries de entregables por servicio que usa ContractFormStep2
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          return query.queryKey[0] === "engagements" && 
+                 query.queryKey[1] === "deliverables";
+        }
+      });
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -90,6 +104,13 @@ export const useDeleteDeliverable = () => {
         response.message || "El entregable se ha eliminado correctamente"
       );
       queryClient.invalidateQueries({ queryKey: deliverableKeys.lists() });
+      // Invalidar también las queries de entregables por servicio que usa ContractFormStep2
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          return query.queryKey[0] === "engagements" && 
+                 query.queryKey[1] === "deliverables";
+        }
+      });
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -101,6 +122,24 @@ export const useDeleteDeliverable = () => {
   });
 };
 
+// Actualizado para traer TODOS los servicios con un límite alto
+export const useAllServicesForSelect = () => {
+  return useQuery({
+    queryKey: ["all-services-for-select"],
+    queryFn: () => engagementService.getServices({ limit: 100 }), // Límite alto para traer todos
+    staleTime: 10 * 60 * 1000,
+    select: (data) => {
+      // Transformar los datos para el SearchableSelect
+      return data.data.map(service => ({
+        value: service.id,
+        label: `${service.name} - $${service.basePrice}`,
+        disabled: !service.isActive // Los inactivos aparecen pero deshabilitados
+      }));
+    }
+  });
+};
+
+// Mantener el hook original para compatibilidad
 export const useServicesForSelect = () => {
   return useQuery({
     queryKey: ["services-for-select"],

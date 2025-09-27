@@ -2,9 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { paymentService } from "../services/payment.service";
 import type { ICreatePaymentDto} from "../types/payment.types";
 import { useToast } from "@/hooks/use-toast";
-import { ACCOUNTING_CLIENTS_QUERY_KEYS } from "@/features/accounting-clients/hooks/use-accounting-clients";
 
-// Query keys para cache de pagos
+// Query keys para pagos
 export const PAYMENT_QUERY_KEYS = {
   all: ["accounting-payments"] as const,
   lists: () => [...PAYMENT_QUERY_KEYS.all, "list"] as const,
@@ -28,22 +27,19 @@ export const useCreatePayment = () => {
       // Invalidar todas las queries de pagos
       await queryClient.invalidateQueries({ queryKey: PAYMENT_QUERY_KEYS.all });
       
-      // Invalidar todas las queries de empresas para actualizar el estado general
-      await queryClient.invalidateQueries({ queryKey: ACCOUNTING_CLIENTS_QUERY_KEYS.companies });
-      
-      // Invalidar queries específicas de empresas individuales
+      // Invalidar TODAS las queries de empresas (incluyendo las que tienen filtros)
       await queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          return query.queryKey[0] === 'accounting-clients' && 
-                 query.queryKey.length >= 2;
-        }
-      });
-      
-      // Refrescar inmediatamente todas las queries de empresas
-      await queryClient.refetchQueries({ 
         predicate: (query) => {
           return query.queryKey[0] === 'accounting-clients';
         }
+      });
+      
+      // Refrescar inmediatamente todas las queries de empresas activas
+      await queryClient.refetchQueries({ 
+        predicate: (query) => {
+          return query.queryKey[0] === 'accounting-clients';
+        },
+        type: 'active'
       });
       
       // Mostrar notificación de éxito
