@@ -472,7 +472,7 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                                 <CardContent>
                                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div className="flex items-center gap-3">
-                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${isPaid ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${isPaid ? 'bg-blue-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                                         {index + 1}
                                       </div>
                                       <div className="flex-1 min-w-0">

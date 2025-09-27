@@ -19,6 +19,7 @@ import { useContract } from "@/features/contract/hooks/useContracts";
 import { useAuthStore } from "@/features/auth";
 import { ProjectPaymentTab } from "./ProjectPaymentTab";
 import { ProjectDeliverablesTab } from "./ProjectDeliverablesTab";
+import { ProjectMyPaymentTab } from "./ProjectMyPaymentTab";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -193,23 +194,7 @@ export const ProjectDetailView = ({
 
         {isExternalCollaborator && (
           <TabsContent value="my-payments">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Mis Pagos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <DollarSign className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Mis Pagos</h3>
-                  <p className="text-muted-foreground">
-                    Aquí irán mis pagos que CECAGEM me pagará por este proyecto
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <ProjectMyPaymentTab contract={contract} />
           </TabsContent>
         )}
       </Tabs>

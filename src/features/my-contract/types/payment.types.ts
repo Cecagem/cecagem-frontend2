@@ -46,5 +46,13 @@ export interface IUpdatePaymentDto {
 // Interface para la respuesta de actualización de pago
 export interface IUpdatePaymentResponse {
   id: string;
+  installmentId: string;
+  amount: number;
+  currency: string;
   status: PaymentStatus;
+  method: PaymentMethod;
+  reference: string | null;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
