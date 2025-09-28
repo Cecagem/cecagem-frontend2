@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Edit, Trash2, Eye, RefreshCw, Settings } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, RefreshCw, Settings, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useServices, useDeleteService } from "../hooks/useEngagements";
 import {
   getServiceStatusColor,
@@ -56,6 +56,10 @@ export function ServicesPage() {
     refetch,
   } = useServices(filters);
   const deleteServiceMutation = useDeleteService();
+
+  // Get pagination data - Fixed to use meta instead of pagination
+  const services = servicesResponse?.data || [];
+  const pagination = servicesResponse?.meta;
 
   const handleFiltersChange = (
     newFilters: Partial<IServiceFilters & { isActive?: boolean | undefined }>
@@ -105,6 +109,43 @@ export function ServicesPage() {
       });
     }
   };
+
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    handleFiltersChange({ page: newPage });
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    handleFiltersChange({ page: 1, limit: newPageSize });
+  };
+
+  const handleFirstPage = () => {
+    if (pagination && pagination.page > 1) {
+      handlePageChange(1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination && pagination.page > 1) {
+      handlePageChange(pagination.page - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination && pagination.page < pagination.totalPages) {
+      handlePageChange(pagination.page + 1);
+    }
+  };
+
+  const handleLastPage = () => {
+    if (pagination && pagination.page < pagination.totalPages) {
+      handlePageChange(pagination.totalPages);
+    }
+  };
+
+  // Pagination state calculations
+  const canPreviousPage = pagination ? (pagination.hasPrevious !== undefined ? pagination.hasPrevious : pagination.page > 1) : false;
+  const canNextPage = pagination ? (pagination.hasNext !== undefined ? pagination.hasNext : pagination.page < pagination.totalPages) : false;
 
   const ServicesSkeleton = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -216,9 +257,6 @@ export function ServicesPage() {
       </div>
     );
   }
-
-  const services = servicesResponse?.data || [];
-  const pagination = servicesResponse?.pagination;
 
   return (
     <div className="space-y-6">
@@ -340,37 +378,94 @@ export function ServicesPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="text-sm text-muted-foreground">
-            Mostrando {((pagination.page - 1) * filters.limit) + 1} a{' '}
-            {Math.min(pagination.page * filters.limit, pagination.total)} de {pagination.total} servicios
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                handleFiltersChange({ page: filters.page - 1 })
-              }
-              disabled={pagination.page <= 1}
-            >
-              Anterior
-            </Button>
-            <span className="flex items-center px-3 text-sm">
-              {pagination.page} de {pagination.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                handleFiltersChange({ page: filters.page + 1 })
-              }
-              disabled={pagination.page >= pagination.totalPages}
-            >
-              Siguiente
-            </Button>
+      {/* Enhanced Pagination - Three Columns Responsive */}
+      {pagination && services.length > 0 && (
+        <div className="pt-4 border-t">
+          {/* Single row with three columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
+            {/* Left column - Page size selector */}
+            <div className="flex items-center justify-center sm:justify-start gap-2 text-sm order-2 sm:order-1">
+              <span className="text-muted-foreground">Mostrar:</span>
+              <select
+                value={filters.limit}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                className="h-8 px-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-muted-foreground">por página</span>
+            </div>
+            
+            {/* Center column - Navigation buttons */}
+            <div className="flex items-center justify-center gap-1 order-1 sm:order-2">
+              {/* First page button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleFirstPage}
+                disabled={!canPreviousPage}
+                className="h-8 w-8 p-0"
+                title="Primera página"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              
+              {/* Previous page button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={!canPreviousPage}
+                className="h-8 px-3"
+                title="Página anterior"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                <span className="hidden md:inline">Anterior</span>
+              </Button>
+              
+              {/* Page indicator */}
+              <div className="flex items-center px-3">
+                <span className="text-sm font-medium whitespace-nowrap">
+                  {pagination.page} / {pagination.totalPages || Math.ceil(pagination.total / filters.limit)}
+                </span>
+              </div>
+              
+              {/* Next page button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={!canNextPage}
+                className="h-8 px-3"
+                title="Página siguiente"
+              >
+                <span className="hidden md:inline">Siguiente</span>
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+              
+              {/* Last page button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLastPage}
+                disabled={!canNextPage}
+                className="h-8 w-8 p-0"
+                title="Última página"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Right column - Info text */}
+            <div className="flex justify-center sm:justify-end order-3">
+              <div className="text-sm text-muted-foreground text-center sm:text-right">
+                Mostrando {((pagination.page - 1) * filters.limit) + 1} a{' '}
+                {Math.min(pagination.page * filters.limit, pagination.total)} de {pagination.total}
+              </div>
+            </div>
           </div>
         </div>
       )}

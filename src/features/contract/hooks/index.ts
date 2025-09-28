@@ -7,3 +7,4 @@ export {
   useUpdateContract,
   CONTRACT_QUERY_KEYS,
 } from './useContracts';
+export * from './usePayments';

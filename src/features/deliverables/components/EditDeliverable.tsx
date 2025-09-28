@@ -20,24 +20,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useUpdateDeliverable } from "../hooks/useDeliverables";
+import { SearchableSelect } from "@/components/shared/SearchableSelect";
+import { useUpdateDeliverable, useAllServicesForSelect } from "../hooks/useDeliverables";
 import { IDeliverable } from "../types/deliverable.types";
-import { Service } from "@/features/engagements/types/engagements.type";
 
 interface EditDeliverableDialogProps {
   deliverable: IDeliverable;
-  services: Service[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -53,12 +45,12 @@ type FormData = z.infer<typeof formSchema>;
 
 export const EditDeliverableDialog = ({
   deliverable,
-  services,
   open,
   onOpenChange,
 }: EditDeliverableDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateMutation = useUpdateDeliverable();
+  const { data: serviceOptions = [], isLoading: servicesLoading } = useAllServicesForSelect();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -121,14 +113,23 @@ export const EditDeliverableDialog = ({
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">Información básica</h3>
               
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-1">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="serviceId"
                   render={({ field }) => (
                     <FormItem>
+                      <FormLabel>Servicio *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre del entregable" {...field} />
+                        <SearchableSelect
+                          options={serviceOptions}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Selecciona un servicio"
+                          searchPlaceholder="Buscar servicio..."
+                          emptyMessage="No se encontraron servicios"
+                          disabled={servicesLoading}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -137,23 +138,13 @@ export const EditDeliverableDialog = ({
 
                 <FormField
                   control={form.control}
-                  name="serviceId"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un servicio" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {services.map((service) => (
-                            <SelectItem key={service.id} value={service.id}>
-                              {service.name} - ${service.basePrice}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Nombre *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre del entregable" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -165,6 +156,7 @@ export const EditDeliverableDialog = ({
                 name="description"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel>Descripción *</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Descripción del entregable..."
@@ -218,7 +210,7 @@ export const EditDeliverableDialog = ({
           </Button>
           <Button 
             type="submit" 
-            disabled={isSubmitting}
+            disabled={isSubmitting || servicesLoading}
             className="w-full sm:w-auto"
             onClick={form.handleSubmit(onSubmit)}
           >

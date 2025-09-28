@@ -35,21 +35,35 @@ export function MainUsers() {
     refetch 
   } = useUsers(filters);
 
-  // Obtener estadísticas (no se usan directamente, UserStatsCards tiene su propio hook)
-  // const { 
-  //   data: stats, 
-  //   isLoading: isLoadingStats 
-  // } = useUsersStats();
-
   const users = usersData?.data || [];
-  const meta = usersData ? {
-    page: usersData.page,
-    limit: usersData.limit,
-    total: usersData.total,
-    totalPages: usersData.totalPages
-  } : undefined;
+  const paginationMeta = usersData?.meta;
+
+  // Handlers para paginación del servidor
+  const handlePageChange = useCallback((page: number) => {
+    setFilters(prev => ({
+      ...prev,
+      page
+    }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((pageSize: number) => {
+    setFilters(prev => ({
+      ...prev,
+      limit: pageSize,
+      page: 1 // Reset a la primera página al cambiar el tamaño
+    }));
+  }, []);
 
   // Handlers para filtros
+  const handleFiltersChange = useCallback((newFilters: Partial<IUserFilters>) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      page: 1, // Reset página al cambiar filtros
+      type: 'users_system', // Mantener siempre el tipo
+    }));
+  }, []);
+
   const handleClearFilters = useCallback(() => {
     setFilters({
       page: 1,
@@ -126,14 +140,7 @@ export function MainUsers() {
       {/* Filtros */}
       <UserFilters
         filters={filters}
-        onFiltersChange={(newFilters) => {
-          setFilters(prev => ({
-            ...prev,
-            ...newFilters,
-            page: 1, // Reset página al cambiar filtros
-            type: 'users_system', // Mantener siempre el tipo
-          }));
-        }}
+        onFiltersChange={handleFiltersChange}
         onClearFilters={handleClearFilters}
       />
 
@@ -142,17 +149,12 @@ export function MainUsers() {
         users={users}
         isLoading={isLoading}
         onEditUser={handleEditUser}
+        // Props para paginación del servidor
+        serverPagination={true}
+        paginationMeta={paginationMeta}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
       />
-
-      {/* Paginación */}
-      {meta && meta.totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="text-sm text-muted-foreground">
-            Mostrando {((meta.page - 1) * meta.limit) + 1} a{' '}
-            {Math.min(meta.page * meta.limit, meta.total)} de {meta.total} usuarios
-          </div>
-        </div>
-      )}
 
       {/* Formulario de creación */}
       <UserForm

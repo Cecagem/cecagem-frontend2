@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "../utils";
-import { Eye, CheckCircle } from "lucide-react";
+import { Eye, CheckCircle, X, Upload, MessageSquare } from "lucide-react";
 import { useUpdateDeliverable } from '../hooks';
 import { PaymentModal } from './PaymentModal';
+import { RejectDeliverableModal } from './RejectDeliverableModal';
+import { UploadPaymentModal } from './UploadPaymentModal';
 import type { IContract, IContractPayment } from "../types";
 
 interface ContractExpandedViewProps {
@@ -22,10 +24,34 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
     open: boolean;
     payments: IContractPayment[];
     description: string;
+    isCollaboratorPayment?: boolean;
   }>({
     open: false,
     payments: [],
     description: "",
+    isCollaboratorPayment: false,
+  });
+
+  const [rejectModal, setRejectModal] = useState<{
+    open: boolean;
+    contractId: string;
+    deliverableId: string;
+    deliverableName: string;
+  }>({
+    open: false,
+    contractId: "",
+    deliverableId: "",
+    deliverableName: "",
+  });
+
+  const [uploadPaymentModal, setUploadPaymentModal] = useState<{
+    open: boolean;
+    contractId: string;
+    installmentId?: string;
+  }>({
+    open: false,
+    contractId: "",
+    installmentId: "",
   });
 
   const updateDeliverableMutation = useUpdateDeliverable();
@@ -36,6 +62,18 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
       open: false,
       payments: [],
       description: "",
+      isCollaboratorPayment: false,
+    });
+    setRejectModal({
+      open: false,
+      contractId: "",
+      deliverableId: "",
+      deliverableName: "",
+    });
+    setUploadPaymentModal({
+      open: false,
+      contractId: "",
+      installmentId: "",
     });
   }, [contract.id]);
 
@@ -48,11 +86,12 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
   };
 
   // Handlers para acciones
-  const handleViewPayments = (payments: IContractPayment[], description: string) => {
+  const handleViewPayments = (payments: IContractPayment[], description: string, isCollaboratorPayment = false) => {
     setPaymentModal({
       open: true,
       payments,
       description,
+      isCollaboratorPayment,
     });
   };
 
@@ -67,6 +106,53 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
     } catch (error) {
       console.error('Error al verificar entregable:', error);
     }
+  };
+
+  const handleRejectDeliverable = (contractId: string, deliverableId: string, deliverableName: string) => {
+    setRejectModal({
+      open: true,
+      contractId,
+      deliverableId,
+      deliverableName,
+    });
+  };
+
+  const handleConfirmReject = async (notes: string) => {
+    try {
+      await updateDeliverableMutation.mutateAsync({
+        contractId: rejectModal.contractId,
+        deliverableId: rejectModal.deliverableId,
+        data: { 
+          isCompleted: false,
+          isAproved: false,
+          notes 
+        }
+      });
+      setRejectModal({
+        open: false,
+        contractId: "",
+        deliverableId: "",
+        deliverableName: "",
+      });
+    } catch (error) {
+      console.error('Error al rechazar entregable:', error);
+    }
+  };
+
+  // Función para verificar si hay un colaborador externo
+  const hasExternalCollaborator = () => {
+    return contract.contractUsers?.some(
+      contractUser => contractUser.user.role === 'COLLABORATOR_EXTERNAL'
+    ) || false;
+  };
+
+  // Handler para abrir modal de subir pago
+  const handleUploadPayment = (installmentId: string) => {
+    setUploadPaymentModal({
+      open: true,
+      contractId: contract.id,
+      installmentId: installmentId,
+    });
   };
 
   return (
@@ -244,10 +330,11 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
 
         {/* TAB 2: PAGOS Y CUOTAS */}
         <TabsContent value="payments" className="space-y-4">
+          {/* Cuotas del Contrato */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Cuotas de Pago</span>
+                <span>Cuotas de Pago del Contrato</span>
                 <Badge variant="secondary">
                   {contract.installments?.length || 0} cuotas
                 </Badge>
@@ -270,15 +357,17 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                     return (
                       <Card key={installment.id} className={`${isPaid ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-muted-foreground'}`}>
                         <CardContent>
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-center gap-3">
                               <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${isPaid ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                                 {index + 1}
                               </div>
-                              <div>
-                                <div className="font-medium">{installment.description}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{installment.description}</div>
                                 <div className="text-sm text-muted-foreground">
-                                  Vence: {formatDate(installment.dueDate)} • {formatCurrency(installment.amount, contract.currency)}
+                                  <span className="block sm:inline">Vence: {formatDate(installment.dueDate)}</span>
+                                  <span className="hidden sm:inline"> • </span>
+                                  <span className="block sm:inline">{formatCurrency(installment.amount, contract.currency)}</span>
                                 </div>
                                 {isPaid && (
                                   <div className="text-sm text-primary font-medium">
@@ -293,22 +382,36 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                               <Badge variant={isPaid ? "default" : hasPendingPayments ? "outline" : "secondary"} 
-                                     className={hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : ""}>
+                                     className={`self-start sm:self-center ${hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : ""}`}>
                                 {isPaid ? "Pagado" : hasPendingPayments ? "En Verificación" : "Pendiente"}
                               </Badge>
                               
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={!hasPayments}
-                                onClick={() => handleViewPayments(installment.payments || [], installment.description)}
-                                className="gap-2"
-                              >
-                                <Eye className="h-4 w-4" />
-                                Ver Pagos
-                              </Button>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={!hasPayments}
+                                  onClick={() => handleViewPayments(installment.payments || [], installment.description, false)} // Cambiar a false
+                                  className="gap-2 w-full sm:w-auto text-xs"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                  <span className="sm:inline">Ver Pagos</span>
+                                </Button>
+
+                                {hasExternalCollaborator() && (
+                                  <Button
+                                    size="sm"
+                                    disabled={isPaid}
+                                    onClick={() => handleUploadPayment(installment.id)}
+                                    className="gap-2 w-full sm:w-auto"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    <span className="sm:inline">Subir Pago</span>
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </CardContent>
@@ -319,6 +422,112 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
               )}
             </CardContent>
           </Card>
+
+          {/* Pagos a Colaboradores */}
+          {hasExternalCollaborator() && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Cuota de Pago al Colaborador</span>
+                  <Badge variant="secondary">
+                    {contract.contractUsers?.reduce((total, cu) => 
+                      total + (cu.installments?.length || 0), 0) || 0} pagos
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!contract.contractUsers?.some(cu => cu.installments && cu.installments.length > 0) ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No hay pagos de colaboradores registrados para este contrato.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {contract.contractUsers
+                      .filter(cu => cu.user.role === 'COLLABORATOR_EXTERNAL' && cu.installments && cu.installments.length > 0)
+                      .map((contractUser) => (
+                        <div key={contractUser.id} className="space-y-3">
+                          <div className="flex items-center gap-3 pb-2 border-b">
+                            <div className="h-8 w-8 bg-blue-500/10 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-600">
+                                {contractUser.user.profile.firstName.charAt(0)}{contractUser.user.profile.lastName.charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">
+                                {contractUser.user.profile.firstName} {contractUser.user.profile.lastName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Colaborador Externo</p>
+                            </div>
+                          </div>
+                          
+                          {contractUser.installments?.map((installment, index) => {
+                            const approvedAmount = installment.payments?.reduce((sum, p) => 
+                              p.status === 'COMPLETED' ? sum + (p.amount || 0) : sum, 0) || 0;
+                            const isPaid = approvedAmount >= installment.amount;
+                            const hasPayments = installment.payments && installment.payments.length > 0;
+                            const hasPendingPayments = installment.payments?.some(p => p.status === 'PENDING') || false;
+
+                            return (
+                              <Card key={installment.id} className={`ml-4 ${isPaid ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-muted-foreground'}`}> 
+                                <CardContent>
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${isPaid ? 'bg-blue-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                                        {index + 1}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium truncate text-sm">{installment.description}</div>
+                                        <div className="text-sm text-muted-foreground">
+                                          <span className="block sm:inline">Vence: {formatDate(installment.dueDate)}</span>
+                                          <span className="hidden sm:inline"> • </span>
+                                          <span className="block sm:inline">{formatCurrency(installment.amount, contract.currency)}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                                      <Badge variant={isPaid ? "default" : hasPendingPayments ? "outline" : "secondary"} 
+                                             className={`self-start sm:self-center text-xs ${isPaid ? "bg-blue-700" : ""} ${hasPendingPayments && !isPaid ? "border-yellow-500 text-yellow-600" : ""}`}>
+                                        {isPaid ? "Pagado" : hasPendingPayments ? "En Verificación" : "Pendiente"}
+                                      </Badge>
+                                      
+                                      <div className="flex flex-col sm:flex-row gap-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          disabled={!hasPayments}
+                                          onClick={() => handleViewPayments(installment.payments || [], 
+                                            `Pago colaborador - ${contractUser.user.profile.firstName}`, 
+                                            true)}
+                                          className="gap-2 w-full sm:w-auto text-xs"
+                                        >
+                                          <Eye className="h-3 w-3" />
+                                          <span className="sm:inline">Ver Pagos</span>
+                                        </Button>
+
+                                        <Button
+                                          size="sm"
+                                          disabled={isPaid}
+                                          onClick={() => handleUploadPayment(installment.id)}
+                                          className="gap-2 w-full sm:w-auto"
+                                        >
+                                          <Upload className="h-3 w-3" />
+                                          <span className="sm:inline">Subir Pago</span>
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* TAB 3: ENTREGABLES */}
@@ -345,19 +554,19 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                     const isCompleted = deliverable.isCompleted;
 
                     return (
-                      <Card key={deliverable.id} className={`${isApproved ? 'border-l-4 border-l-green-500' : isCompleted ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-muted-foreground'}`}>
+                      <Card key={deliverable.id} className={`${isApproved ? 'border-l-4 border-l-green-500/50' : isCompleted ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-muted-foreground'}`}>
                         <CardContent>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                                isApproved ? 'bg-green-500 text-white' : 
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${
+                                isApproved ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 
                                 isCompleted ? 'bg-primary text-primary-foreground' : 
                                 'bg-muted text-muted-foreground'
                               }`}>
                                 {index + 1}
                               </div>
-                              <div>
-                                <div className="font-medium">{deliverable.deliverable?.name || `Entregable #${index + 1}`}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{deliverable.deliverable?.name || `Entregable #${index + 1}`}</div>
                                 <div className="text-sm text-muted-foreground">
                                   {deliverable.deliverable?.description || 'Sin descripción'}
                                 </div>
@@ -370,37 +579,62 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                                   </div>
                                 )}
                                 {deliverable.notes && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    {deliverable.notes}
+                                  <div className="mt-2 p-2 rounded-md bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 flex items-start gap-2">
+                                    <MessageSquare className="h-4 w-4 text-primary shrink-0" />
+                                    <div className="text-xs break-words">
+                                      <span className="font-semibold text-primary">Observación: </span>
+                                      <span className="text-muted-foreground">{deliverable.notes}</span>
+                                    </div>
                                   </div>
                                 )}
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-3">
-                              <div className="flex gap-2">
-                                <Badge variant={isCompleted ? "default" : "secondary"}>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Badge variant={isCompleted ? "default" : "secondary"} className="w-fit">
                                   {isCompleted ? "Completado" : "En Progreso"}
                                 </Badge>
                                 {isApproved && (
-                                  <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                                  <Badge variant="default" className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 w-fit">
                                     Aprobado
                                   </Badge>
                                 )}
                               </div>
                               
-                              <Button
-                                size="sm"
-                                variant={canVerify ? "default" : "outline"}
-                                disabled={!canVerify || updateDeliverableMutation.isPending}
-                                onClick={() => handleVerifyDeliverable(contract.id, deliverable.deliverableId)}
-                                className="gap-2"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                                {updateDeliverableMutation.isPending ? 'Verificando...' : 
-                                 canVerify ? 'Aprobar' : 
-                                 isApproved ? 'Aprobado' : 'No Disponible'}
-                              </Button>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  size="sm"
+                                  variant={canVerify ? "default" : "outline"}
+                                  disabled={!canVerify || updateDeliverableMutation.isPending}
+                                  onClick={() => handleVerifyDeliverable(contract.id, deliverable.deliverableId)}
+                                  className="gap-2 w-full sm:w-auto"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span className="sm:inline">
+                                    {updateDeliverableMutation.isPending ? 'Verificando...' : 
+                                     canVerify ? 'Aprobar' : 
+                                     isApproved ? 'Aprobado' : 'No Disponible'}
+                                  </span>
+                                </Button>
+                                
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={!canVerify || updateDeliverableMutation.isPending}
+                                  onClick={() => handleRejectDeliverable(
+                                    contract.id, 
+                                    deliverable.deliverableId, 
+                                    deliverable.deliverable?.name || `Entregable #${index + 1}`
+                                  )}
+                                  className="gap-2 w-full sm:w-auto"
+                                >
+                                  <X className="h-4 w-4" />
+                                  <span className="sm:inline">
+                                    {updateDeliverableMutation.isPending ? 'Procesando...' : 'Rechazar'}
+                                  </span>
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </CardContent>
@@ -420,7 +654,24 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
         onOpenChange={(open) => setPaymentModal(prev => ({ ...prev, open }))}
         payments={paymentModal.payments}
         installmentDescription={paymentModal.description}
-        canManagePayments={true} // Los administradores pueden gestionar pagos
+        canManagePayments={!paymentModal.isCollaboratorPayment}
+      />
+
+      {/* Modal de rechazo de entregables */}
+      <RejectDeliverableModal
+        open={rejectModal.open}
+        onOpenChange={(open) => setRejectModal(prev => ({ ...prev, open }))}
+        onConfirm={handleConfirmReject}
+        deliverableName={rejectModal.deliverableName}
+        isLoading={updateDeliverableMutation.isPending}
+      />
+
+      {/* Modal de subir pago */}
+      <UploadPaymentModal
+        open={uploadPaymentModal.open}
+        onOpenChange={(open) => setUploadPaymentModal(prev => ({ ...prev, open }))}
+        contractId={uploadPaymentModal.contractId}
+        installmentId={uploadPaymentModal.installmentId}
       />
     </div>
   );

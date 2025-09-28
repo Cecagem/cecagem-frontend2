@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { useCreateContract } from "../hooks";
 import type { ICreateContractDto } from "../types";
+import { useUsers } from "@/features/user/hooks/use-users";
 
 import { ContractFormStep1, type Step1FormData } from "./ContractFormStep1";
 import { ContractFormStep2, type Step2FormData } from "./ContractFormStep2";
@@ -48,6 +49,13 @@ export const NewContractForm = ({
 
   // Hook para crear contratos
   const createContractMutation = useCreateContract();
+
+  // Obtener información del colaborador seleccionado
+  const { data: usersData } = useUsers({
+    limit: 1000, // Obtener todos los usuarios para encontrar el colaborador
+  });
+
+  const selectedCollaborator = usersData?.data?.find(user => user.id === formData.collaboratorId);
 
   const steps: StepInfo[] = [
     { 
@@ -146,13 +154,19 @@ export const NewContractForm = ({
       currency: data.currency,
       startDate: data.startDate.toISOString(),
       endDate: data.endDate.toISOString(),
-      userIds: userIds, // Usar userIds como indica el backend
+      userIds: userIds,
       deliverableIds: data.deliverableIds,
       installments: data.installments?.map(installment => ({
         description: installment.description,
         amount: Number(installment.amount),
         dueDate: installment.dueDate.toISOString(),
       })) || [],
+      collaboratorPayments: data.collaboratorPayments?.map(payment => ({
+        userId: payment.userId,
+        amount: Number(payment.amount),
+        dueDate: payment.dueDate.toISOString(),
+        description: payment.description,
+      })) || undefined,
     };
   };
 
@@ -254,6 +268,9 @@ export const NewContractForm = ({
             initialData={formData}
             onNext={handleStep3Complete}
             onBack={() => setCurrentStep(2)}
+            collaboratorId={formData.collaboratorId}
+            collaboratorRole={selectedCollaborator?.role}
+            contractName={formData.name}
           />
         );
       case 4:

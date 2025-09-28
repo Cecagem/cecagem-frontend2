@@ -46,6 +46,9 @@ export interface IDeliverableMeta {
   page: number;
   lastPage: number;
   limit: number;
+  totalPages?: number; // Agregar esta propiedad opcional
+  hasNext?: boolean;   // Agregar esta propiedad opcional
+  hasPrevious?: boolean; // Agregar esta propiedad opcional
 }
 
 export interface IDeliverablesResponse {

@@ -19,8 +19,8 @@ export const useContracts = (filters: Partial<IContractFilters> = {}) => {
     queryKey: CONTRACT_QUERY_KEYS.list(filters),
     queryFn: () => contractService.getContracts(filters),
     retry: 1,
-    refetchOnWindowFocus: false,
-    staleTime: 30000, // 30 segundos
+    refetchOnWindowFocus: true, // Actualizar cuando regrese a la ventana
+    staleTime: 0, // Siempre considerar los datos como obsoletos
   });
 };
 
@@ -91,10 +91,22 @@ export const useUpdateDeliverable = () => {
         exact: false 
       });
       
+      // Determinar el tipo de acción basado en el estado del entregable
+      let title = "Entregable actualizado";
+      let description = "El entregable ha sido actualizado exitosamente";
+      
+      if (response.isAproved === true && response.isCompleted === true) {
+        title = "Entregable aprobado";
+        description = "El entregable ha sido aprobado exitosamente";
+      } else if (response.isAproved === false && response.isCompleted === false) {
+        title = "Entregable rechazado";
+        description = "El entregable ha sido rechazado y vuelve a estar en progreso";
+      }
+      
       // Mostrar notificación de éxito
       showSuccess("updated", { 
-        title: "Entregable actualizado",
-        description: response.isAproved ? "El entregable ha sido aprobado exitosamente" : "El entregable ha sido actualizado exitosamente"
+        title,
+        description
       });
     },
     onError: (error: Error) => {

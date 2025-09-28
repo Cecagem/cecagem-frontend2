@@ -10,7 +10,7 @@ import {
   User,
 } from 'lucide-react';
 
-import { DataTable } from '@/components/shared/data-table';
+import { DataTable, ServerPaginationMeta } from '@/components/shared/data-table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,12 +34,21 @@ interface AccountingClientTableProps {
   isLoading?: boolean;
   onEdit?: (company: ICompany) => void;
   onDelete?: (company: ICompany) => void;
+  // Props para paginación del servidor
+  serverPagination?: boolean;
+  paginationMeta?: ServerPaginationMeta;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 export const AccountingClientTable = ({
   data,
   isLoading = false,
   onEdit,
+  serverPagination = false,
+  paginationMeta,
+  onPageChange,
+  onPageSizeChange,
 }: AccountingClientTableProps) => {
   const [companyToDelete, setCompanyToDelete] = useState<ICompany | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
@@ -253,6 +262,11 @@ export const AccountingClientTable = ({
             setSelectedCompanyId(selectedCompanyId === company.id ? null : company.id);
           }
         }}
+        // Props para paginación del servidor
+        serverPagination={serverPagination}
+        paginationMeta={paginationMeta}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
 
       {/* Modal de confirmación para eliminar */}

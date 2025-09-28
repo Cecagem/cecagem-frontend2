@@ -72,7 +72,8 @@ export const useCompanies = (filters: Partial<ICompanyFilters> = {}) => {
     queryKey: ACCOUNTING_CLIENTS_QUERY_KEYS.companiesWithFilters(filters),
     queryFn: () => accountingClientsService.getCompanies(filters),
     retry: 1,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Actualizar cuando regrese a la ventana
+    staleTime: 0, // Siempre considerar los datos como obsoletos
   });
 };
 

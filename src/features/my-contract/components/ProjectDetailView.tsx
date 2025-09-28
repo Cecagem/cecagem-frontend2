@@ -12,11 +12,14 @@ import {
   FileText, 
   CreditCard,
   GraduationCap,
+  DollarSign,
 } from "lucide-react";
 import { IContract } from "@/features/contract/types/contract.types";
 import { useContract } from "@/features/contract/hooks/useContracts";
+import { useAuthStore } from "@/features/auth";
 import { ProjectPaymentTab } from "./ProjectPaymentTab";
 import { ProjectDeliverablesTab } from "./ProjectDeliverablesTab";
+import { ProjectMyPaymentTab } from "./ProjectMyPaymentTab";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -33,6 +36,9 @@ export const ProjectDetailView = ({
 }: ProjectDetailViewProps) => {
   const [activeTab, setActiveTab] = useState("deliverables");
   
+  // Obtener usuario actual
+  const { user } = useAuthStore();
+  
   // Usar hook para obtener datos actualizados del contrato
   const { data: freshContract, isLoading: contractLoading } = useContract(
     initialContract?.id || ""
@@ -41,6 +47,9 @@ export const ProjectDetailView = ({
   // Usar datos frescos si están disponibles, sino usar los iniciales
   const contract = freshContract || initialContract;
   const isLoading = initialLoading || contractLoading;
+
+  // Verificar si el usuario actual es un colaborador externo
+  const isExternalCollaborator = user?.role === 'COLLABORATOR_EXTERNAL';
 
   if (isLoading || !contract) {
     return (
@@ -153,15 +162,22 @@ export const ProjectDetailView = ({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className={`grid w-full ${isExternalCollaborator ? 'grid-cols-2' : 'grid-cols-2'}`}>
           <TabsTrigger value="deliverables" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Entregables
           </TabsTrigger>
-          <TabsTrigger value="payments" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Pagos
-          </TabsTrigger>
+          {isExternalCollaborator ? (
+            <TabsTrigger value="my-payments" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Mis Pagos
+            </TabsTrigger>
+          ) : (
+            <TabsTrigger value="payments" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Pagos
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="deliverables">
@@ -170,9 +186,17 @@ export const ProjectDetailView = ({
           />
         </TabsContent>
 
-        <TabsContent value="payments">
-          <ProjectPaymentTab contract={contract} />
-        </TabsContent>
+        {!isExternalCollaborator && (
+          <TabsContent value="payments">
+            <ProjectPaymentTab contract={contract} />
+          </TabsContent>
+        )}
+
+        {isExternalCollaborator && (
+          <TabsContent value="my-payments">
+            <ProjectMyPaymentTab contract={contract} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

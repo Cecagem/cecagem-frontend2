@@ -28,8 +28,8 @@ export const useServices = (filters?: Partial<ServiceFilters>) => {
   return useQuery<ServicesResponse, Error>({
     queryKey: engagementKeys.list(filters),
     queryFn: () => engagementService.getServices(filters),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };
 
@@ -55,6 +55,9 @@ export const useCreateService = () => {
         description: `El servicio  ha sido creado exitosamente.`,
       });
       queryClient.invalidateQueries({ queryKey: engagementKeys.lists() });
+      // Invalidar también las queries que usa el SearchableSelect en entregables
+      queryClient.invalidateQueries({ queryKey: ["all-services-for-select"] });
+      queryClient.invalidateQueries({ queryKey: ["services-for-select"] });
     },
     onError: (error) => {
       console.error("Error creating service:", error);
@@ -81,6 +84,9 @@ export const useUpdateService = () => {
       queryClient.invalidateQueries({
         queryKey: engagementKeys.detail(variables.serviceId),
       });
+      // Invalidar también las queries que usa el SearchableSelect en entregables
+      queryClient.invalidateQueries({ queryKey: ["all-services-for-select"] });
+      queryClient.invalidateQueries({ queryKey: ["services-for-select"] });
     },
     onError: (error) => {
       console.error("Error updating service:", error);
@@ -95,6 +101,9 @@ export const useDeleteService = () => {
     mutationFn: engagementService.deleteService,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: engagementKeys.lists() });
+      // Invalidar también las queries que usa el SearchableSelect en entregables
+      queryClient.invalidateQueries({ queryKey: ["all-services-for-select"] });
+      queryClient.invalidateQueries({ queryKey: ["services-for-select"] });
     },
     onError: (error) => {
       console.error("Error deleting service:", error);

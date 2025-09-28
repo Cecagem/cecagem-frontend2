@@ -14,7 +14,7 @@ import {
   Eye,
 } from 'lucide-react';
 
-import { DataTable } from '@/components/shared/data-table';
+import { DataTable, ServerPaginationMeta } from '@/components/shared/data-table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,12 +38,22 @@ interface UserTableProps {
   users: IUser[];
   isLoading?: boolean;
   onEditUser: (user: IUser) => void;
+  // Props para paginación del servidor
+  serverPagination?: boolean;
+  paginationMeta?: ServerPaginationMeta;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 export function UserTable({ 
   users, 
   isLoading = false, 
   onEditUser,
+  // Props para paginación del servidor
+  serverPagination = false,
+  paginationMeta,
+  onPageChange,
+  onPageSizeChange,
 }: UserTableProps) {
   const [userToDelete, setUserToDelete] = useState<IUser | null>(null);
   const [userToView, setUserToView] = useState<IUser | null>(null);
@@ -295,6 +305,11 @@ export function UserTable({
         enablePagination={true}
         enableSorting={true}
         pageSize={10}
+        // Props para paginación del servidor
+        serverPagination={serverPagination}
+        paginationMeta={paginationMeta}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
 
       <UserViewDialog

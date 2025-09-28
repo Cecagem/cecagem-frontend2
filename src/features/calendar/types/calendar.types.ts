@@ -18,6 +18,7 @@ export interface IAttendee {
 export interface IMeeting {
   id: string;
   contractId: string;
+  contractName: string;
   title: string;
   description: string;
   startDate: string;

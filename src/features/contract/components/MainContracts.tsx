@@ -50,6 +50,23 @@ export function MainContracts() {
   const deleteContractMutation = useDeleteContract();
 
   const contracts = useMemo(() => contractsData?.data || [], [contractsData?.data]);
+  const paginationMeta = contractsData?.meta;
+
+  // Handlers para paginación
+  const handlePageChange = useCallback((page: number) => {
+    setFilters(prev => ({
+      ...prev,
+      page,
+    }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((pageSize: number) => {
+    setFilters(prev => ({
+      ...prev,
+      limit: pageSize,
+      page: 1, // Reset a la primera página cuando cambia el tamaño
+    }));
+  }, []);
 
   // Handlers para filtros
   const handleFiltersChange = useCallback((newFilters: Partial<IContractFilters>) => {
@@ -112,7 +129,7 @@ export function MainContracts() {
 
   // Calcular estadísticas básicas de los datos actuales
   const stats = {
-    totalContracts: contracts.length,
+    totalContracts: paginationMeta?.total || contracts.length,
     activeContracts: contracts.filter(c => c.overallProgress < 100).length,
     completedContracts: contracts.filter(c => c.overallProgress === 100).length,
     thisMonthContracts: 0,
@@ -168,8 +185,12 @@ export function MainContracts() {
         <ContractTable
           data={contracts}
           isLoading={isLoading}
-
           onDelete={handleDeleteContract}
+          // Props para paginación del servidor
+          serverPagination={true}
+          paginationMeta={paginationMeta}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
         />
       </div>
 

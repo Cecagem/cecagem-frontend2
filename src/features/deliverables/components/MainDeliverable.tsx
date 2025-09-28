@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { DataTable } from "@/components/shared/data-table";
+import { DataTable, ServerPaginationMeta } from "@/components/shared/data-table";
 import {
   useDeliverables,
   useServicesForSelect,
@@ -46,6 +46,16 @@ export const DeliverablesPage = () => {
 
   const deliverables = deliverablesResponse?.data || [];
   const services = servicesResponse?.data || [];
+  const paginationMeta = deliverablesResponse?.meta;
+
+  // Handlers para paginación
+  const handlePageChange = (page: number) => {
+    setFilters(prev => ({ ...prev, page }));
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setFilters(prev => ({ ...prev, limit: pageSize, page: 1 }));
+  };
 
   // Handlers
   const handleView = (deliverable: IDeliverable) => {
@@ -92,7 +102,7 @@ export const DeliverablesPage = () => {
   const handleFiltersChange = (
     newFilters: Partial<IDeliverableTableFilters>
   ) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
+    setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
 
   const handleClearFilters = () => {
@@ -115,6 +125,20 @@ export const DeliverablesPage = () => {
       }),
     []
   );
+
+  // Transformar paginationMeta para que coincida con ServerPaginationMeta
+  const serverPaginationMeta: ServerPaginationMeta | undefined = paginationMeta ? {
+    total: paginationMeta.total,
+    page: paginationMeta.page,
+    limit: paginationMeta.limit,
+    totalPages: paginationMeta.totalPages || paginationMeta.lastPage,
+    hasNext: paginationMeta.hasNext !== undefined 
+      ? paginationMeta.hasNext 
+      : paginationMeta.page < (paginationMeta.totalPages || paginationMeta.lastPage),
+    hasPrevious: paginationMeta.hasPrevious !== undefined 
+      ? paginationMeta.hasPrevious 
+      : paginationMeta.page > 1,
+  } : undefined;
 
   return (
     <div className="space-y-6">
@@ -153,20 +177,22 @@ export const DeliverablesPage = () => {
         enablePagination={true}
         enableSorting={true}
         pageSize={filters.limit}
+        serverPagination={true}
+        paginationMeta={serverPaginationMeta}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
       />
 
       {/* Dialogs */}
       <CreateDeliverableDialog
         open={createDialogOpen}
         onOpenChange={handleCloseCreate}
-        services={services}
       />
 
       {selectedDeliverable && (
         <>
           <EditDeliverableDialog
             deliverable={selectedDeliverable}
-            services={services}
             open={editDialogOpen}
             onOpenChange={handleCloseEdit}
           />

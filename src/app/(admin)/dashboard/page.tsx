@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DashboardView } from "@/features/dashboard";
 
 export default function Page() {
   return (
@@ -20,14 +21,13 @@ export default function Page() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>Panel de inicio</BreadcrumbPage>
+                <BreadcrumbPage>Panel de Control</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
         <div className="ml-auto mr-4">
           <ModeToggle />
-
           <Button
             variant="ghost"
             size="icon"
@@ -38,13 +38,17 @@ export default function Page() {
           </Button>
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-2">
-        <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-          <div className="bg-muted/50 aspect-video rounded-xl" />
-          <div className="bg-muted/50 aspect-video rounded-xl" />
-          <div className="bg-muted/50 aspect-video rounded-xl" />
+      <div className="flex flex-1 flex-col gap-6 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Resumen general de la actividad y métricas del sistema
+            </p>
+          </div>
         </div>
-        <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+        
+        <DashboardView />
       </div>
     </div>
   );

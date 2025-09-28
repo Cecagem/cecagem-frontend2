@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { AccountStatsCards, AccountFilters, AccountTable, AccountForm, TransactionDetailsModal, ChangeStatusModal } from "./index";
 import { 
   useTransactions, 
-  useTransactionStats,
   useCreateTransaction, 
   useUpdateTransaction, 
   useUpdateTransactionStatus,
@@ -21,7 +20,11 @@ import type {
   ITransactionFilters, 
   ICreateTransactionDto, 
   IUpdateTransactionDto,
-  TransactionStatus
+  ITransactionStatsByCurrency
+} from "../types/account.types";
+import { 
+  TransactionStatus,
+  TransactionType
 } from "../types/account.types";
 
 export const MainAccount = () => {
@@ -38,22 +41,110 @@ export const MainAccount = () => {
   const [transactionToChangeStatus, setTransactionToChangeStatus] = useState<ITransaction | null>(null);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
 
-  // Queries
+  // Query para datos paginados de la tabla
   const { data: transactionsData, isLoading: transactionsLoading } = useTransactions(filters);
-  const { data: statsData, isLoading: statsLoading } = useTransactionStats();
+  
+  // Query para TODAS las transacciones para calcular estadísticas
+  const { data: allTransactionsData, isLoading: allTransactionsLoading } = useTransactions({ 
+    page: 1,
+    limit: 100
+  });
 
-  // Mutations
-  const createMutation = useCreateTransaction();
-  const updateMutation = useUpdateTransaction();
-  const updateStatusMutation = useUpdateTransactionStatus();
-  const deleteMutation = useDeleteTransaction();
+  // Calcular estadísticas directamente de los datos
+  const statsData = useMemo((): ITransactionStatsByCurrency => {
+    if (!allTransactionsData?.data) {
+      return {
+        pen: {
+          currency: "PEN",
+          totalBalance: 0,
+          totalIncome: 0,
+          totalExpenses: 0,
+          transactionCount: 0,
+        },
+        usd: {
+          currency: "USD",
+          totalBalance: 0,
+          totalIncome: 0,
+          totalExpenses: 0,
+          transactionCount: 0,
+        },
+        overall: {
+          totalTransactions: 0,
+          activeCurrencies: [],
+        },
+      };
+    }
+
+    // Filtrar solo transacciones completadas
+    const completedTransactions = allTransactionsData.data.filter(
+      (transaction) => transaction.estado === TransactionStatus.COMPLETED
+    );
+
+    // Separar por moneda
+    const penTransactions = completedTransactions.filter(t => t.currency === "PEN");
+    const usdTransactions = completedTransactions.filter(t => t.currency === "USD");
+
+    // Calcular estadísticas para PEN
+    const penIncome = penTransactions
+      .filter(t => t.tipo === TransactionType.INCOME)
+      .reduce((sum, t) => sum + parseFloat(t.monto), 0);
+    
+    const penExpenses = penTransactions
+      .filter(t => t.tipo === TransactionType.EXPENSE)
+      .reduce((sum, t) => sum + parseFloat(t.monto), 0);
+
+    // Calcular estadísticas para USD
+    const usdIncome = usdTransactions
+      .filter(t => t.tipo === TransactionType.INCOME)
+      .reduce((sum, t) => sum + parseFloat(t.monto), 0);
+    
+    const usdExpenses = usdTransactions
+      .filter(t => t.tipo === TransactionType.EXPENSE)
+      .reduce((sum, t) => sum + parseFloat(t.monto), 0);
+
+    // Obtener monedas activas
+    const activeCurrencies = Array.from(
+      new Set(completedTransactions.map(t => t.currency))
+    );
+
+    return {
+      pen: {
+        currency: "PEN",
+        totalIncome: penIncome,
+        totalExpenses: penExpenses,
+        totalBalance: penIncome - penExpenses,
+        transactionCount: penTransactions.length,
+      },
+      usd: {
+        currency: "USD",
+        totalIncome: usdIncome,
+        totalExpenses: usdExpenses,
+        totalBalance: usdIncome - usdExpenses,
+        transactionCount: usdTransactions.length,
+      },
+      overall: {
+        totalTransactions: completedTransactions.length,
+        activeCurrencies,
+      },
+    };
+  }, [allTransactionsData?.data]);
 
   const handleFiltersChange = (newFilters: Partial<ITransactionFilters>) => {
     setFilters({ ...filters, ...newFilters, page: 1 });
   };
 
   const handleClearFilters = () => {
-    setFilters({ page: 1, limit: 10 });
+    setFilters({ page: 1, limit: filters.limit || 10 });
+  };
+
+  // Manejar cambio de página
+  const handlePageChange = (page: number) => {
+    setFilters({ ...filters, page });
+  };
+
+  // Manejar cambio de tamaño de página
+  const handlePageSizeChange = (pageSize: number) => {
+    setFilters({ ...filters, limit: pageSize, page: 1 });
   };
 
   const handleCreateTransaction = () => {
@@ -145,12 +236,11 @@ export const MainAccount = () => {
     }
   };
 
-  const defaultStats = {
-    totalBalance: 0,
-    totalIncome: 0,
-    totalExpenses: 0,
-    transactionCount: transactionsData?.data?.length || 0,
-  };
+  // Mutations
+  const createMutation = useCreateTransaction();
+  const updateMutation = useUpdateTransaction();
+  const updateStatusMutation = useUpdateTransactionStatus();
+  const deleteMutation = useDeleteTransaction();
 
   return (
     <div className="space-y-6">
@@ -160,7 +250,7 @@ export const MainAccount = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Ingresos y Egresos</h1>
             <p className="text-muted-foreground">
-              Gestiona tus ingresos y gastos personales
+              Gestiona tus ingresos y gastos en soles y dólares
             </p>
           </div>
           <Button onClick={handleCreateTransaction} className="w-full sm:w-auto">
@@ -170,8 +260,8 @@ export const MainAccount = () => {
         </div>
 
         <AccountStatsCards
-          stats={statsData || defaultStats}
-          isLoading={statsLoading}
+          stats={statsData}
+          isLoading={allTransactionsLoading}
         />
       </div>
 
@@ -191,18 +281,24 @@ export const MainAccount = () => {
         onDelete={handleDeleteTransaction}
         onView={handleViewTransaction}
         onChangeStatus={handleChangeStatus}
+        paginationMeta={transactionsData?.meta}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
       />
 
       {/* Dialog para crear/editar transacción */}
       <Dialog 
         open={isFormOpen} 
-        onOpenChange={setIsFormOpen} // Permitir cierre con X
+        onOpenChange={setIsFormOpen}
       >
         <DialogContent 
           className="max-w-4xl w-[95vw] max-h-[95vh] flex flex-col p-0"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
+          <DialogTitle className="sr-only">
+            {formMode === "create" ? "Nueva Transacción" : "Editar Transacción"}
+          </DialogTitle>
           <div className="flex-1 overflow-y-auto p-6">
             <AccountForm
               transaction={selectedTransaction || undefined}
@@ -218,7 +314,7 @@ export const MainAccount = () => {
       {/* Dialog de confirmación para eliminar */}
       <AlertDialog 
         open={isDeleteDialogOpen} 
-        onOpenChange={() => {}} // Prevenir cierre con click fuera
+        onOpenChange={() => {}}
       >
         <AlertDialogContent>
           <AlertDialogHeader>

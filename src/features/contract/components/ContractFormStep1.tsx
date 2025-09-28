@@ -70,7 +70,7 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
   const { data: usersData, refetch: refetchUsers } = useUsers({
     search: searchCollaborators.length >= 2 ? searchCollaborators : undefined,
     isActive: true,
-    limit: 100, // Aumentar límite para obtener más usuarios
+    limit: 100,
   });
 
   // Filtrar colaboradores internos y externos manualmente
@@ -81,7 +81,7 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
 
   // Obtener clientes de investigación (TODOS, no solo activos)
   const { data: researchClientsData, refetch: refetchClients } = useResearchClients({
-    limit: 100, // Solo limitar cantidad, traer todos sin filtrar por isActive
+    limit: 100,
   });
   
   // Convertir datos a opciones de select

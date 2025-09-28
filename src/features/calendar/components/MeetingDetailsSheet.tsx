@@ -111,6 +111,16 @@ export function MeetingDetailsSheet({
 
         {/* Content Section */}
         <div className="p-6 space-y-6 max-h-[calc(100vh-180px)] overflow-y-auto">
+          {/* Contract Name */}
+          {meeting.contractName && (
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Proyecto</h3>
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-100/80 dark:bg-gray-800 p-3 rounded-lg border border-gray-200/50 dark:border-gray-700">
+                {meeting.contractName}
+              </p>
+            </div>
+          )}
+
           {/* Description */}
           {meeting.description && (
             <div>
