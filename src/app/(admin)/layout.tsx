@@ -12,7 +12,7 @@ export default function AdminLayout({
   return (
     <SidebarProvider>
       <AppSidebar variant="floating" />
-      {children}
+      <>{children}</>
     </SidebarProvider>
   );
 }

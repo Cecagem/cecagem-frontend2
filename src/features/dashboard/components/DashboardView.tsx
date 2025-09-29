@@ -1,0 +1,130 @@
+"use client";
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw } from "lucide-react";
+import { useDashboard } from "../hooks/useDashboard";
+import { StatsCards } from "./StatsCards";
+import { ChartsSection } from "./ChartsSection";
+import { AlertsSection } from "./AlertsSection";
+import type { IDashboardFilters } from "../types/dashboard.types";
+
+export const DashboardView = () => {
+  const [filters, setFilters] = useState<IDashboardFilters>({
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+  });
+
+  const { data, isLoading, refetch, isFetching } = useDashboard(filters);
+
+  const handleFilterChange = (key: keyof IDashboardFilters, value: string | number) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleRefresh = () => {
+    refetch();
+  };
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const months = [
+    { value: 0, label: 'Todos los meses' },
+    { value: 1, label: 'Enero' },
+    { value: 2, label: 'Febrero' },
+    { value: 3, label: 'Marzo' },
+    { value: 4, label: 'Abril' },
+    { value: 5, label: 'Mayo' },
+    { value: 6, label: 'Junio' },
+    { value: 7, label: 'Julio' },
+    { value: 8, label: 'Agosto' },
+    { value: 9, label: 'Septiembre' },
+    { value: 10, label: 'Octubre' },
+    { value: 11, label: 'Noviembre' },
+    { value: 12, label: 'Diciembre' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Filtros y controles */}
+      <Card className="border border-border/50 shadow-lg bg-gradient-to-br from-white to-gray-50/80 dark:from-gray-900 dark:to-gray-800/50 dark:border-gray-800">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold">Filtros del Dashboard</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 items-end w-full">
+            {/* Selector de Año */}
+            <div className="space-y-2 flex-1">
+              <label className="text-sm font-medium text-muted-foreground">Año</label>
+              <Select
+                value={filters.year?.toString()}
+                onValueChange={(value) => handleFilterChange('year', parseInt(value))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar año" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(year => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Selector de Mes */}
+            <div className="space-y-2 flex-1">
+              <label className="text-sm font-medium text-muted-foreground">Mes</label>
+              <Select
+                value={filters.month?.toString() || "0"}
+                onValueChange={(value) => {
+                  const monthValue = parseInt(value);
+                  handleFilterChange('month', monthValue === 0 ? "" : monthValue);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar mes" />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map(month => (
+                    <SelectItem key={month.value} value={month.value.toString()}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Botón de actualizar */}
+            <div className="space-y-2 flex-1">
+              <label className="text-sm font-medium text-muted-foreground">Acción</label>
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={isFetching}
+                className="flex items-center justify-center gap-2 w-full"
+              >
+                <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                Actualizar
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tarjetas de estadísticas */}
+      {data && <StatsCards data={data} isLoading={isLoading} />}
+
+      {/* Gráficos */}
+      {data && <ChartsSection data={data} isLoading={isLoading} />}
+
+      {/* Alertas */}
+      {data && <AlertsSection alerts={data.alerts} isLoading={isLoading} />}
+    </div>
+  );
+};

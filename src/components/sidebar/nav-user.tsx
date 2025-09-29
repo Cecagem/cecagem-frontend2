@@ -1,15 +1,12 @@
 import {
-  BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
+  User,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -21,6 +18,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useLogout } from "@/features/auth";
 import { useRouter } from "next/navigation";
 
 export function NavUser({
@@ -34,6 +32,13 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+
+  const logout = useLogout();
+  // const { user } = useAuthStore();
+
+  const handleProfileClick = () => {
+    router.push("/my-profile");
+  };
 
   return (
     <SidebarMenu>
@@ -75,7 +80,19 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
+            <DropdownMenuItem
+              className="gap-2 p-2 cursor-pointer"
+              onClick={handleProfileClick}
+            >
+              <div className="flex size-6 items-center justify-center rounded-md border bg-primary/10">
+                <User className="size-3.5 shrink-0 dark:text-white" />
+              </div>
+              <span className="font-medium">Mi Perfil</span>
+            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
+
+            {/* <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck />
@@ -90,10 +107,18 @@ export function NavUser({
                 Notificaciones
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/")}>
-              <LogOut />
-              Salir
+            <DropdownMenuSeparator /> */}
+            <DropdownMenuItem
+              className="gap-2 p-2 cursor-pointer"
+              onClick={() => logout.mutate()}
+              aria-disabled={logout.isPending}
+            >
+              <div className="flex size-6 items-center justify-center rounded-md border bg-primary">
+                <LogOut className="size-3.5 shrink-0 text-white" />
+              </div>
+              <span className="font-medium">
+                {logout.isPending ? "Cerrando..." : "Cerrar Sesión"}
+              </span>{" "}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

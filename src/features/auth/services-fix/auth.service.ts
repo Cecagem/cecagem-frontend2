@@ -1,0 +1,30 @@
+import { cecagemApi } from "@/lib/api-client";
+
+import { LoginRequest, User2 } from "@/features/auth";
+
+export const authService = {
+  login: async (credentials: LoginRequest): Promise<{ message: string }> => {
+    const result = await cecagemApi.post<{ message: string }>(
+      "/auth/login",
+      credentials
+    );
+    console.log("Login result:", result);
+
+    return result;
+  },
+
+  me: async (): Promise<User2> => {
+    const result = await cecagemApi.get<User2>("/auth/me");
+    console.log("Me result:", result);
+
+    return result;
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+      await cecagemApi.post("/auth/logout");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  },
+};
