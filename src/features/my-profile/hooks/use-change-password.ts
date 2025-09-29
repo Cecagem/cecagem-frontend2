@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileService } from "../services/profile.service";
-import { ChangePasswordRequest } from "../types/profile.types";
+import { ChangePasswordRequest, ChangePasswordErrorResponse } from "../types/profile.types";
 import { toast } from "sonner";
 
 export const useChangePassword = () => {
@@ -14,7 +14,7 @@ export const useChangePassword = () => {
 
       toast.success(response.message || "Contraseña cambiada exitosamente");
     },
-    onError: (error: any) => {
+    onError: (error: { response?: { data?: ChangePasswordErrorResponse }; message?: string }) => {
       // Handle API error response
       const errorMessage = error.response?.data?.message || error.message || "Ocurrió un error al cambiar la contraseña";
       toast.error(errorMessage);

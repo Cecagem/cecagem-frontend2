@@ -66,7 +66,7 @@ export const ChangePasswordCard = () => {
       
       // Reset form on success
       form.reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handling is done in the hook
       console.error("Error changing password:", error);
     }

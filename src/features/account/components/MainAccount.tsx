@@ -25,7 +25,6 @@ import type {
 } from "../types/account.types";
 import { 
   TransactionStatus,
-  TransactionType
 } from "../types/account.types";
 
 export const MainAccount = () => {
