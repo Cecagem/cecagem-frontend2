@@ -103,28 +103,33 @@ export interface ITransactionTableFilters {
   limit: number;
 }
 
-// STATS
-export interface ITransactionStats {
-  totalBalance: number;
-  totalIncome: number;
-  totalExpenses: number;
-  transactionCount: number;
+// SUMMARY API TYPES
+export interface ICurrencySummary {
+  income: number;
+  expense: number;
+  transactions: number;
+  total: number;
 }
 
-// STATS POR MONEDA
-export interface ICurrencyStats {
-  currency: string;
-  totalBalance: number;
-  totalIncome: number;
-  totalExpenses: number;
-  transactionCount: number;
+export interface ITransactionSummaryResponse {
+  pen: ICurrencySummary;
+  usd: ICurrencySummary;
 }
 
+// STATS PARA UI (adaptado de la API)
 export interface ITransactionStatsByCurrency {
-  pen: ICurrencyStats;
-  usd: ICurrencyStats;
-  overall: {
-    totalTransactions: number;
-    activeCurrencies: string[];
+  pen: {
+    currency: string;
+    totalBalance: number;
+    totalIncome: number;
+    totalExpenses: number;
+    transactionCount: number;
+  };
+  usd: {
+    currency: string;
+    totalBalance: number;
+    totalIncome: number;
+    totalExpenses: number;
+    transactionCount: number;
   };
 }

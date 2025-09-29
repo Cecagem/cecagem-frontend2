@@ -13,7 +13,8 @@ import {
   useCreateTransaction, 
   useUpdateTransaction, 
   useUpdateTransactionStatus,
-  useDeleteTransaction 
+  useDeleteTransaction,
+  useTransactionSummary
 } from "../hooks/use-account";
 import type { 
   ITransaction, 
@@ -44,15 +45,12 @@ export const MainAccount = () => {
   // Query para datos paginados de la tabla
   const { data: transactionsData, isLoading: transactionsLoading } = useTransactions(filters);
   
-  // Query para TODAS las transacciones para calcular estadísticas
-  const { data: allTransactionsData, isLoading: allTransactionsLoading } = useTransactions({ 
-    page: 1,
-    limit: 100
-  });
+  // Query para el resumen de estadísticas desde la API
+  const { data: summaryData, isLoading: summaryLoading } = useTransactionSummary();
 
-  // Calcular estadísticas directamente de los datos
+  // Transformar datos de la API al formato esperado por el componente
   const statsData = useMemo((): ITransactionStatsByCurrency => {
-    if (!allTransactionsData?.data) {
+    if (!summaryData) {
       return {
         pen: {
           currency: "PEN",
@@ -68,66 +66,26 @@ export const MainAccount = () => {
           totalExpenses: 0,
           transactionCount: 0,
         },
-        overall: {
-          totalTransactions: 0,
-          activeCurrencies: [],
-        },
       };
     }
-
-    // Filtrar solo transacciones completadas
-    const completedTransactions = allTransactionsData.data.filter(
-      (transaction) => transaction.estado === TransactionStatus.COMPLETED
-    );
-
-    // Separar por moneda
-    const penTransactions = completedTransactions.filter(t => t.currency === "PEN");
-    const usdTransactions = completedTransactions.filter(t => t.currency === "USD");
-
-    // Calcular estadísticas para PEN
-    const penIncome = penTransactions
-      .filter(t => t.tipo === TransactionType.INCOME)
-      .reduce((sum, t) => sum + parseFloat(t.monto), 0);
-    
-    const penExpenses = penTransactions
-      .filter(t => t.tipo === TransactionType.EXPENSE)
-      .reduce((sum, t) => sum + parseFloat(t.monto), 0);
-
-    // Calcular estadísticas para USD
-    const usdIncome = usdTransactions
-      .filter(t => t.tipo === TransactionType.INCOME)
-      .reduce((sum, t) => sum + parseFloat(t.monto), 0);
-    
-    const usdExpenses = usdTransactions
-      .filter(t => t.tipo === TransactionType.EXPENSE)
-      .reduce((sum, t) => sum + parseFloat(t.monto), 0);
-
-    // Obtener monedas activas
-    const activeCurrencies = Array.from(
-      new Set(completedTransactions.map(t => t.currency))
-    );
 
     return {
       pen: {
         currency: "PEN",
-        totalIncome: penIncome,
-        totalExpenses: penExpenses,
-        totalBalance: penIncome - penExpenses,
-        transactionCount: penTransactions.length,
+        totalBalance: summaryData.pen.total,
+        totalIncome: summaryData.pen.income,
+        totalExpenses: summaryData.pen.expense,
+        transactionCount: summaryData.pen.transactions,
       },
       usd: {
         currency: "USD",
-        totalIncome: usdIncome,
-        totalExpenses: usdExpenses,
-        totalBalance: usdIncome - usdExpenses,
-        transactionCount: usdTransactions.length,
-      },
-      overall: {
-        totalTransactions: completedTransactions.length,
-        activeCurrencies,
+        totalBalance: summaryData.usd.total,
+        totalIncome: summaryData.usd.income,
+        totalExpenses: summaryData.usd.expense,
+        transactionCount: summaryData.usd.transactions,
       },
     };
-  }, [allTransactionsData?.data]);
+  }, [summaryData]);
 
   const handleFiltersChange = (newFilters: Partial<ITransactionFilters>) => {
     setFilters({ ...filters, ...newFilters, page: 1 });
@@ -261,7 +219,7 @@ export const MainAccount = () => {
 
         <AccountStatsCards
           stats={statsData}
-          isLoading={allTransactionsLoading}
+          isLoading={summaryLoading}
         />
       </div>
 

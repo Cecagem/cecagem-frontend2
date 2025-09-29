@@ -5,6 +5,7 @@ import {
   ITransactionFilters,
   ITransactionsResponse,
   ITransactionResponse,
+  ITransactionSummaryResponse,
 } from "../types/account.types";
 
 export class TransactionService {
@@ -31,6 +32,12 @@ export class TransactionService {
   async getById(id: string): Promise<ITransactionResponse> {
     return await cecagemApi.get<ITransactionResponse>(
       `/transactions/${id}`
+    );
+  }
+
+  async getSummary(): Promise<ITransactionSummaryResponse> {
+    return await cecagemApi.get<ITransactionSummaryResponse>(
+      "/transactions/report/summary"
     );
   }
 

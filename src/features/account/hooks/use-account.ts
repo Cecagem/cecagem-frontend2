@@ -15,6 +15,7 @@ export const transactionKeys = {
     [...transactionKeys.lists(), filters] as const,
   details: () => [...transactionKeys.all, "detail"] as const,
   detail: (id: string) => [...transactionKeys.details(), id] as const,
+  summary: () => [...transactionKeys.all, "summary"] as const,
 };
 
 export const useTransactions = (filters?: ITransactionFilters) => {
@@ -34,6 +35,14 @@ export const useTransaction = (id: string) => {
   });
 };
 
+export const useTransactionSummary = () => {
+  return useQuery({
+    queryKey: transactionKeys.summary(),
+    queryFn: () => transactionService.getSummary(),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 export const useCreateTransaction = () => {
   const queryClient = useQueryClient();
 
@@ -42,6 +51,7 @@ export const useCreateTransaction = () => {
       transactionService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -62,6 +72,7 @@ export const useUpdateTransaction = () => {
     onSuccess: (response, { id }) => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -80,6 +91,7 @@ export const useDeleteTransaction = () => {
     mutationFn: (id: string) => transactionService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -99,6 +111,7 @@ export const useUpdateTransactionStatus = () => {
       transactionService.update(id, { estado }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }

@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, TrendingDown, DollarSign, Activity, Coins, Globe } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Coins } from "lucide-react";
 import { StatsGrid, StatCard } from "@/components/shared/stats-cards";
 import type { ITransactionStatsByCurrency } from "../types/account.types";
 
@@ -26,29 +26,6 @@ export const AccountStatsCards = ({ stats, isLoading }: AccountStatsCardsProps) 
 
   return (
     <div className="space-y-6">
-      {/* Estadísticas Generales */}
-      <div>
-        <h3 className="text-lg font-semibold mb-3 text-muted-foreground">Resumen General</h3>
-        <StatsGrid columns={2}>
-          <StatCard
-            title="Total de Transacciones"
-            value={stats.overall.totalTransactions}
-            subtitle="Todas las monedas"
-            icon={Activity}
-            loading={isLoading}
-            variant="default"
-          />
-          <StatCard
-            title="Monedas Activas"
-            value={stats.overall.activeCurrencies.length}
-            subtitle={stats.overall.activeCurrencies.join(", ")}
-            icon={Globe}
-            loading={isLoading}
-            variant="default"
-          />
-        </StatsGrid>
-      </div>
-
       {/* Estadísticas por Moneda */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Soles (PEN) */}
@@ -70,7 +47,7 @@ export const AccountStatsCards = ({ stats, isLoading }: AccountStatsCardsProps) 
               title="Transacciones"
               value={stats.pen.transactionCount}
               subtitle="En soles"
-              icon={Activity}
+              icon={getCurrencyIcon("PEN")}
               loading={isLoading}
               variant="default"
             />
@@ -112,7 +89,7 @@ export const AccountStatsCards = ({ stats, isLoading }: AccountStatsCardsProps) 
               title="Transacciones"
               value={stats.usd.transactionCount}
               subtitle="En dólares"
-              icon={Activity}
+              icon={getCurrencyIcon("USD")}
               loading={isLoading}
               variant="default"
             />
