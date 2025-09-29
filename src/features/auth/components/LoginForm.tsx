@@ -41,7 +41,7 @@ export function LoginForm({
     super_admin: {
       name: "super_admin",
       email: "super_admin@ejemplo.com",
-      password: "12345678",
+      password: "123456",
     },
     admin: {
       name: "admin",
