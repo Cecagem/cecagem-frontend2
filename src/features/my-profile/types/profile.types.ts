@@ -37,4 +37,11 @@ export interface ChangePasswordRequest {
 
 export interface ChangePasswordResponse {
   message: string;
+  success: boolean;
+}
+
+export interface ChangePasswordErrorResponse {
+  message: string;
+  error: string;
+  statusCode: number;
 }
