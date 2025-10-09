@@ -169,8 +169,8 @@ export const ChartsSection = ({ data, isLoading }: ChartsSectionProps) => {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* Gráfico de Ingresos por Mes */}
-      <Card className="border border-blue-200/60 dark:border-blue-800/50 shadow-lg bg-gradient-to-br from-white via-blue-50/30 to-blue-100/50 dark:from-gray-900 dark:via-blue-950/20 dark:to-blue-900/30 overflow-hidden">
-        <CardHeader className="pb-3 bg-gradient-to-r from-transparent to-blue-50/50 dark:to-blue-950/30">
+      <Card>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/30">
@@ -259,8 +259,8 @@ export const ChartsSection = ({ data, isLoading }: ChartsSectionProps) => {
       </Card>
 
       {/* Gráfico de Contratos por Mes */}
-      <Card className="border border-purple-200/60 dark:border-purple-800/50 shadow-lg bg-gradient-to-br from-white via-purple-50/30 to-purple-100/50 dark:from-gray-900 dark:via-purple-950/20 dark:to-purple-900/30 overflow-hidden">
-        <CardHeader className="pb-3 bg-gradient-to-r from-transparent to-purple-50/50 dark:to-purple-950/30">
+      <Card>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-900/30">
@@ -340,8 +340,8 @@ export const ChartsSection = ({ data, isLoading }: ChartsSectionProps) => {
       </Card>
 
       {/* Gráfico de Distribución de Usuarios */}
-      <Card className="border border-emerald-200/60 dark:border-emerald-800/50 shadow-lg bg-gradient-to-br from-white via-emerald-50/30 to-emerald-100/50 dark:from-gray-900 dark:via-emerald-950/20 dark:to-emerald-900/30 overflow-hidden">
-        <CardHeader className="pb-3 bg-gradient-to-r from-transparent to-emerald-50/50 dark:to-emerald-950/30">
+      <Card>
+        <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
               <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -394,8 +394,8 @@ export const ChartsSection = ({ data, isLoading }: ChartsSectionProps) => {
       </Card>
 
       {/* Gráfico de Estado de Entregables */}
-      <Card className="border border-amber-200/60 dark:border-amber-800/50 shadow-lg bg-gradient-to-br from-white via-amber-50/30 to-amber-100/50 dark:from-gray-900 dark:via-amber-950/20 dark:to-amber-900/30 overflow-hidden">
-        <CardHeader className="pb-3 bg-gradient-to-r from-transparent to-amber-50/50 dark:to-amber-950/30">
+      <Card>
+        <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/30">
               <Building2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
