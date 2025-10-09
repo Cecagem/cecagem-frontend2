@@ -155,6 +155,7 @@ export default function ReportsPage() {
           transactionData={transactionReports.data}
           reportType={currentFilters.reportType}
           loading={isLoading}
+          currency={currentFilters.currency}
         />
       </div>
     </div>

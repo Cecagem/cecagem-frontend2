@@ -101,15 +101,6 @@ export const ViewDeliverableDialog = ({
                     <p className="text-base break-words">{deliverable.service.description}</p>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Precio
-                    </label>
-                    <p className="text-base font-medium text-primary">
-                      ${deliverable.service.basePrice.toFixed(2)}
-                    </p>
-                  </div>
-
                   <div className="flex items-center space-x-2 flex-wrap">
                     <label className="text-sm font-medium text-muted-foreground">
                       Estado del Servicio:

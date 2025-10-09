@@ -18,6 +18,7 @@ interface ReportPreviewProps {
   transactionData?: TransactionReportResponse | null;
   reportType: 'contracts' | 'companies' | 'transactions';
   loading: boolean;
+  currency: 'PEN' | 'USD';
 }
 
 const getStatusColor = (status: ContractStatus) => {
@@ -55,7 +56,7 @@ const getTransactionTypeColor = (type: TransactionType) => {
   }
 };
 
-export function ReportPreview({ contractData, companyData, transactionData, reportType, loading }: ReportPreviewProps) {
+export function ReportPreview({ contractData, companyData, transactionData, reportType, loading, currency }: ReportPreviewProps) {
   if (loading) {
     return (
       <Card>
@@ -103,15 +104,21 @@ export function ReportPreview({ contractData, companyData, transactionData, repo
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(contractData.summary.totalPaidPEN, 'PEN')}
+                  {formatCurrency(
+                    currency === 'USD' ? contractData.summary.totalPaidUSD : contractData.summary.totalPaidPEN, 
+                    currency
+                  )}
                 </p>
-                <p className="text-sm text-green-800">Pagado (PEN)</p>
+                <p className="text-sm text-green-800">Pagado ({currency})</p>
               </div>
               <div className="text-center p-4 bg-yellow-50 rounded-lg">
                 <p className="text-2xl font-bold text-yellow-600">
-                  {formatCurrency(contractData.summary.totalPendingPEN, 'PEN')}
+                  {formatCurrency(
+                    currency === 'USD' ? contractData.summary.totalPendingUSD : contractData.summary.totalPendingPEN, 
+                    currency
+                  )}
                 </p>
-                <p className="text-sm text-yellow-800">Pendiente (PEN)</p>
+                <p className="text-sm text-yellow-800">Pendiente ({currency})</p>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <p className="text-2xl font-bold text-purple-600">{contractData.summary.activeContracts}</p>
@@ -271,21 +278,30 @@ export function ReportPreview({ contractData, companyData, transactionData, repo
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(transactionData.summary.totalIncomesPEN, 'PEN')}
+                  {formatCurrency(
+                    currency === 'USD' ? transactionData.summary.totalIncomesUSD : transactionData.summary.totalIncomesPEN, 
+                    currency
+                  )}
                 </p>
-                <p className="text-sm text-green-800">Total Ingresos</p>
+                <p className="text-sm text-green-800">Total Ingresos ({currency})</p>
               </div>
               <div className="text-center p-4 bg-red-50 rounded-lg">
                 <p className="text-2xl font-bold text-red-600">
-                  {formatCurrency(transactionData.summary.totalExpensesPEN, 'PEN')}
+                  {formatCurrency(
+                    currency === 'USD' ? transactionData.summary.totalExpensesUSD : transactionData.summary.totalExpensesPEN, 
+                    currency
+                  )}
                 </p>
-                <p className="text-sm text-red-800">Total Egresos</p>
+                <p className="text-sm text-red-800">Total Egresos ({currency})</p>
               </div>
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <p className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(transactionData.summary.netBalancePEN, 'PEN')}
+                  {formatCurrency(
+                    currency === 'USD' ? transactionData.summary.netBalanceUSD : transactionData.summary.netBalancePEN, 
+                    currency
+                  )}
                 </p>
-                <p className="text-sm text-blue-800">Balance Neto</p>
+                <p className="text-sm text-blue-800">Balance Neto ({currency})</p>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <p className="text-2xl font-bold text-purple-600">
@@ -315,7 +331,10 @@ export function ReportPreview({ contractData, companyData, transactionData, repo
                           <span className="font-medium">{category.category}</span>
                           <div className="text-right">
                             <p className="font-bold text-red-600">
-                              {formatCurrency(category.totalPEN, 'PEN')}
+                              {formatCurrency(
+                                currency === 'USD' ? category.totalUSD : category.totalPEN, 
+                                currency
+                              )}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {category.percentage.toFixed(1)}% ({category.transactionCount} transacciones)
@@ -337,7 +356,10 @@ export function ReportPreview({ contractData, companyData, transactionData, repo
                           <span className="font-medium">{category.category}</span>
                           <div className="text-right">
                             <p className="font-bold text-green-600">
-                              {formatCurrency(category.totalPEN, 'PEN')}
+                              {formatCurrency(
+                                currency === 'USD' ? category.totalUSD : category.totalPEN, 
+                                currency
+                              )}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {category.percentage.toFixed(1)}% ({category.transactionCount} transacciones)

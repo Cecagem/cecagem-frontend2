@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  async rewrites() {
+  /*async rewrites() {
     return [
       {
         source: "/api/cecagem/:path*",
@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
         destination: "http://localhost:5001/api/v1/:path*",
       },
     ];
-  },
+  },*/
   images: {
     remotePatterns: [
       {

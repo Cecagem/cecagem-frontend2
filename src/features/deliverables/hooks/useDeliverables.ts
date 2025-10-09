@@ -132,7 +132,7 @@ export const useAllServicesForSelect = () => {
       // Transformar los datos para el SearchableSelect
       return data.data.map(service => ({
         value: service.id,
-        label: `${service.name} - $${service.basePrice}`,
+        label: `${service.name}`,
         disabled: !service.isActive // Los inactivos aparecen pero deshabilitados
       }));
     }

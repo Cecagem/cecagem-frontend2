@@ -162,19 +162,19 @@ const ContractReportPDF = ({ contractData, dateRange, currency }: {
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>
-              {currency} {contractData.summary.totalValuePEN.toLocaleString()}
+              {currency} {(currency === 'USD' ? contractData.summary.totalValueUSD : contractData.summary.totalValuePEN).toLocaleString()}
             </Text>
             <Text style={styles.summaryLabel}>Valor Total</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>
-              {currency} {contractData.summary.totalPaidPEN.toLocaleString()}
+              {currency} {(currency === 'USD' ? contractData.summary.totalPaidUSD : contractData.summary.totalPaidPEN).toLocaleString()}
             </Text>
             <Text style={styles.summaryLabel}>Total Pagado</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>
-              {currency} {contractData.summary.totalPendingPEN.toLocaleString()}
+              {currency} {(currency === 'USD' ? contractData.summary.totalPendingUSD : contractData.summary.totalPendingPEN).toLocaleString()}
             </Text>
             <Text style={styles.summaryLabel}>Total Pendiente</Text>
           </View>
@@ -340,10 +340,10 @@ const TransactionReportPDF = ({ transactionData, dateRange, currency, transactio
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>
               {currency} {(transactionType === 'INCOME' 
-                ? transactionData.summary.totalIncomesPEN 
+                ? (currency === 'USD' ? transactionData.summary.totalIncomesUSD : transactionData.summary.totalIncomesPEN)
                 : transactionType === 'EXPENSE' 
-                ? transactionData.summary.totalExpensesPEN
-                : transactionData.summary.netBalancePEN
+                ? (currency === 'USD' ? transactionData.summary.totalExpensesUSD : transactionData.summary.totalExpensesPEN)
+                : (currency === 'USD' ? transactionData.summary.netBalanceUSD : transactionData.summary.netBalancePEN)
               ).toLocaleString()}
             </Text>
             <Text style={styles.summaryLabel}>
@@ -353,8 +353,8 @@ const TransactionReportPDF = ({ transactionData, dateRange, currency, transactio
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>
               {currency} {(transactionType === 'INCOME' 
-                ? transactionData.summary.avgIncomePerTransactionPEN 
-                : transactionData.summary.avgExpensePerTransactionPEN
+                ? (currency === 'USD' ? transactionData.summary.avgIncomePerTransactionUSD : transactionData.summary.avgIncomePerTransactionPEN)
+                : (currency === 'USD' ? transactionData.summary.avgExpensePerTransactionUSD : transactionData.summary.avgExpensePerTransactionPEN)
               ).toLocaleString()}
             </Text>
             <Text style={styles.summaryLabel}>Promedio por Transacción</Text>

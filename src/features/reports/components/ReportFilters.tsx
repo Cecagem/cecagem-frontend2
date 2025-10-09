@@ -52,6 +52,11 @@ export function ReportFiltersComponent({
       newFilters.transactionType = 'EXPENSE';
     }
     
+    // Si cambia a companies, forzar la moneda a PEN
+    if (key === 'reportType' && value === 'companies') {
+      newFilters.currency = 'PEN';
+    }
+    
     onFiltersChange(newFilters);
   };
 
@@ -134,8 +139,9 @@ export function ReportFiltersComponent({
             <Select
               value={filters.currency}
               onValueChange={(value) => handleFilterChange('currency', value)}
+              disabled={filters.reportType === 'companies'}
             >
-              <SelectTrigger>
+              <SelectTrigger className={filters.reportType === 'companies' ? 'opacity-60 cursor-not-allowed' : ''}>
                 <SelectValue placeholder="Seleccionar moneda" />
               </SelectTrigger>
               <SelectContent>
@@ -143,6 +149,11 @@ export function ReportFiltersComponent({
                 <SelectItem value="USD">USD - Dólares</SelectItem>
               </SelectContent>
             </Select>
+            {filters.reportType === 'companies' && (
+              <p className="text-xs text-muted-foreground">
+                Los reportes de empresas solo están disponibles en Soles (PEN)
+              </p>
+            )}
           </div>
         </div>
 
