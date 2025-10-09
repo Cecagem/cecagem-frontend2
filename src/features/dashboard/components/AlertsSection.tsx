@@ -2,13 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { 
   AlertTriangle, 
   Clock, 
   CheckCircle, 
   Info,
-  X,
   Bell,
   AlertCircle,
   Zap,
@@ -157,8 +155,8 @@ export const AlertsSection = ({ alerts, isLoading }: AlertsSectionProps) => {
   const priorityOrder = ['critical', 'high', 'medium', 'low'];
 
   return (
-    <Card className="border border-orange-200/60 dark:border-orange-800/50 shadow-lg bg-gradient-to-br from-white via-orange-50/30 to-orange-100/50 dark:from-gray-900 dark:via-orange-950/20 dark:to-orange-900/30 overflow-hidden">
-      <CardHeader className="pb-4 bg-gradient-to-r from-transparent to-orange-50/50 dark:to-orange-950/30">
+    <Card>
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-orange-100 dark:bg-orange-900/30">
@@ -203,7 +201,7 @@ export const AlertsSection = ({ alerts, isLoading }: AlertsSectionProps) => {
                     return (
                       <div
                         key={`${priority}-${index}`}
-                        className={`p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-md hover:scale-[1.02] ${config.bgColor} ${config.borderColor} group`}
+                        className={`p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-md ${config.bgColor} ${config.borderColor} group`}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-start gap-4 flex-1">
@@ -233,13 +231,6 @@ export const AlertsSection = ({ alerts, isLoading }: AlertsSectionProps) => {
                               </div>
                             </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-8 w-8 p-0 opacity-60 hover:opacity-100 ${config.iconColor} hover:bg-background/50 transition-all duration-200`}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
                     );

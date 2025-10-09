@@ -93,8 +93,6 @@ export const StatsCards = ({ data, isLoading }: StatsCardsProps) => {
       icon: FileText,
       color: "text-blue-600 dark:text-blue-400",
       bgColor: "bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30",
-      cardBg: "bg-gradient-to-br from-white via-blue-50/30 to-blue-100/50 dark:from-gray-900 dark:via-blue-950/20 dark:to-blue-900/30",
-      borderColor: "border-blue-200/60 dark:border-blue-800/50",
       percentage: calculatePercentage(data.contracts.active, data.contracts.total),
     },
     {
@@ -105,8 +103,6 @@ export const StatsCards = ({ data, isLoading }: StatsCardsProps) => {
       icon: Users,
       color: "text-purple-600 dark:text-purple-400",
       bgColor: "bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30",
-      cardBg: "bg-gradient-to-br from-white via-purple-50/30 to-purple-100/50 dark:from-gray-900 dark:via-purple-950/20 dark:to-purple-900/30",
-      borderColor: "border-purple-200/60 dark:border-purple-800/50",
       percentage: calculatePercentage(data.users.active, data.users.total),
     },
   ];
@@ -121,8 +117,6 @@ export const StatsCards = ({ data, isLoading }: StatsCardsProps) => {
       icon: Building2,
       color: "text-indigo-600 dark:text-indigo-400",
       bgColor: "bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/30",
-      cardBg: "bg-gradient-to-br from-white via-indigo-50/30 to-indigo-100/50 dark:from-gray-900 dark:via-indigo-950/20 dark:to-indigo-900/30",
-      borderColor: "border-indigo-200/60 dark:border-indigo-800/50",
       percentage: calculatePercentage(data.companies.active, data.companies.total),
     },
     {
@@ -133,8 +127,6 @@ export const StatsCards = ({ data, isLoading }: StatsCardsProps) => {
       icon: CheckCircle,
       color: "text-emerald-600 dark:text-emerald-400",
       bgColor: "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30",
-      cardBg: "bg-gradient-to-br from-white via-emerald-50/30 to-emerald-100/50 dark:from-gray-900 dark:via-emerald-950/20 dark:to-emerald-900/30",
-      borderColor: "border-emerald-200/60 dark:border-emerald-800/50",
       percentage: calculatePercentage(data.deliverables.completed, data.deliverables.total),
     },
     {
@@ -143,8 +135,6 @@ export const StatsCards = ({ data, isLoading }: StatsCardsProps) => {
       icon: AlertTriangle,
       color: "text-amber-600 dark:text-amber-400",
       bgColor: "bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30",
-      cardBg: "bg-gradient-to-br from-white via-amber-50/30 to-amber-100/50 dark:from-gray-900 dark:via-amber-950/20 dark:to-amber-900/30",
-      borderColor: "border-amber-200/60 dark:border-amber-800/50",
       isAlert: true,
     },
     {
@@ -153,8 +143,6 @@ export const StatsCards = ({ data, isLoading }: StatsCardsProps) => {
       icon: AlertTriangle,
       color: "text-red-600 dark:text-red-400",
       bgColor: "bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30",
-      cardBg: "bg-gradient-to-br from-white via-red-50/30 to-red-100/50 dark:from-gray-900 dark:via-red-950/20 dark:to-red-900/30",
-      borderColor: "border-red-200/60 dark:border-red-800/50",
       isAlert: true,
     },
   ];
@@ -169,7 +157,7 @@ export const StatsCards = ({ data, isLoading }: StatsCardsProps) => {
           const trendColor = getTrendColor(stat.percentage);
           
           return (
-            <Card key={index} className={`border ${stat.borderColor} shadow-lg hover:shadow-xl transition-all duration-300 ${stat.cardBg} overflow-hidden group`}>
+            <Card key={index} className={`border shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group`}>
               <CardContent className="p-8">
                 <div className="flex items-center justify-between">
                   <div className="space-y-3 flex-1">
@@ -217,7 +205,7 @@ export const StatsCards = ({ data, isLoading }: StatsCardsProps) => {
           const trendColor = showTrend ? getTrendColor(stat.percentage!, !stat.isAlert) : "";
           
           return (
-            <Card key={index + 2} className={`border ${stat.borderColor} shadow-lg hover:shadow-xl transition-all duration-300 ${stat.cardBg} overflow-hidden group`}>
+            <Card key={index + 2} className={`border shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group`}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2 flex-1">

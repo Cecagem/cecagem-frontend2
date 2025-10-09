@@ -51,7 +51,7 @@ export const DashboardView = () => {
   return (
     <div className="space-y-6">
       {/* Filtros y controles */}
-      <Card className="border border-border/50 shadow-lg bg-gradient-to-br from-white to-gray-50/80 dark:from-gray-900 dark:to-gray-800/50 dark:border-gray-800">
+      <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-semibold">Filtros del Dashboard</CardTitle>
         </CardHeader>

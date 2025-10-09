@@ -26,14 +26,14 @@ export const ContractStatsCards = ({
   return (
     <StatsGrid columns={3}>
       <StatCard
-        title="Total de Contratos"
+        title="Total de Proyectos"
         value={data?.totalContracts || 0}
         subtitle={`${data?.thisMonthContracts || 0} nuevos este mes`}
         icon={FileText}
         loading={isLoading}
       />
       <StatCard
-        title="Contratos Activos"
+        title="Proyectos Activos"
         value={data?.activeContracts || 0}
         subtitle={`${data ? Math.round((data.activeContracts / (data.totalContracts || 1)) * 100) : 0}% del total`}
         icon={TrendingUp}
@@ -41,7 +41,7 @@ export const ContractStatsCards = ({
         loading={isLoading}
       />
       <StatCard
-        title="Contratos Completados"
+        title="Proyectos Completados"
         value={data?.completedContracts || 0}
         subtitle={`${data ? Math.round((data.completedContracts / (data.totalContracts || 1)) * 100) : 0}% completados`}
         icon={CheckCircle}
