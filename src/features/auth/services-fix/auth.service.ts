@@ -1,6 +1,7 @@
 import { cecagemApi } from "@/lib/api-client";
 
 import { LoginRequest, User2 } from "@/features/auth";
+console.log("API URL:", process.env.NEXT_PUBLIC_API_CECAGEM_URL);
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<{ message: string }> => {
