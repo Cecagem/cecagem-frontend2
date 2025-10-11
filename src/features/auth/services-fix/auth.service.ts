@@ -1,7 +1,6 @@
 import { cecagemApi } from "@/lib/api-client";
 
 import { LoginRequest, User2 } from "@/features/auth";
-console.log("API URL:", process.env.NEXT_PUBLIC_API_CECAGEM_URL);
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<{ message: string }> => {
@@ -9,14 +8,22 @@ export const authService = {
     //   "/auth/login",
     //   credentials
     // );
+    console.log("Logging in with credentials:", credentials);
+    console.log("API URL:", process.env.NEXT_PUBLIC_API_CECAGEM_URL);
+    console.log(
+      "Full URL:",
+      `https://back-system.cecagem.com/api/v1/auth/login`
+    );
+
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/login`,
+      `https://back-system.cecagem.com/api/v1/auth/login`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
+        credentials: "include",
       }
     );
 
