@@ -5,10 +5,22 @@ console.log("API URL:", process.env.NEXT_PUBLIC_API_CECAGEM_URL);
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<{ message: string }> => {
-    const result = await cecagemApi.post<{ message: string }>(
-      "/auth/login",
-      credentials
+    // const result = await cecagemApi.post<{ message: string }>(
+    //   "/auth/login",
+    //   credentials
+    // );
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+      }
     );
+
+    const result = await response.json();
     console.log("Login result:", result);
 
     return result;
