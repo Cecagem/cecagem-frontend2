@@ -105,7 +105,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "D:\\ECOMAS\\testing\\crud-alvaro\\cecagem\\cecagem-frontend2",
+    "outputFileTracingRoot": "F:\\trabajo\\cecagem\\cecagem-frontend2",
     "experimental": {
       "useSkewCookie": false,
       "nodeMiddleware": false,
@@ -164,7 +164,7 @@
       "middlewarePrefetch": "flexible",
       "optimisticClientCache": true,
       "manualClientBasePath": false,
-      "cpus": 11,
+      "cpus": 15,
       "memoryBasedWorkersCount": false,
       "imgOptConcurrency": null,
       "imgOptTimeoutInSeconds": 7,
@@ -296,10 +296,10 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.ts",
     "turbopack": {
-      "root": "D:\\ECOMAS\\testing\\crud-alvaro\\cecagem\\cecagem-frontend2"
+      "root": "F:\\trabajo\\cecagem\\cecagem-frontend2"
     }
   },
-  "appDir": "D:\\ECOMAS\\testing\\crud-alvaro\\cecagem\\cecagem-frontend2",
+  "appDir": "F:\\trabajo\\cecagem\\cecagem-frontend2",
   "relativeAppDir": "",
   "files": [
     ".next\\routes-manifest.json",
