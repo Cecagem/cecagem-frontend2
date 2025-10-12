@@ -17,6 +17,7 @@
 .next/ 
 !.next/standalone 
 !.next/static
+!.next/server
 /out/
 
 # production
