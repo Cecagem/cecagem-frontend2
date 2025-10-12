@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const API_URL = "https://back-system.cecagem.com/api/v1";
 
   const ignoredRoutes = [
     "/.well-known",
@@ -16,6 +17,7 @@ export async function middleware(request: NextRequest) {
     "/image",
     "/public",
   ];
+
   if (ignoredRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
@@ -33,51 +35,42 @@ export async function middleware(request: NextRequest) {
   let isAuthenticated = false;
 
   try {
-    const authRes = await fetch(
-      `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/me`,
-      {
-        method: "GET",
+    const authRes = await fetch(`${API_URL}/auth/me`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookieHeader,
+      },
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (authRes.ok) {
+      isAuthenticated = true;
+    } else if (authRes.status === 401) {
+      const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Cookie: cookieHeader,
         },
         credentials: "include",
-        cache: "no-store",
-      }
-    );
-
-    if (authRes.ok) {
-      isAuthenticated = true;
-    } else if (authRes.status === 401) {
-      const refreshRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/refresh`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Cookie: cookieHeader,
-          },
-          credentials: "include",
-        }
-      );
+      });
 
       if (refreshRes.ok) {
         const setCookie = refreshRes.headers.get("set-cookie");
         if (setCookie) {
-          const retryRes = await fetch(
-            `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/me`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Cookie: setCookie
-                  .split(",")
-                  .map((c) => c.split(";")[0])
-                  .join("; "),
-              },
-              credentials: "include",
-            }
-          );
+          const retryRes = await fetch(`${API_URL}/auth/me`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: setCookie
+                .split(",")
+                .map((c) => c.split(";")[0])
+                .join("; "),
+            },
+            credentials: "include",
+          });
 
           if (retryRes.ok) {
             const response = NextResponse.next();
