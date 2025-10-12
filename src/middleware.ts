@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const API_URL = "https://back-system.cecagem.com/api/v1";
+  console.log(`Middleware: ${pathname}`);
+  console.log(`Request URL: ${request.url}`);
+  console.log(`URL midleware: ${API_URL}`);
+
+  console.log(`Cookies: ${request.headers.get("cookie")}`);
 
   const ignoredRoutes = [
     "/.well-known",
