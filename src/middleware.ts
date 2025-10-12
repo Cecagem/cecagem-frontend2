@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  console.log("Middleware triggered for:");
 
-  const systemRoutes = [
+  const ignoredRoutes = [
     "/.well-known",
     "/_next",
     "/favicon.ico",
@@ -13,13 +12,11 @@ export async function middleware(request: NextRequest) {
     "/sw.js",
     "/workbox-",
     "/manifest.json",
+    "/api",
+    "/image",
+    "/public",
   ];
-  if (systemRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
-  }
-
-  const publicRoutes = ["/image", "/api"];
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  if (ignoredRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
@@ -29,118 +26,95 @@ export async function middleware(request: NextRequest) {
 
   const cookieHeader = request.headers.get("cookie");
 
+  if (!cookieHeader) {
+    return redirectToLogin(request, pathname);
+  }
+
   let isAuthenticated = false;
 
-  if (cookieHeader) {
-    try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        Cookie: cookieHeader,
-      };
+  try {
+    const authRes = await fetch(
+      `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/me`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookieHeader,
+        },
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
 
-      const authResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/me`,
+    if (authRes.ok) {
+      isAuthenticated = true;
+    } else if (authRes.status === 401) {
+      const refreshRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/refresh`,
         {
-          method: "GET",
-          headers,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Cookie: cookieHeader,
+          },
+          credentials: "include",
         }
       );
 
-      if (authResponse.ok) {
-        isAuthenticated = true;
-      } else if (authResponse.status === 401) {
-        const refreshResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/refresh`,
-          {
-            method: "POST",
-            headers,
-          }
-        );
-
-        if (refreshResponse.ok) {
-          const setCookieHeaders = refreshResponse.headers.get("set-cookie");
-
-          if (setCookieHeaders) {
-            const cookies = setCookieHeaders
-              .split(",")
-              .map((cookie) => cookie.split(";")[0])
-              .join("; ");
-
-            const newHeaders = {
-              ...headers,
-              Cookie: cookies,
-            };
-
-            const retryAuthResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/me`,
-              {
-                method: "GET",
-                headers: newHeaders,
-              }
-            );
-
-            if (retryAuthResponse.ok) {
-              isAuthenticated = true;
-
-              let response: NextResponse;
-
-              if (pathname === "/login" || pathname === "/") {
-                response = NextResponse.redirect(
-                  new URL("/dashboard", request.url)
-                );
-              } else {
-                response = NextResponse.next();
-              }
-
-              const cookieArray = setCookieHeaders.split(",");
-              cookieArray.forEach((cookie, index) => {
-                if (index === 0) {
-                  response.headers.set("Set-Cookie", cookie.trim());
-                } else {
-                  response.headers.append("Set-Cookie", cookie.trim());
-                }
-              });
-
-              return response;
+      if (refreshRes.ok) {
+        const setCookie = refreshRes.headers.get("set-cookie");
+        if (setCookie) {
+          const retryRes = await fetch(
+            `${process.env.NEXT_PUBLIC_API_CECAGEM_URL}/auth/me`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Cookie: setCookie
+                  .split(",")
+                  .map((c) => c.split(";")[0])
+                  .join("; "),
+              },
+              credentials: "include",
             }
+          );
+
+          if (retryRes.ok) {
+            const response = NextResponse.next();
+            const cookies = setCookie.split(",");
+            cookies.forEach((cookie, i) => {
+              if (i === 0) response.headers.set("Set-Cookie", cookie.trim());
+              else response.headers.append("Set-Cookie", cookie.trim());
+            });
+            return response;
           }
         }
-
-        isAuthenticated = false;
-      } else {
-        await authResponse.text();
-        isAuthenticated = false;
       }
-    } catch {
-      isAuthenticated = false;
     }
+  } catch (error) {
+    console.error("Middleware error:", error);
   }
-
-  console.log("User is authenticated:", isAuthenticated);
 
   if (isAuthenticated) {
     if (pathname === "/" || pathname === "/login") {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-
     return NextResponse.next();
-  } else {
-    const loginUrl = new URL("/login", request.url);
-    if (pathname !== "/") {
-      loginUrl.searchParams.set("redirect", pathname);
-    }
-    return NextResponse.redirect(loginUrl);
   }
+
+  return redirectToLogin(request, pathname);
+}
+
+function redirectToLogin(request: NextRequest, pathname: string) {
+  const loginUrl = new URL("/login", request.url);
+  if (pathname && pathname !== "/") {
+    loginUrl.searchParams.set("redirect", pathname);
+  }
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {
   matcher: [
-    /*
-     *  Solo interceptar rutas de la aplicación:
-     * - Rutas de estudiante: /dashboard, /profile, /calendario, etc.
-     * - Rutas de auth: /login
-     * - Excluir: archivos estáticos, API routes, recursos del sistema
-     */
-    "/((?!_next/static|_next/image|favicon.ico|public|api|image|.well-known|robots.txt|sitemap.xml|sw.js|workbox|manifest.json).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|sw.js|workbox|manifest.json|api|image|public|.well-known).*)",
   ],
 };

@@ -15,10 +15,7 @@
 
 # next.js
 .next/ 
-!.next/standalone 
-!.next/static
-!.next/server
-/out/
+.out/
 
 # production
 /build
