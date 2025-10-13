@@ -1,19 +1,19 @@
 {
-  "/_not-found/page": "/_not-found",
   "/favicon.ico/route": "/favicon.ico",
+  "/_not-found/page": "/_not-found",
   "/page": "/",
-  "/(admin)/calendar/page": "/calendar",
   "/(admin)/account/page": "/account",
+  "/(admin)/calendar/page": "/calendar",
   "/(admin)/contract/page": "/contract",
   "/(admin)/accounting-clients/page": "/accounting-clients",
   "/(admin)/dashboard/page": "/dashboard",
-  "/(admin)/deliverables/page": "/deliverables",
   "/(admin)/my-accounting-client/page": "/my-accounting-client",
-  "/(admin)/my-profile/page": "/my-profile",
+  "/(admin)/deliverables/page": "/deliverables",
   "/(admin)/my-contract/page": "/my-contract",
-  "/(admin)/user/page": "/user",
-  "/(admin)/reports/page": "/reports",
-  "/(admin)/research-clients/page": "/research-clients",
+  "/(admin)/my-profile/page": "/my-profile",
   "/(admin)/services/page": "/services",
-  "/(auth)/login/page": "/login"
+  "/(admin)/research-clients/page": "/research-clients",
+  "/(admin)/reports/page": "/reports",
+  "/(auth)/login/page": "/login",
+  "/(admin)/user/page": "/user"
 }

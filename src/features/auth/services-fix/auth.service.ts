@@ -15,17 +15,18 @@ export const authService = {
       `https://back-system.cecagem.com/api/v1/auth/login`
     );
 
-    const response = await fetch(
-      `https://back-system.cecagem.com/api/v1/auth/login`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-        credentials: "include",
-      }
-    );
+    const URL =
+      process.env.NEXT_PUBLIC_API_CECAGEM_URL ||
+      "https://back-system.cecagem.com/api/v1";
+
+    const response = await fetch(`${URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(credentials),
+      credentials: "include",
+    });
 
     const result = await response.json();
     console.log("Login result:", result);
