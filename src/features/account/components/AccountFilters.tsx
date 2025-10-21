@@ -30,7 +30,7 @@ export const AccountFilters = ({
   onClearFilters,
   isLoading = false,
 }: AccountFiltersProps) => {
-  const handleInputChange = (field: keyof ITransactionFilters, value: string | number | undefined) => {
+  const handleInputChange = (field: keyof ITransactionFilters, value: string | number | boolean | undefined) => {
     onFiltersChange({ ...filters, [field]: value });
   };
 
@@ -41,7 +41,7 @@ export const AccountFilters = ({
   return (
     <Card>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Búsqueda */}
           <div>
             <div className="relative">
@@ -88,6 +88,25 @@ export const AccountFilters = ({
                     {getStatusLabel(status)}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Recurrente */}
+          <div>
+            <Select
+              value={filters.isRecurrent === undefined ? "all" : filters.isRecurrent ? "true" : "false"}
+              onValueChange={(value) => 
+                handleInputChange("isRecurrent", value === "all" ? undefined : value === "true")
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todas las transacciones" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las transacciones</SelectItem>
+                <SelectItem value="true">Solo recurrentes</SelectItem>
+                <SelectItem value="false">Solo no recurrentes</SelectItem>
               </SelectContent>
             </Select>
           </div>

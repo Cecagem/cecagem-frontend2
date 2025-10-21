@@ -74,7 +74,7 @@ export const TransactionDetailsModal = ({
         onEscapeKeyDown={(e) => e.preventDefault()} // Prevenir cierre con ESC
       >
         {/* Header fijo */}
-        <DialogHeader className="flex-shrink-0 border-b pb-4 mb-4">
+        <DialogHeader className="border-b pb-4 mb-4">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5" />
             Detalles de la Transacción
@@ -91,25 +91,25 @@ export const TransactionDetailsModal = ({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
-                  <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Monto</p>
-                    <p className={`font-semibold text-lg break-words ${transaction.tipo === TType.INCOME ? "text-green-600" : "text-red-600"}`}>
+                    <p className={`font-semibold text-lg ${transaction.tipo === TType.INCOME ? "text-green-600" : "text-red-600"}`}>
                       {formatCurrency(parseFloat(transaction.monto))}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Fecha</p>
-                    <p className="font-medium break-words">{formatDate(transaction.fecha)}</p>
+                    <p className="font-medium">{formatDate(transaction.fecha)}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Tag className="h-4 w-4 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Tipo</p>
                     <Badge variant={getTypeVariant(transaction.tipo)} className="mt-1">
@@ -119,7 +119,7 @@ export const TransactionDetailsModal = ({
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Activity className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Activity className="h-4 w-4 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Estado</p>
                     <Badge variant={getStatusVariant(transaction.estado)} className="mt-1">
@@ -127,19 +127,39 @@ export const TransactionDetailsModal = ({
                     </Badge>
                   </div>
                 </div>
+
+
               </div>
 
               <div className="border-t my-4"></div>
 
+              {/* Sección de Transacción Recurrente - Ocupa toda la fila */}
+              <div className="bg-muted/50 p-4 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">Transacción Recurrente</p>
+                    <p className="text-xs text-muted-foreground">
+                      {transaction.isRecurrent 
+                        ? "Esta transacción se repite automáticamente cada mes" 
+                        : "Esta es una transacción única, no se repite"
+                      }
+                    </p>
+                  </div>
+                  <Badge variant={transaction.isRecurrent ? "default" : "outline"} className="ml-3">
+                    {transaction.isRecurrent ? "Mensual" : "Única"}
+                  </Badge>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Categoría</p>
-                  <p className="font-medium break-words">{transaction.categoria}</p>
+                  <p className="font-medium">{transaction.categoria}</p>
                 </div>
 
                 <div>
                   <p className="text-sm text-muted-foreground">Descripción</p>
-                  <p className="font-medium break-words">{transaction.descripcion}</p>
+                  <p className="font-medium">{transaction.descripcion}</p>
                 </div>
 
                 {transaction.paymentId && (

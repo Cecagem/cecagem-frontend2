@@ -18,6 +18,7 @@ export class TransactionService {
     if (filters?.categoria) params.append("categoria", filters.categoria);
     if (filters?.fechaInicio) params.append("fechaInicio", filters.fechaInicio);
     if (filters?.fechaFin) params.append("fechaFin", filters.fechaFin);
+    if (filters?.isRecurrent) params.append("isRecurrent", filters.isRecurrent.toString());
     if (filters?.page) params.append("page", filters.page.toString());
     if (filters?.limit) params.append("limit", filters.limit.toString());
 

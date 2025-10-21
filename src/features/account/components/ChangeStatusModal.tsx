@@ -82,7 +82,7 @@ export const ChangeStatusModal = ({
         onEscapeKeyDown={(e) => e.preventDefault()} // Prevenir cierre con ESC
       >
         {/* Header fijo */}
-        <DialogHeader className="flex-shrink-0 border-b pb-4 mb-4">
+        <DialogHeader className="shrink-0 border-b pb-4 mb-4">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Activity className="h-5 w-5" />
             Cambiar Estado
@@ -95,7 +95,7 @@ export const ChangeStatusModal = ({
           <div className="bg-muted/50 p-3 sm:p-4 rounded-lg space-y-2">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
               <span className="text-sm text-muted-foreground">Transacción:</span>
-              <span className="font-medium text-sm sm:text-base break-words">{transaction.descripcion}</span>
+              <span className="font-medium text-sm sm:text-base wrap-break-word">{transaction.descripcion}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
               <span className="text-sm text-muted-foreground">Monto:</span>

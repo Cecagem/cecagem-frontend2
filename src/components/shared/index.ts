@@ -6,3 +6,4 @@ export { SearchableSelect } from "./SearchableSelect";
 export type { SearchableSelectOption } from "./SearchableSelect";
 export { MultiSelect } from "./MultiSelect";
 export type { MultiSelectOption } from "./MultiSelect";
+export * from "./whatsapp";

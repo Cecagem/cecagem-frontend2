@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import ModeToggle from "@/components/themes/mode-toggle";
 import {
   Breadcrumb,
@@ -42,7 +43,9 @@ export default function ContractsPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-        <MainContracts />
+        <Suspense fallback={<div>Cargando...</div>}>
+          <MainContracts />
+        </Suspense>
       </div>
     </div>
   );

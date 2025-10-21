@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -50,12 +51,24 @@ export const AccountingClientTable = ({
   onPageChange,
   onPageSizeChange,
 }: AccountingClientTableProps) => {
+  const searchParams = useSearchParams();
   const [companyToDelete, setCompanyToDelete] = useState<ICompany | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const deleteCompanyMutation = useDeleteCompany();
 
+  // Solo renderizar en el cliente para evitar problemas de SSR
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Leer el ID de la empresa desde los query parameters solo en el cliente
+  const companyIdFromUrl = isClient ? searchParams.get('id') : null;
+
   // Encontrar la empresa seleccionada por ID para mantener la selección tras updates
-  const selectedCompany = selectedCompanyId 
+  const selectedCompany = isClient && companyIdFromUrl 
+    ? data.find(company => company.id === companyIdFromUrl) || null 
+    : selectedCompanyId 
     ? data.find(company => company.id === selectedCompanyId) || null 
     : null;
 
@@ -255,11 +268,31 @@ export const AccountingClientTable = ({
         getItemId={(company: ICompany) => company.id}
         onRowClick={(company: ICompany | null) => {
           if (!company) {
-            // Cerrar el detalle
+            // Cerrar el detalle - remover query parameters sin recargar
+            const url = new URL(window.location.href);
+            url.searchParams.delete('id');
+            url.searchParams.delete('tab');
+            window.history.replaceState({}, '', url.pathname + url.search);
             setSelectedCompanyId(null);
           } else {
-            // Toggle del detalle usando ID
-            setSelectedCompanyId(selectedCompanyId === company.id ? null : company.id);
+            // Verificar si es la misma empresa ya seleccionada para deseleccionar (toggle)
+            const isCurrentlySelected = companyIdFromUrl === company.id || selectedCompanyId === company.id;
+            
+            if (isCurrentlySelected) {
+              // Cerrar el detalle - remover query parameters sin recargar
+              const url = new URL(window.location.href);
+              url.searchParams.delete('id');
+              url.searchParams.delete('tab');
+              window.history.replaceState({}, '', url.pathname + url.search);
+              setSelectedCompanyId(null);
+            } else {
+              // Abrir detalle con query parameters sin recargar
+              const url = new URL(window.location.href);
+              url.searchParams.set('id', company.id);
+              url.searchParams.set('tab', 'general'); // Tab por defecto
+              window.history.replaceState({}, '', url.pathname + url.search);
+              setSelectedCompanyId(company.id);
+            }
           }
         }}
         // Props para paginación del servidor
