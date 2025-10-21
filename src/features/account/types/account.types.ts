@@ -21,6 +21,7 @@ export interface ITransaction {
   estado: TransactionStatus;
   descripcion: string;
   paymentId: string;
+  isRecurrent: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +36,7 @@ export interface ICreateTransactionDto {
   estado: TransactionStatus;
   descripcion: string;
   paymentId?: string;
+  isRecurrent?: boolean;
 }
 
 export interface IUpdateTransactionDto {
@@ -46,6 +48,7 @@ export interface IUpdateTransactionDto {
   estado?: TransactionStatus;
   descripcion?: string;
   paymentId?: string;
+  isRecurrent?: boolean;
 }
 
 // FILTERS
@@ -56,6 +59,7 @@ export interface ITransactionFilters {
   categoria?: string;
   fechaInicio?: string;
   fechaFin?: string;
+  isRecurrent?: boolean;
   page?: number;
   limit?: number;
 }
@@ -89,6 +93,7 @@ export interface ITransactionFormData {
   estado: TransactionStatus;
   descripcion: string;
   paymentId?: string;
+  isRecurrent: boolean;
 }
 
 // TABLE TYPES
@@ -99,6 +104,7 @@ export interface ITransactionTableFilters {
   categoria: string;
   fechaInicio: string;
   fechaFin: string;
+  isRecurrent: string;
   page: number;
   limit: number;
 }

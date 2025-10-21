@@ -135,6 +135,15 @@ export const AccountTable = ({
       ),
     },
     {
+      accessorKey: "isRecurrent",
+      header: "Recurrente",
+      cell: ({ row }) => (
+        <Badge variant={row.original.isRecurrent ? "default" : "outline"}>
+          {row.original.isRecurrent ? "Sí" : "No"}
+        </Badge>
+      ),
+    },
+    {
       id: "actions",
       header: "Acciones",
       cell: ({ row }) => (

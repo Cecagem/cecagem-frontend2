@@ -134,7 +134,7 @@ export function LoginForm({
                     placeholder=" "
                     autoFocus
                     {...register("email")}
-                    className={`!bg-card h-11 ${
+                    className={`bg-card! h-11 ${
                       errors.email
                         ? "border-destructive focus-visible:ring-2 focus-visible:ring-destructive/50 focus-visible:border-destructive"
                         : ""
@@ -157,7 +157,7 @@ export function LoginForm({
                     type={showPassword ? "text" : "password"}
                     placeholder=" "
                     {...register("password")}
-                    className={`!bg-card h-11 ${
+                    className={`bg-card! h-11 ${
                       errors.password
                         ? "border-destructive focus-visible:ring-2 focus-visible:ring-destructive/50 focus-visible:border-destructive pr-10"
                         : "pr-10"
@@ -203,7 +203,7 @@ export function LoginForm({
                   Recuérdame
                 </Label>
                 <a
-                  href="#"
+                  href="/forgot-password"
                   className="ml-auto text-sm underline-offset-2 hover:underline"
                 >
                   ¿Olvidaste tu contraseña?
@@ -213,7 +213,7 @@ export function LoginForm({
               <Button
                 type="submit"
                 disabled={login.isPending}
-                className="w-full bg-gradient-to-r from-primary to-secondary dark:from-primary/80 dark:to-secondary/80 text-white"
+                className="w-full bg-linear-to-r from-primary to-secondary dark:from-primary/80 dark:to-secondary/80 text-white"
               >
                 {login.isPending ? "Iniciando sesión..." : "Iniciar sesión"}
               </Button>
@@ -245,7 +245,7 @@ export function LoginForm({
           </form>
 
           {/* Logo y Sección de Administración */}
-          <div className="bg-gradient-to-l from-primary/20 to-secondary/20 dark:from-primary/60 dark:to-secondary/60 relative hidden md:flex md:flex-col md:items-center md:justify-center p-8">
+          <div className="bg-linear-to-l from-primary/20 to-secondary/20 dark:from-primary/60 dark:to-secondary/60 relative hidden md:flex md:flex-col md:items-center md:justify-center p-8">
             <div className="text-center space-y-6">
               {/* Logo */}
               <div className="mx-auto flex items-center justify-center">

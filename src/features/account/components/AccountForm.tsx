@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import type { 
@@ -49,6 +50,7 @@ const transactionSchema = z.object({
   descripcion: z.string().min(1, "La descripción es requerida").max(200, "La descripción no puede exceder 200 caracteres"),
   fecha: z.string().min(1, "La fecha es requerida"),
   estado: z.string().min(1, "Seleccione un estado"),
+  isRecurrent: z.boolean(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -70,6 +72,7 @@ export const AccountForm = ({
       descripcion: transaction?.descripcion || "",
       fecha: transaction?.fecha ? new Date(transaction.fecha).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       estado: transaction?.estado || TStatus.COMPLETED,
+      isRecurrent: transaction?.isRecurrent || false,
     },
   });
 
@@ -84,6 +87,7 @@ export const AccountForm = ({
         descripcion: transaction.descripcion,
         fecha: new Date(transaction.fecha).toISOString().split('T')[0],
         estado: transaction.estado,
+        isRecurrent: transaction.isRecurrent || false,
       });
     }
   }, [transaction, form]);
@@ -97,6 +101,7 @@ export const AccountForm = ({
       descripcion: data.descripcion,
       fecha: data.fecha,
       estado: data.estado as TransactionStatus,
+      isRecurrent: data.isRecurrent,
     };
     onSubmit(submitData);
   };
@@ -104,7 +109,7 @@ export const AccountForm = ({
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
       {/* Header fijo */}
-      <div className="flex-shrink-0 border-b pb-4 mb-6">
+      <div className="border-b pb-4 mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold text-center sm:text-left">
           {mode === "create" ? "Nueva Transacción" : "Editar Transacción"}
         </h2>
@@ -214,6 +219,32 @@ export const AccountForm = ({
                   <FormControl>
                     <Input type="date" className="w-full" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            
+            {/* Transacción Recurrente */}
+            <FormField
+              control={form.control}
+              name="isRecurrent"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-sm font-medium">
+                      Transacción Recurrente
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Esta transacción se repetirá mensualmente
+                    </p>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
