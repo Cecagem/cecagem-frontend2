@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { NotificationProvider } from "@/features/notifications/components/NotificationProvider";
 import React from "react";
 
 export default function AdminLayout({
@@ -11,8 +12,10 @@ export default function AdminLayout({
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar variant="floating" />
-      <>{children}</>
+      <NotificationProvider>
+        <AppSidebar variant="floating" />
+        <>{children}</>
+      </NotificationProvider>
     </SidebarProvider>
   );
 }

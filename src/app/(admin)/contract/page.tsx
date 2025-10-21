@@ -10,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Bell } from "lucide-react";
 import { MainContracts } from "@/features/contract";
+import { BellComponent } from "@/components/shared/notification/BellComponent";
 
 export default function ContractsPage() {
   return (
@@ -36,7 +36,7 @@ export default function ContractsPage() {
             aria-label="Notificaciones"
             className="mr-2"
           >
-            <Bell className="h-5 w-5" />
+            <BellComponent />
           </Button>
         </div>
       </header>
