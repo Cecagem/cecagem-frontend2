@@ -32,8 +32,15 @@ interface CompanyExpandedViewProps {
 export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ company }) => {
   const searchParams = useSearchParams();
   
-  // Leer el tab activo desde los query parameters
-  const activeTabFromUrl = searchParams.get('tab') || 'general';
+  const [isClient, setIsClient] = useState(false);
+  
+  // Solo renderizar en el cliente para evitar problemas de SSR
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Leer el tab activo desde los query parameters solo en el cliente
+  const activeTabFromUrl = isClient ? (searchParams.get('tab') || 'general') : 'general';
   const [activeTab, setActiveTab] = useState(activeTabFromUrl);
   
   // Función para cambiar tab y actualizar URL sin recargar

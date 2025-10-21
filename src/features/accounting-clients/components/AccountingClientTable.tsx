@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -54,13 +54,19 @@ export const AccountingClientTable = ({
   const searchParams = useSearchParams();
   const [companyToDelete, setCompanyToDelete] = useState<ICompany | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const deleteCompanyMutation = useDeleteCompany();
 
-  // Leer el ID de la empresa desde los query parameters
-  const companyIdFromUrl = searchParams.get('id');
+  // Solo renderizar en el cliente para evitar problemas de SSR
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Leer el ID de la empresa desde los query parameters solo en el cliente
+  const companyIdFromUrl = isClient ? searchParams.get('id') : null;
 
   // Encontrar la empresa seleccionada por ID para mantener la selección tras updates
-  const selectedCompany = companyIdFromUrl 
+  const selectedCompany = isClient && companyIdFromUrl 
     ? data.find(company => company.id === companyIdFromUrl) || null 
     : selectedCompanyId 
     ? data.find(company => company.id === selectedCompanyId) || null 
