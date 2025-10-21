@@ -31,39 +31,39 @@ export function LoginForm({
     register,
     handleSubmit,
     control,
-    // setValue,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
-  // const userAccount = {
-  //   super_admin: {
-  //     name: "super_admin",
-  //     email: "superadmin@cecagem.com",
-  //     password: "123456",
-  //   },
-  //   admin: {
-  //     name: "admin",
-  //     email: "admin@cecagem.com",
-  //     password: "123456",
-  //   },
-  //   rrhh: {
-  //     name: "rrhh",
-  //     email: "rrhh@cecagem.com",
-  //     password: "123456",
-  //   },
-  //   colaborador_interno: {
-  //     name: "colaborador_interno",
-  //     email: "carlos.mendoza@cecagem.com",
-  //     password: "123456",
-  //   },
-  //   colaborador_externo: {
-  //     name: "colaborador_externo",
-  //     email: "diana.torres@freelance.com",
-  //     password: "123456",
-  //   },
-  // };
+  const userAccount = {
+    super_admin: {
+      name: "super_admin",
+      email: "superadmin@cecagem.com",
+      password: "123456",
+    },
+    admin: {
+      name: "admin",
+      email: "admin@cecagem.com",
+      password: "123456",
+    },
+    rrhh: {
+      name: "rrhh",
+      email: "rrhh@cecagem.com",
+      password: "123456",
+    },
+    colaborador_interno: {
+      name: "colaborador_interno",
+      email: "carlos.mendoza@cecagem.com",
+      password: "123456",
+    },
+    colaborador_externo: {
+      name: "colaborador_externo",
+      email: "diana.torres@freelance.com",
+      password: "123456",
+    },
+  };
 
   const onSubmit = async (data: LoginFormData) => {
     login.mutate(
@@ -81,16 +81,16 @@ export function LoginForm({
     );
   };
 
-  // const fillCredentials = (
-  //   account: { email: string; password: string },
-  //   autoSubmit = false
-  // ) => {
-  //   setValue("email", account.email, { shouldValidate: true });
-  //   setValue("password", account.password, { shouldValidate: true });
-  //   if (autoSubmit) {
-  //     handleSubmit(onSubmit)();
-  //   }
-  // };
+  const fillCredentials = (
+    account: { email: string; password: string },
+    autoSubmit = false
+  ) => {
+    setValue("email", account.email, { shouldValidate: true });
+    setValue("password", account.password, { shouldValidate: true });
+    if (autoSubmit) {
+      handleSubmit(onSubmit)();
+    }
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -217,7 +217,7 @@ export function LoginForm({
               >
                 {login.isPending ? "Iniciando sesión..." : "Iniciar sesión"}
               </Button>
-              {/* 
+
               <div className="flex flex-wrap gap-2">
                 {Object.entries(userAccount).map(([key, account]) => (
                   <Button
@@ -229,7 +229,7 @@ export function LoginForm({
                     {account.name.replace("_", " ")}
                   </Button>
                 ))}
-              </div> */}
+              </div>
 
               <div className="text-center text-sm text-muted-foreground">
                 ¿Tienes problemas para iniciar sesión?{" "}
