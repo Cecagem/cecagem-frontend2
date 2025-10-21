@@ -1,0 +1,22 @@
+{
+  "..\\node_modules\\@tanstack\\query-devtools\\build\\index.js -> ./DevtoolsComponent/LNWAZHJI.js": {
+    "id": null,
+    "files": []
+  },
+  "..\\node_modules\\@tanstack\\query-devtools\\build\\index.js -> ./DevtoolsPanelComponent/MWZ6AO7Z.js": {
+    "id": null,
+    "files": []
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": 90472,
+    "files": [
+      "static/chunks/472.2c08b965bd9148e2.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": 99341,
+    "files": [
+      "static/chunks/9341.9dd4325e474cb349.js"
+    ]
+  }
+}

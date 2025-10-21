@@ -1,14 +1,34 @@
 import { cecagemApi } from "@/lib/api-client";
 
 import { LoginRequest, User2 } from "@/features/auth";
-console.log("API URL:", process.env.NEXT_PUBLIC_API_CECAGEM_URL);
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<{ message: string }> => {
-    const result = await cecagemApi.post<{ message: string }>(
-      "/auth/login",
-      credentials
+    // const result = await cecagemApi.post<{ message: string }>(
+    //   "/auth/login",
+    //   credentials
+    // );
+    console.log("Logging in with credentials:", credentials);
+    console.log("API URL:", process.env.NEXT_PUBLIC_API_CECAGEM_URL);
+    console.log(
+      "Full URL:",
+      `https://back-system.cecagem.com/api/v1/auth/login`
     );
+
+    const URL =
+      process.env.NEXT_PUBLIC_API_CECAGEM_URL ||
+      "https://back-system.cecagem.com/api/v1";
+
+    const response = await fetch(`${URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(credentials),
+      credentials: "include",
+    });
+
+    const result = await response.json();
     console.log("Login result:", result);
 
     return result;

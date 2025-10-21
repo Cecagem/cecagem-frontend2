@@ -1,0 +1,19 @@
+{
+  "/favicon.ico/route": "/favicon.ico",
+  "/_not-found/page": "/_not-found",
+  "/page": "/",
+  "/(admin)/account/page": "/account",
+  "/(admin)/calendar/page": "/calendar",
+  "/(admin)/contract/page": "/contract",
+  "/(admin)/accounting-clients/page": "/accounting-clients",
+  "/(admin)/dashboard/page": "/dashboard",
+  "/(admin)/my-accounting-client/page": "/my-accounting-client",
+  "/(admin)/deliverables/page": "/deliverables",
+  "/(admin)/my-contract/page": "/my-contract",
+  "/(admin)/my-profile/page": "/my-profile",
+  "/(admin)/services/page": "/services",
+  "/(admin)/research-clients/page": "/research-clients",
+  "/(admin)/reports/page": "/reports",
+  "/(auth)/login/page": "/login",
+  "/(admin)/user/page": "/user"
+}

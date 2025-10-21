@@ -10,6 +10,8 @@ class ApiClient {
   private client: AxiosInstance;
 
   constructor(baseURL?: string) {
+    console.log("API Base URL:", baseURL);
+
     this.client = axios.create({
       baseURL,
       timeout: 30000,
@@ -98,7 +100,8 @@ class ApiClient {
 }
 
 export const cecagemApi = new ApiClient(
-  process.env.NEXT_PUBLIC_API_CECAGEM_URL
+  process.env.NEXT_PUBLIC_API_CECAGEM_URL ||
+    "https://back-system.cecagem.com/api/v1"
 );
 
 export type { ApiError, RequestData };
