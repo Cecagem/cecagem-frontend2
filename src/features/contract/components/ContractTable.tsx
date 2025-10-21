@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { FileText } from 'lucide-react';
 import { DataTable, ServerPaginationMeta } from '@/components/shared/data-table';
 import { getContractColumns } from './contract-columns';
@@ -27,10 +28,16 @@ export const ContractTable = ({
   onPageChange,
   onPageSizeChange,
 }: ContractTableProps) => {
+  const searchParams = useSearchParams();
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
 
+  // Leer el ID del contrato desde los query parameters
+  const contractIdFromUrl = searchParams.get('id');
+  
   // Encontrar el contrato seleccionado por ID para mantener la selección tras updates
-  const selectedContract = selectedContractId 
+  const selectedContract = contractIdFromUrl 
+    ? data.find(contract => contract.id === contractIdFromUrl) || null 
+    : selectedContractId 
     ? data.find(contract => contract.id === selectedContractId) || null 
     : null;
 
@@ -56,11 +63,31 @@ export const ContractTable = ({
       getItemId={(contract: IContract) => contract.id}
       onRowClick={(contract: IContract | null) => {
         if (!contract) {
-          // Cerrar el detalle
+          // Cerrar el detalle - remover query parameters sin recargar
+          const url = new URL(window.location.href);
+          url.searchParams.delete('id');
+          url.searchParams.delete('tab');
+          window.history.replaceState({}, '', url.pathname + url.search);
           setSelectedContractId(null);
         } else {
-          // Toggle del detalle usando ID
-          setSelectedContractId(selectedContractId === contract.id ? null : contract.id);
+          // Verificar si es el mismo contrato ya seleccionado para deseleccionar (toggle)
+          const isCurrentlySelected = contractIdFromUrl === contract.id || selectedContractId === contract.id;
+          
+          if (isCurrentlySelected) {
+            // Cerrar el detalle - remover query parameters sin recargar
+            const url = new URL(window.location.href);
+            url.searchParams.delete('id');
+            url.searchParams.delete('tab');
+            window.history.replaceState({}, '', url.pathname + url.search);
+            setSelectedContractId(null);
+          } else {
+            // Abrir detalle con query parameters sin recargar
+            const url = new URL(window.location.href);
+            url.searchParams.set('id', contract.id);
+            url.searchParams.set('tab', 'general'); // Tab por defecto
+            window.history.replaceState({}, '', url.pathname + url.search);
+            setSelectedContractId(contract.id);
+          }
         }
       }}
       // Props para paginación del servidor

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,25 @@ interface CompanyExpandedViewProps {
 }
 
 export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ company }) => {
+  const searchParams = useSearchParams();
+  
+  // Leer el tab activo desde los query parameters
+  const activeTabFromUrl = searchParams.get('tab') || 'general';
+  const [activeTab, setActiveTab] = useState(activeTabFromUrl);
+  
+  // Función para cambiar tab y actualizar URL sin recargar
+  const handleTabChange = (value: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', value);
+    window.history.replaceState({}, '', url.pathname + url.search);
+    setActiveTab(value);
+  };
+
+  // Sincronizar el estado local cuando cambien los query parameters
+  useEffect(() => {
+    setActiveTab(activeTabFromUrl);
+  }, [activeTabFromUrl]);
+
   const [paymentModal, setPaymentModal] = useState<{
     open: boolean;
     payments: IPayment[];
@@ -71,7 +91,7 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
 
   return (
     <div className="w-full">
-      <Tabs defaultValue="general" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="general">Información General</TabsTrigger>
           <TabsTrigger value="payments">Información de Pagos</TabsTrigger>

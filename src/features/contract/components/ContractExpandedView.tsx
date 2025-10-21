@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from 'next/navigation';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,8 +19,24 @@ interface ContractExpandedViewProps {
 }
 
 export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) => {
-  // Usar directamente los datos del contrato que llegan como prop
-  const [activeTab, setActiveTab] = useState("general");
+  const searchParams = useSearchParams();
+  
+  // Leer el tab activo desde los query parameters
+  const activeTabFromUrl = searchParams.get('tab') || 'general';
+  const [activeTab, setActiveTab] = useState(activeTabFromUrl);
+  
+  // Función para cambiar tab y actualizar URL sin recargar
+  const handleTabChange = (value: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', value);
+    window.history.replaceState({}, '', url.pathname + url.search);
+    setActiveTab(value);
+  };
+
+  // Sincronizar el estado local cuando cambien los query parameters
+  useEffect(() => {
+    setActiveTab(activeTabFromUrl);
+  }, [activeTabFromUrl]);
   const [paymentModal, setPaymentModal] = useState<{
     open: boolean;
     payments: IContractPayment[];
@@ -157,9 +174,9 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="general">Información General</TabsTrigger>
+          <TabsTrigger value="general">Información General</TabsTrigger>  
           <TabsTrigger value="payments">Pagos y Cuotas</TabsTrigger>
           <TabsTrigger value="deliverables">Entregables</TabsTrigger>
         </TabsList>
@@ -558,7 +575,7 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                         <CardContent>
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-start gap-3">
-                              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${
+                              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
                                 isApproved ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 
                                 isCompleted ? 'bg-primary text-primary-foreground' : 
                                 'bg-muted text-muted-foreground'
@@ -581,7 +598,7 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                                 {deliverable.notes && (
                                   <div className="mt-2 p-2 rounded-md bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 flex items-start gap-2">
                                     <MessageSquare className="h-4 w-4 text-primary shrink-0" />
-                                    <div className="text-xs break-words">
+                                    <div className="text-xs wrap-break-word">
                                       <span className="font-semibold text-primary">Observación: </span>
                                       <span className="text-muted-foreground">{deliverable.notes}</span>
                                     </div>
