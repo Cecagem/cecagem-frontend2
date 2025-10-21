@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FileText } from 'lucide-react';
 import { DataTable, ServerPaginationMeta } from '@/components/shared/data-table';
@@ -30,12 +30,18 @@ export const ContractTable = ({
 }: ContractTableProps) => {
   const searchParams = useSearchParams();
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
-  // Leer el ID del contrato desde los query parameters
-  const contractIdFromUrl = searchParams.get('id');
+  // Solo renderizar en el cliente para evitar problemas de SSR
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Leer el ID del contrato desde los query parameters solo en el cliente
+  const contractIdFromUrl = isClient ? searchParams.get('id') : null;
   
   // Encontrar el contrato seleccionado por ID para mantener la selección tras updates
-  const selectedContract = contractIdFromUrl 
+  const selectedContract = isClient && contractIdFromUrl 
     ? data.find(contract => contract.id === contractIdFromUrl) || null 
     : selectedContractId 
     ? data.find(contract => contract.id === selectedContractId) || null 

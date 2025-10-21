@@ -20,9 +20,15 @@ interface ContractExpandedViewProps {
 
 export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) => {
   const searchParams = useSearchParams();
+  const [isClient, setIsClient] = useState(false);
   
-  // Leer el tab activo desde los query parameters
-  const activeTabFromUrl = searchParams.get('tab') || 'general';
+  // Solo renderizar en el cliente para evitar problemas de SSR
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Leer el tab activo desde los query parameters solo en el cliente
+  const activeTabFromUrl = isClient ? (searchParams.get('tab') || 'general') : 'general';
   const [activeTab, setActiveTab] = useState(activeTabFromUrl);
   
   // Función para cambiar tab y actualizar URL sin recargar
