@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams } from 'next/navigation';
 import { AdminHeader } from "@/components/shared";
 
 // Importar hooks de accounting-clients
@@ -14,9 +15,16 @@ import {
   CompanyDetailView 
 } from "@/features/my-accounting-client/components";
 
-export default function MyAccountingClientPage() {
+function MyAccountingClientContent() {
+  const searchParams = useSearchParams();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [isDetailView, setIsDetailView] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  
+  // Solo renderizar en el cliente para evitar problemas de SSR
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   // Estado para filtros con paginación
   const [filters, setFilters] = useState<Partial<ICompanyFilters>>({
@@ -31,11 +39,25 @@ export default function MyAccountingClientPage() {
   // Hook para obtener la empresa seleccionada (se actualiza automáticamente)
   const { data: selectedCompanyData, isLoading: isLoadingSelectedCompany } = useCompany(selectedCompanyId || "");
 
-  const userCompanies = companiesData?.data || [];
+  const userCompanies = useMemo(() => companiesData?.data || [], [companiesData?.data]);
   const paginationMeta = companiesData?.pagination;
   
   // Convertir undefined a null para compatibilidad con CompanyDetailView
   const selectedCompany = selectedCompanyData || null;
+
+  // Leer parámetros de URL y establecer la empresa seleccionada
+  useEffect(() => {
+    if (isClient) {
+      const companyId = searchParams.get('id');
+      if (companyId) {
+        setSelectedCompanyId(companyId);
+        setIsDetailView(true);
+      } else {
+        setIsDetailView(false);
+        setSelectedCompanyId(null);
+      }
+    }
+  }, [isClient, searchParams]);
 
   const handleSearch = (search: string) => {
     setFilters(prev => ({
@@ -54,11 +76,21 @@ export default function MyAccountingClientPage() {
   };
 
   const handleCompanyClick = (companyId: string) => {
+    // Actualizar URL con el ID de la empresa
+    const url = new URL(window.location.href);
+    url.searchParams.set('id', companyId);
+    window.history.pushState({}, '', url.pathname + url.search);
+    
     setSelectedCompanyId(companyId);
     setIsDetailView(true);
   };
 
   const handleBackToList = () => {
+    // Limpiar parámetros de URL al volver a la lista
+    const url = new URL(window.location.href);
+    url.searchParams.delete('id');
+    window.history.pushState({}, '', url.pathname + url.search);
+    
     setIsDetailView(false);
     setSelectedCompanyId(null);
   };
@@ -97,5 +129,13 @@ export default function MyAccountingClientPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function MyAccountingClientPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <MyAccountingClientContent />
+    </Suspense>
   );
 }
