@@ -207,7 +207,7 @@ export const BellComponent = () => {
                     onClick={(e) => handleNotificationClick(notification, e)}
                   >
                     <div className="flex gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
+                      <div className="shrink-0 mt-0.5">
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 space-y-1.5">
@@ -223,7 +223,7 @@ export const BellComponent = () => {
                             {notification.title}
                           </p>
                           {isUnread && (
-                            <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                            <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
                           )}
                         </div>
                         <TooltipProvider delayDuration={300}>

@@ -12,6 +12,7 @@ import { useUpdateDeliverable } from '../hooks';
 import { PaymentModal } from './PaymentModal';
 import { RejectDeliverableModal } from './RejectDeliverableModal';
 import { UploadPaymentModal } from './UploadPaymentModal';
+import { WhatsAppNotificationButton } from "@/components/shared";
 import type { IContract, IContractPayment } from "../types";
 
 interface ContractExpandedViewProps {
@@ -167,6 +168,13 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
     return contract.contractUsers?.some(
       contractUser => contractUser.user.role === 'COLLABORATOR_EXTERNAL'
     ) || false;
+  };
+
+  // Función para obtener el cliente del contrato
+  const getContractClient = () => {
+    return contract.contractUsers?.find(
+      contractUser => contractUser.user.role === 'CLIENT'
+    );
   };
 
   // Handler para abrir modal de subir pago
@@ -433,6 +441,18 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                                     <Upload className="h-4 w-4" />
                                     <span className="sm:inline">Subir Pago</span>
                                   </Button>
+                                )}
+
+                                {getContractClient() && !isPaid && (
+                                  <WhatsAppNotificationButton
+                                    userId={getContractClient()!.user.id}
+                                    contractId={contract.id}
+                                    installmentId={installment.id}
+                                    size="sm"
+                                    className="w-full sm:w-auto"
+                                  >
+                                    Notificar Cliente
+                                  </WhatsAppNotificationButton>
                                 )}
                               </div>
                             </div>
