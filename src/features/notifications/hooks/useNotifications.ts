@@ -6,6 +6,7 @@ import { NotificationEvent } from "../types/notification.types";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/cookies";
 import { notificationService } from "../services/notification.service";
+import { cleanNotificationMessage } from "@/lib/utils";
 
 export const useNotifications = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -62,7 +63,7 @@ export const useNotifications = () => {
         addNotificationEvent(event);
 
         toast(event.title, {
-          description: event.message,
+          description: cleanNotificationMessage(event.message),
           duration: 5000,
         });
 

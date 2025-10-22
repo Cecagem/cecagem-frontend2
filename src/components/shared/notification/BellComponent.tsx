@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Bell,
   CheckCheck,
@@ -17,31 +18,78 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useNotificationStore } from "@/features/notifications/stores/notification.store";
 import { notificationService } from "@/features/notifications/services/notification.service";
+import { Notification } from "@/features/notifications/types/notification.types";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, cleanNotificationMessage } from "@/lib/utils";
 
 export const BellComponent = () => {
   const { notifications, unreadCount, isConnected } = useNotifications();
   const { markAsRead, markAllAsRead } = useNotificationStore();
+  const [open, setOpen] = useState(false);
 
-  const handleMarkAsRead = async (notificationId: string) => {
-    if (notificationId.startsWith("temp-")) {
-      markAsRead(notificationId);
-      return;
+  const handleNotificationClick = async (
+    notification: Notification,
+    event: React.MouseEvent
+  ) => {
+    event.stopPropagation();
+
+    if (!notification.id.startsWith("temp-")) {
+      try {
+        await notificationService.markAsRead(notification.id);
+        markAsRead(notification.id);
+      } catch (error) {
+        console.error("Error al marcar notificación como leída:", error);
+      }
+    } else {
+      markAsRead(notification.id);
     }
 
-    try {
-      await notificationService.markAsRead(notificationId);
-      markAsRead(notificationId);
-    } catch (error) {
-      console.error("Error al marcar notificación como leída:", error);
+    let payload = notification.payload || {};
+
+    if (typeof payload === "string") {
+      try {
+        payload = JSON.parse(payload);
+      } catch (error) {
+        console.error("Error parsing payload:", error);
+        payload = {};
+      }
+    }
+
+    const { contractId } = payload;
+
+    if (contractId) {
+      let tab = "general";
+
+      if (
+        notification.type === "PAYMENT_PENDING" ||
+        notification.type === "PAYMENT_REJECTED" ||
+        notification.type === "PAYMENT_COMPLETED"
+      ) {
+        tab = "payments";
+      } else if (
+        notification.type === "DELIVERABLE_REJECTED" ||
+        notification.type === "DELIVERABLE_APPROVED" ||
+        notification.type === "DELIVERABLE_COMPLETED"
+      ) {
+        tab = "deliverables";
+      }
+
+      setOpen(false);
+
+      window.location.href = `/contract?id=${contractId}&tab=${tab}`;
     }
   };
 
@@ -93,7 +141,7 @@ export const BellComponent = () => {
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -156,7 +204,7 @@ export const BellComponent = () => {
                         ? "bg-blue-50/50 dark:bg-blue-950/20 border-l-blue-500 hover:bg-blue-100/50 dark:hover:bg-blue-950/30"
                         : "bg-background border-l-transparent hover:bg-accent/30"
                     )}
-                    onClick={() => handleMarkAsRead(notification.id)}
+                    onClick={(e) => handleNotificationClick(notification, e)}
                   >
                     <div className="flex gap-3">
                       <div className="flex-shrink-0 mt-0.5">
@@ -178,16 +226,27 @@ export const BellComponent = () => {
                             <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
                           )}
                         </div>
-                        <p
-                          className={cn(
-                            "text-xs line-clamp-2 leading-relaxed",
-                            isUnread
-                              ? "text-foreground/80"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          {notification.message}
-                        </p>
+                        <TooltipProvider delayDuration={300}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p
+                                className={cn(
+                                  "text-xs line-clamp-2 leading-relaxed",
+                                  isUnread
+                                    ? "text-foreground/80"
+                                    : "text-muted-foreground"
+                                )}
+                              >
+                                {cleanNotificationMessage(notification.message)}
+                              </p>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs">
+                              <p className="text-xs">
+                                {cleanNotificationMessage(notification.message)}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <p className="text-xs text-muted-foreground/60 font-medium">
                           {formatDistanceToNow(
                             new Date(notification.createdAt),

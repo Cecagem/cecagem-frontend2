@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { FileText } from 'lucide-react';
-import { DataTable, ServerPaginationMeta } from '@/components/shared/data-table';
-import { getContractColumns } from './contract-columns';
-import { ContractExpandedView } from './ContractExpandedView';
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { FileText } from "lucide-react";
+import {
+  DataTable,
+  ServerPaginationMeta,
+} from "@/components/shared/data-table";
+import { getContractColumns } from "./contract-columns";
+import { ContractExpandedView } from "./ContractExpandedView";
 import type { IContract } from "../types";
 
 interface ContractTableProps {
@@ -29,7 +32,9 @@ export const ContractTable = ({
   onPageSizeChange,
 }: ContractTableProps) => {
   const searchParams = useSearchParams();
-  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(
+    null
+  );
   const [isClient, setIsClient] = useState(false);
 
   // Solo renderizar en el cliente para evitar problemas de SSR
@@ -37,14 +42,35 @@ export const ContractTable = ({
     setIsClient(true);
   }, []);
 
-  // Leer el ID del contrato desde los query parameters solo en el cliente
-  const contractIdFromUrl = isClient ? searchParams.get('id') : null;
-  
-  // Encontrar el contrato seleccionado por ID para mantener la selección tras updates
-  const selectedContract = isClient && contractIdFromUrl 
-    ? data.find(contract => contract.id === contractIdFromUrl) || null 
-    : selectedContractId 
-    ? data.find(contract => contract.id === selectedContractId) || null 
+  const contractIdFromUrl = isClient ? searchParams.get("id") : null;
+
+  useEffect(() => {
+    if (isClient && contractIdFromUrl) {
+      setSelectedContractId(contractIdFromUrl);
+    }
+  }, [isClient, contractIdFromUrl]);
+
+  useEffect(() => {
+    const handleNotificationClick = (event: CustomEvent) => {
+      const { contractId } = event.detail;
+      setSelectedContractId(contractId);
+    };
+
+    window.addEventListener(
+      "contractNotificationClick",
+      handleNotificationClick as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "contractNotificationClick",
+        handleNotificationClick as EventListener
+      );
+    };
+  }, []);
+
+  const selectedContract = selectedContractId
+    ? data.find((contract) => contract.id === selectedContractId) || null
     : null;
 
   // Generar columnas con los handlers
@@ -64,34 +90,38 @@ export const ContractTable = ({
       enableSorting={true}
       pageSize={10}
       selectedItem={selectedContract}
-      detailComponent={(contract: IContract) => <ContractExpandedView contract={contract} />}
+      detailComponent={(contract: IContract) => (
+        <ContractExpandedView contract={contract} />
+      )}
       detailTitle={(contract: IContract) => contract.name}
       getItemId={(contract: IContract) => contract.id}
       onRowClick={(contract: IContract | null) => {
         if (!contract) {
           // Cerrar el detalle - remover query parameters sin recargar
           const url = new URL(window.location.href);
-          url.searchParams.delete('id');
-          url.searchParams.delete('tab');
-          window.history.replaceState({}, '', url.pathname + url.search);
+          url.searchParams.delete("id");
+          url.searchParams.delete("tab");
+          window.history.replaceState({}, "", url.pathname + url.search);
           setSelectedContractId(null);
         } else {
           // Verificar si es el mismo contrato ya seleccionado para deseleccionar (toggle)
-          const isCurrentlySelected = contractIdFromUrl === contract.id || selectedContractId === contract.id;
-          
+          const isCurrentlySelected =
+            contractIdFromUrl === contract.id ||
+            selectedContractId === contract.id;
+
           if (isCurrentlySelected) {
             // Cerrar el detalle - remover query parameters sin recargar
             const url = new URL(window.location.href);
-            url.searchParams.delete('id');
-            url.searchParams.delete('tab');
-            window.history.replaceState({}, '', url.pathname + url.search);
+            url.searchParams.delete("id");
+            url.searchParams.delete("tab");
+            window.history.replaceState({}, "", url.pathname + url.search);
             setSelectedContractId(null);
           } else {
             // Abrir detalle con query parameters sin recargar
             const url = new URL(window.location.href);
-            url.searchParams.set('id', contract.id);
-            url.searchParams.set('tab', 'general'); // Tab por defecto
-            window.history.replaceState({}, '', url.pathname + url.search);
+            url.searchParams.set("id", contract.id);
+            url.searchParams.set("tab", "general"); // Tab por defecto
+            window.history.replaceState({}, "", url.pathname + url.search);
             setSelectedContractId(contract.id);
           }
         }
