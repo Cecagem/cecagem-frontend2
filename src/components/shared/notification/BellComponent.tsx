@@ -70,6 +70,12 @@ export const BellComponent = () => {
 
     const { contractId } = payload;
 
+    if (notification.type === "TRANSACTION_CREATED") {
+      setOpen(false);
+      window.location.href = `/account`;
+      return;
+    }
+
     if (contractId) {
       let tab = "general";
 
@@ -131,6 +137,11 @@ export const BellComponent = () => {
       ),
       CONTRACT_EXPIRED: (
         <Clock className={cn(iconClass, "text-red-600 dark:text-red-400")} />
+      ),
+      TRANSACTION_CREATED: (
+        <DollarSign
+          className={cn(iconClass, "text-blue-600 dark:text-blue-400")}
+        />
       ),
     };
     return (
