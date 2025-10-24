@@ -34,10 +34,13 @@ import { Notification } from "@/features/notifications/types/notification.types"
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn, cleanNotificationMessage } from "@/lib/utils";
+import { useAuthStore } from "@/features/auth/stores/auth.store";
+import { UserRole } from "@/features/user/types/user.types";
 
 export const BellComponent = () => {
   const { notifications, unreadCount, isConnected } = useNotifications();
   const { markAsRead, markAllAsRead } = useNotificationStore();
+  const { user } = useAuthStore();
   const [open, setOpen] = useState(false);
 
   const handleNotificationClick = async (
@@ -68,11 +71,31 @@ export const BellComponent = () => {
       }
     }
 
-    const { contractId } = payload;
+    console.log(payload);
+
+    const { contractId, companyId } = payload;
+    const isCollaborator =
+      user?.role === UserRole.COLLABORATOR_INTERNAL ||
+      user?.role === UserRole.COLLABORATOR_EXTERNAL;
 
     if (notification.type === "TRANSACTION_CREATED") {
       setOpen(false);
       window.location.href = `/account`;
+      return;
+    }
+
+    if (
+      (notification.type === "PAYMENT_PENDING" ||
+        notification.type === "PAYMENT_REJECTED" ||
+        notification.type === "PAYMENT_COMPLETED") &&
+      companyId
+    ) {
+      setOpen(false);
+      if (isCollaborator) {
+        window.location.href = `/my-accounting-client?id=${companyId}`;
+      } else {
+        window.location.href = `/accounting-clients?id=${companyId}&tab=installments`;
+      }
       return;
     }
 
@@ -95,7 +118,11 @@ export const BellComponent = () => {
 
       setOpen(false);
 
-      window.location.href = `/contract?id=${contractId}&tab=${tab}`;
+      if (isCollaborator) {
+        window.location.href = `/my-contract?id=${contractId}&tab=${tab}`;
+      } else {
+        window.location.href = `/contract?id=${contractId}&tab=${tab}`;
+      }
     }
   };
 

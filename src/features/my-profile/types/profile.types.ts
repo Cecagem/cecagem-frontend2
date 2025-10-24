@@ -19,7 +19,12 @@ export interface Profile {
 export interface UserProfile {
   id: string;
   email: string;
-  role: "ADMIN" | "RRHH" | "SUPER_ADMIN" | "COLLABRATOR_INTERNAL" | "COLLABORATOR_EXTERNAL";
+  role:
+    | "ADMIN"
+    | "RRHH"
+    | "SUPER_ADMIN"
+    | "COLLABORATOR_INTERNAL"
+    | "COLLABORATOR_EXTERNAL";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
