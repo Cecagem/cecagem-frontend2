@@ -1,22 +1,32 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import { Plus } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useContracts, useDeleteContract } from '../hooks/useContracts';
-import { ContractFilters } from './ContractFilters';
-import { ContractTable } from './ContractTable';
-import { ContractStatsCards } from './ContractStatsCards';
-import { DeleteContractDialog } from './DeleteContractDialog';
-import { NewContractForm } from './NewContractForm';
-import type { 
-  IContractFilters 
-} from '../types';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  useContracts,
+  useDeleteContract,
+  useContract,
+} from "../hooks/useContracts";
+import { ContractFilters } from "./ContractFilters";
+import { ContractTable } from "./ContractTable";
+import { ContractStatsCards } from "./ContractStatsCards";
+import { DeleteContractDialog } from "./DeleteContractDialog";
+import { NewContractForm } from "./NewContractForm";
+import type { IContractFilters } from "../types";
 
 export function MainContracts() {
-  // Estado para filtros y paginación
+  const searchParams = useSearchParams();
+  const contractIdFromUrl = searchParams.get("id");
+
   const [filters, setFilters] = useState<Partial<IContractFilters>>({
     page: 1,
     limit: 10,
@@ -38,30 +48,41 @@ export function MainContracts() {
     open: false,
   });
 
-  // Obtener datos
-  const { 
-    data: contractsData, 
-    isLoading, 
-    error, 
-    refetch 
+  const {
+    data: contractsData,
+    isLoading,
+    error,
+    refetch,
   } = useContracts(filters);
 
-  // Hook de eliminación
+  const { data: specificContract } = useContract(contractIdFromUrl || "");
+
   const deleteContractMutation = useDeleteContract();
 
-  const contracts = useMemo(() => contractsData?.data || [], [contractsData?.data]);
+  const contracts = useMemo(() => {
+    const baseContracts = contractsData?.data || [];
+
+    if (specificContract && contractIdFromUrl) {
+      const exists = baseContracts.some((c) => c.id === contractIdFromUrl);
+      if (!exists) {
+        return [specificContract, ...baseContracts];
+      }
+    }
+
+    return baseContracts;
+  }, [contractsData?.data, specificContract, contractIdFromUrl]);
   const paginationMeta = contractsData?.meta;
 
   // Handlers para paginación
   const handlePageChange = useCallback((page: number) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       page,
     }));
   }, []);
 
   const handlePageSizeChange = useCallback((pageSize: number) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       limit: pageSize,
       page: 1, // Reset a la primera página cuando cambia el tamaño
@@ -69,13 +90,16 @@ export function MainContracts() {
   }, []);
 
   // Handlers para filtros
-  const handleFiltersChange = useCallback((newFilters: Partial<IContractFilters>) => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters,
-      page: 1,
-    }));
-  }, []);
+  const handleFiltersChange = useCallback(
+    (newFilters: Partial<IContractFilters>) => {
+      setFilters((prev) => ({
+        ...prev,
+        ...newFilters,
+        page: 1,
+      }));
+    },
+    []
+  );
 
   const handleClearFilters = useCallback(() => {
     setFilters({
@@ -105,14 +129,17 @@ export function MainContracts() {
   };
 
   // Handler para eliminar contrato
-  const handleDeleteContract = useCallback((contractId: string) => {
-    const contract = contracts.find(c => c.id === contractId);
-    setDeleteDialog({
-      open: true,
-      contractId,
-      contractName: contract?.name || null,
-    });
-  }, [contracts]);
+  const handleDeleteContract = useCallback(
+    (contractId: string) => {
+      const contract = contracts.find((c) => c.id === contractId);
+      setDeleteDialog({
+        open: true,
+        contractId,
+        contractName: contract?.name || null,
+      });
+    },
+    [contracts]
+  );
 
   // Confirmar eliminación
   const handleConfirmDelete = useCallback(async () => {
@@ -123,18 +150,25 @@ export function MainContracts() {
       setDeleteDialog({ open: false, contractId: null, contractName: null });
     } catch (error) {
       // Error ya manejado por el hook
-      console.error('Error eliminando contrato:', error);
+      console.error("Error eliminando contrato:", error);
     }
   }, [deleteDialog.contractId, deleteContractMutation]);
 
   // Calcular estadísticas básicas de los datos actuales
   const stats = {
     totalContracts: paginationMeta?.total || contracts.length,
-    activeContracts: contracts.filter(c => c.overallProgress < 100).length,
-    completedContracts: contracts.filter(c => c.overallProgress === 100).length,
+    activeContracts: contracts.filter((c) => c.overallProgress < 100).length,
+    completedContracts: contracts.filter((c) => c.overallProgress === 100)
+      .length,
     thisMonthContracts: 0,
     totalRevenue: contracts.reduce((sum, c) => sum + c.costTotal, 0),
-    avgProgress: contracts.length > 0 ? Math.round(contracts.reduce((sum, c) => sum + c.overallProgress, 0) / contracts.length) : 0,
+    avgProgress:
+      contracts.length > 0
+        ? Math.round(
+            contracts.reduce((sum, c) => sum + c.overallProgress, 0) /
+              contracts.length
+          )
+        : 0,
   };
 
   if (error) {
@@ -167,11 +201,9 @@ export function MainContracts() {
           Nuevo Proyecto
         </Button>
       </div>
-      
+
       {/* Estadísticas */}
-      <ContractStatsCards 
-        data={stats}
-      />
+      <ContractStatsCards data={stats} />
 
       {/* Filtros */}
       <ContractFilters
@@ -197,30 +229,29 @@ export function MainContracts() {
       {/* Diálogo de confirmación de eliminación */}
       <DeleteContractDialog
         open={deleteDialog.open}
-        onOpenChange={(open) => 
-          setDeleteDialog(prev => ({ ...prev, open }))
-        }
+        onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}
         onConfirm={handleConfirmDelete}
         contractName={deleteDialog.contractName || undefined}
         isLoading={deleteContractMutation.isPending}
       />
 
       {/* Modal de crear/editar contrato */}
-      <Dialog 
-        open={createContractModal.open} 
+      <Dialog
+        open={createContractModal.open}
         onOpenChange={(open) => {
           if (!open) {
             handleCloseContractModal();
           }
         }}
       >
-        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[85vh] overflow-y-auto" style={{ width: '80vw', maxWidth: '70vw' }}>
+        <DialogContent
+          className="max-w-[95vw] w-[95vw] max-h-[85vh] overflow-y-auto"
+          style={{ width: "80vw", maxWidth: "70vw" }}
+        >
           <DialogHeader>
-            <DialogTitle>
-              Nuevo Contrato
-            </DialogTitle>
+            <DialogTitle>Nuevo Contrato</DialogTitle>
           </DialogHeader>
-          
+
           <NewContractForm
             onSuccess={handleContractSuccess}
             onCancel={handleCloseContractModal}

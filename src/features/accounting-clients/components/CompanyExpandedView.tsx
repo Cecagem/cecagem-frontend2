@@ -23,6 +23,7 @@ import { es } from 'date-fns/locale';
 
 import type { ICompany, IPayment } from '../types/accounting-clients.types';
 import { PaymentStatus } from '@/features/contract/types/contract.types';
+import { WhatsAppNotificationButton } from "@/components/shared";
 import { PaymentModal } from './PaymentModal';
 
 interface CompanyExpandedViewProps {
@@ -301,16 +302,29 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({ compan
                                   {isPaid ? "Pagado" : hasPendingPayments ? "En Verificación" : "Pendiente"}
                                 </Badge>
                                 
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={!hasPayments}
-                                  onClick={() => handleViewPayments(installment.payments || [], installment.description)}
-                                  className="gap-2 w-full sm:w-auto"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  <span className="sm:inline">Ver Pagos</span>
-                                </Button>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={!hasPayments}
+                                    onClick={() => handleViewPayments(installment.payments || [], installment.description)}
+                                    className="gap-2 w-full sm:w-auto"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sm:inline">Ver Pagos</span>
+                                  </Button>
+
+                                  {!isPaid && (
+                                    <WhatsAppNotificationButton
+                                      companyId={company.id}
+                                      installmentId={installment.id}
+                                      size="sm"
+                                      className="w-full sm:w-auto"
+                                    >
+                                      Notificar Empresa
+                                    </WhatsAppNotificationButton>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </CardContent>

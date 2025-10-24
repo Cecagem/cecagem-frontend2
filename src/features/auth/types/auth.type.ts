@@ -13,7 +13,12 @@ export interface User {
 
 export interface User2 {
   id: string;
-  role: "ADMIN" | "RRHH" | "SUPER_ADMIN" | "COLLABRATOR_INTERNAL" | "COLLABORATOR_EXTERNAL";
+  role:
+    | "ADMIN"
+    | "RRHH"
+    | "SUPER_ADMIN"
+    | "COLLABORATOR_INTERNAL"
+    | "COLLABORATOR_EXTERNAL";
   email: string;
   isActive: boolean;
   profile: Profile;

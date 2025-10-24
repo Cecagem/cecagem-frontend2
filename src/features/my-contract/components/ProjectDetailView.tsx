@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,12 +30,35 @@ interface ProjectDetailViewProps {
   isLoading?: boolean;
 }
 
-export const ProjectDetailView = ({ 
+function ProjectDetailViewContent({ 
   contract: initialContract, 
   onBack, 
   isLoading: initialLoading 
-}: ProjectDetailViewProps) => {
-  const [activeTab, setActiveTab] = useState("deliverables");
+}: ProjectDetailViewProps) {
+  const searchParams = useSearchParams();
+  const [isClient, setIsClient] = useState(false);
+  
+  // Solo renderizar en el cliente para evitar problemas de SSR
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Leer el tab activo desde los query parameters
+  const activeTabFromUrl = isClient ? (searchParams.get('tab') || 'deliverables') : 'deliverables';
+  const [activeTab, setActiveTab] = useState(activeTabFromUrl);
+  
+  // Sincronizar el estado local cuando cambien los query parameters
+  useEffect(() => {
+    setActiveTab(activeTabFromUrl);
+  }, [activeTabFromUrl]);
+  
+  // Función para cambiar tab y actualizar URL
+  const handleTabChange = (value: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', value);
+    window.history.replaceState({}, '', url.pathname + url.search);
+    setActiveTab(value);
+  };
   
   // Obtener usuario actual
   const { user } = useAuthStore();
@@ -161,7 +185,7 @@ export const ProjectDetailView = ({
       </Card>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className={`grid w-full ${isExternalCollaborator ? 'grid-cols-2' : 'grid-cols-2'}`}>
           <TabsTrigger value="deliverables" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -199,5 +223,13 @@ export const ProjectDetailView = ({
         )}
       </Tabs>
     </div>
+  );
+}
+
+export const ProjectDetailView = (props: ProjectDetailViewProps) => {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <ProjectDetailViewContent {...props} />
+    </Suspense>
   );
 };
