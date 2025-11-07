@@ -38,7 +38,7 @@ export interface IProfile {
 // Interface para User
 export interface IResearchClient {
   id: string;
-  email: string;
+  email?: string;
   role: UserRole;
   isActive: boolean;
   createdAt: string;
@@ -48,7 +48,7 @@ export interface IResearchClient {
 
 // DTOs para crear usuario completo
 export interface ICreateUserDto {
-  email: string;
+  email?: string;
   password: string;
   role: UserRole;
   isActive: boolean;
@@ -109,7 +109,7 @@ export interface IResearchClientFilters {
 // Datos para el formulario
 export interface IResearchClientFormData {
   // Datos de usuario
-  email: string;
+  email?: string;
   password?: string;
   isActive: boolean;
   

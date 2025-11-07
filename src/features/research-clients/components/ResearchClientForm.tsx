@@ -50,9 +50,13 @@ import type {
 const researchClientFormSchema = z.object({
   // Datos de usuario
   email: z.string()
-    .min(1, 'El email es obligatorio')
-    .email('Email inválido')
-    .max(100, 'El email no puede exceder 100 caracteres'),
+    .optional()
+    .refine((val) => !val || z.string().email().safeParse(val).success, {
+      message: 'Email inválido'
+    })
+    .refine((val) => !val || val.length <= 100, {
+      message: 'El email no puede exceder 100 caracteres'
+    }),
   isActive: z.boolean(),
   
   // Datos de perfil
@@ -143,7 +147,7 @@ export function ResearchClientForm({
   useEffect(() => {
     if (mode === 'edit' && client && open) {
       form.reset({
-        email: client.email,
+        email: client.email || '',
         isActive: client.isActive,
         firstName: client.profile.firstName,
         lastName: client.profile.lastName,
@@ -182,7 +186,7 @@ export function ResearchClientForm({
         // Actualizar cliente existente
         const updateData: IUpdateResearchClientDto = {
           user: {
-            email: data.email,
+            email: data.email || undefined,
             isActive: data.isActive,
           },
           profile: {
@@ -206,7 +210,7 @@ export function ResearchClientForm({
         // Crear nuevo cliente
         const createData: ICreateResearchClientDto = {
           user: {
-            email: data.email,
+            email: data.email || undefined,
             password: 'temporal123',
             role: 'CLIENT' as UserRole,
             isActive: data.isActive,
@@ -301,11 +305,11 @@ export function ResearchClientForm({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Correo Electrónico *</FormLabel>
+                    <FormLabel>Correo Electrónico (Opcional)</FormLabel>
                     <FormControl>
                       <Input 
                         type="email" 
-                        placeholder="correo@ejemplo.com" 
+                        placeholder="correo@ejemplo.com (opcional)" 
                         {...field} 
                       />
                     </FormControl>

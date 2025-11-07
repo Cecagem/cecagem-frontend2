@@ -55,10 +55,12 @@ export const deliverableColumns = ({
     cell: ({ row }) => {
       const service = row.original.service;
       return (
-        <div className="max-w-[200px]">
+        <div className="max-w-[250px] min-w-[200px]">
           {service ? (
             <div>
-              <div className="font-medium">{service.name}</div>
+              <div className="font-medium overflow-hidden text-ellipsis whitespace-nowrap" title={service.name}>
+                {service.name}
+              </div>
               <div className="text-sm text-muted-foreground">
                 ${service.basePrice?.toFixed(2)}
               </div>

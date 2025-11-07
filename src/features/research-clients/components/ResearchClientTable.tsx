@@ -95,6 +95,11 @@ export function ResearchClientTable({
     {
       accessorKey: "email",
       header: "Email",
+      cell: ({ row }) => (
+        <span className="text-sm">
+          {row.original.email || 'No registrado'}
+        </span>
+      ),
     },
     {
       accessorKey: "profile.documentNumber",

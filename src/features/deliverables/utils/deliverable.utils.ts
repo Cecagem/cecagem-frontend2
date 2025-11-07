@@ -73,8 +73,8 @@ export const validateDeliverableForm = (
 };
 
 export const truncateText = (text: string, maxLength: number = 100): string => {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + "...";
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + "...";
 };
 
 export const getSearchableText = (deliverable: IDeliverable): string => {

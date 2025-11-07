@@ -328,7 +328,7 @@ export function ReportPreview({ contractData, companyData, transactionData, repo
                     <div className="space-y-2">
                       {transactionData.expenseByCategory.map((category, index) => (
                         <div key={index} className="flex justify-between items-center p-2 bg-red-50 rounded">
-                          <span className="font-medium">{category.category}</span>
+                          <span className="font-medium text-black">{category.category}</span>
                           <div className="text-right">
                             <p className="font-bold text-red-600">
                               {formatCurrency(
@@ -353,7 +353,7 @@ export function ReportPreview({ contractData, companyData, transactionData, repo
                     <div className="space-y-2">
                       {transactionData.incomeByCategory.map((category, index) => (
                         <div key={index} className="flex justify-between items-center p-2 bg-green-50 rounded">
-                          <span className="font-medium">{category.category}</span>
+                          <span className="font-medium text-black">{category.category}</span>
                           <div className="text-right">
                             <p className="font-bold text-green-600">
                               {formatCurrency(
