@@ -492,7 +492,11 @@ export const NewContractForm = ({
   if (open !== undefined && onOpenChange) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="max-w-6xl max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => e.preventDefault()} // ✅ CORRECCIÓN: Evita cerrar al hacer click fuera
+          onEscapeKeyDown={(e) => e.preventDefault()}     // ✅ CORRECCIÓN: Evita cerrar con ESC
+        >
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-xl">
               Crear Nuevo Contrato

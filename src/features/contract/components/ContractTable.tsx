@@ -15,6 +15,7 @@ interface ContractTableProps {
   data: IContract[];
   isLoading?: boolean;
   onDelete?: (contractId: string) => void;
+  onEdit?: (contractId: string) => void;
   // Props para paginación del servidor
   serverPagination?: boolean;
   paginationMeta?: ServerPaginationMeta;
@@ -26,6 +27,7 @@ export const ContractTable = ({
   data,
   isLoading = false,
   onDelete,
+  onEdit, // ✅ Nuevo prop para editar
   serverPagination = false,
   paginationMeta,
   onPageChange,
@@ -73,9 +75,10 @@ export const ContractTable = ({
     ? data.find((contract) => contract.id === selectedContractId) || null
     : null;
 
-  // Generar columnas con los handlers
+  //  Generar columnas con los handlers (incluyendo onEdit)
   const columns = getContractColumns({
     onDelete,
+    onEdit, //  Pasamos el handler de editar
   });
 
   return (

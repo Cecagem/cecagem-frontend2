@@ -3,16 +3,18 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react"; // Agregar Edit
 import { formatCurrency } from "../utils";
 import type { IContract } from "../types";
 
 interface ContractColumnsProps {
   onDelete?: (contractId: string) => void;
+  onEdit?: (contractId: string) => void; // Agregar onEdit
 }
 
 export const getContractColumns = ({ 
-  onDelete 
+  onDelete,
+  onEdit // Agregar parámetro
 }: ContractColumnsProps = {}): ColumnDef<IContract>[] => [
   {
     accessorKey: "name",
@@ -130,6 +132,18 @@ export const getContractColumns = ({
 
       return (
         <div className="flex items-center gap-2">
+          {/* ✅ Botón de Editar agregado */}
+          {onEdit && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onEdit(contract.id)}
+              className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
+          {/* Botón de Eliminar (existente) */}
           <Button
             size="sm"
             variant="outline"

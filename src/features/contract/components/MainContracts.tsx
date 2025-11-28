@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
@@ -21,6 +22,7 @@ import { ContractTable } from "./ContractTable";
 import { ContractStatsCards } from "./ContractStatsCards";
 import { DeleteContractDialog } from "./DeleteContractDialog";
 import { NewContractForm } from "./NewContractForm";
+import { ContractEditForm } from "./ContractEditForm"; // ✅ AGREGADO
 import type { IContractFilters } from "../types";
 
 export function MainContracts() {
@@ -31,6 +33,19 @@ export function MainContracts() {
     page: 1,
     limit: 10,
   });
+
+  // Estado para el diálogo de edición
+const [editDialog, setEditDialog] = useState<{
+  open: boolean;
+  contractId: string | null;
+  contractName: string | null;
+  contractData?: any; // Datos completos del contrato para editar
+}>({
+  open: false,
+  contractId: null,
+  contractName: null,
+  contractData: null,
+});
 
   // Estado para el diálogo de confirmación de eliminación
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -141,6 +156,20 @@ export function MainContracts() {
     [contracts]
   );
 
+  // Handler para editar contrato
+const handleEditContract = useCallback(
+  (contractId: string) => {
+    const contract = contracts.find((c) => c.id === contractId);
+    setEditDialog({
+      open: true,
+      contractId,
+      contractName: contract?.name || null,
+      contractData: contract || null, // Todos los datos del contrato
+    });
+  },
+  [contracts]
+);
+
   // Confirmar eliminación
   const handleConfirmDelete = useCallback(async () => {
     if (!deleteDialog.contractId) return;
@@ -218,6 +247,7 @@ export function MainContracts() {
           data={contracts}
           isLoading={isLoading}
           onDelete={handleDeleteContract}
+          onEdit={handleEditContract}
           // Props para paginación del servidor
           serverPagination={true}
           paginationMeta={paginationMeta}
@@ -233,6 +263,18 @@ export function MainContracts() {
         onConfirm={handleConfirmDelete}
         contractName={deleteDialog.contractName || undefined}
         isLoading={deleteContractMutation.isPending}
+      />
+
+      {/* ✅ AGREGADO: Diálogo de edición de contrato */}
+      <ContractEditForm
+        open={editDialog.open}
+        onOpenChange={(open) => setEditDialog((prev) => ({ ...prev, open }))}
+        onContractSaved={() => {
+          setEditDialog({ open: false, contractId: null, contractName: null, contractData: null });
+          refetch(); // Recargar datos después de editar
+        }}
+        contract={editDialog.contractData}
+        mode="edit"
       />
 
       {/* Modal de crear/editar contrato */}
