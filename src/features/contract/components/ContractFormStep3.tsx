@@ -69,13 +69,22 @@ export const ContractFormStep3 = ({
   contractName 
 }: ContractFormStep3Props) => {
   const [installments, setInstallments] = useState<InstallmentData[]>(
-    initialData?.installments || []
+    initialData?.installments?.map(inst => ({
+      ...inst,
+      dueDate: new Date(inst.dueDate.getTime())
+    })) || []
   );
   const [numberOfInstallments, setNumberOfInstallments] = useState<number>(
     initialData?.installments?.length || 2
   );
+  const [hasManuallyEditedInstallments, setHasManuallyEditedInstallments] = useState<boolean>(
+    (initialData?.installments?.length || 0) > 0
+  );
   const [collaboratorPayments, setCollaboratorPayments] = useState<CollaboratorPaymentData[]>(
-    initialData?.collaboratorPayments || []
+    initialData?.collaboratorPayments?.map(pay => ({
+      ...pay,
+      dueDate: new Date(pay.dueDate.getTime())
+    })) || []
   );
 
   // Verificar si el colaborador es externo
@@ -86,11 +95,17 @@ export const ContractFormStep3 = ({
     defaultValues: {
       costTotal: initialData?.costTotal || 0,
       currency: initialData?.currency || "PEN",
-      startDate: initialData?.startDate || new Date(),
-      endDate: initialData?.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días después
+      startDate: initialData?.startDate ? new Date(initialData.startDate.getTime()) : new Date(),
+      endDate: initialData?.endDate ? new Date(initialData.endDate.getTime()) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       paymentType: initialData?.paymentType || "cash",
-      installments: installments,
-      collaboratorPayments: collaboratorPayments,
+      installments: installments.map(inst => ({
+        ...inst,
+        dueDate: new Date(inst.dueDate.getTime())
+      })),
+      collaboratorPayments: collaboratorPayments.map(pay => ({
+        ...pay,
+        dueDate: new Date(pay.dueDate.getTime())
+      })),
     },
   });
 
@@ -101,28 +116,22 @@ export const ContractFormStep3 = ({
 
   // Inicializar pago de colaborador externo cuando cambie la fecha final
   useEffect(() => {
-  if (isExternalCollaborator && collaboratorId && contractName && watchedEndDate) {
-    setCollaboratorPayments(prevPayments => {
-      if (prevPayments.length === 0) {
-        const newCollaboratorPayment: CollaboratorPaymentData = {
-          userId: collaboratorId,
-          amount: 0,
-          dueDate: watchedEndDate,
-          description: `Pago colaborador - ${contractName}`,
-        };
-        form.setValue("collaboratorPayments", [newCollaboratorPayment]);
-        return [newCollaboratorPayment];
-      } else {
-        const updatedPayments = prevPayments.map(payment => ({
-          ...payment,
-          dueDate: watchedEndDate,
-        }));
-        form.setValue("collaboratorPayments", updatedPayments);
-        return updatedPayments;
-      }
-    });
-  }
-}, [isExternalCollaborator, collaboratorId, contractName, watchedEndDate, form]);
+    if (isExternalCollaborator && collaboratorId && contractName && watchedEndDate) {
+      setCollaboratorPayments(prevPayments => {
+        if (prevPayments.length === 0) {
+          const newCollaboratorPayment: CollaboratorPaymentData = {
+            userId: collaboratorId,
+            amount: 0,
+            dueDate: new Date(watchedEndDate.getTime()),
+            description: `Pago colaborador - ${contractName}`,
+          };
+          form.setValue("collaboratorPayments", [newCollaboratorPayment]);
+          return [newCollaboratorPayment];
+        }
+        return prevPayments;
+      });
+    }
+  }, [isExternalCollaborator, collaboratorId, contractName, watchedEndDate, form]);
 
   // Calcular cuotas automáticamente
   const calculateInstallments = useCallback(() => {
@@ -133,12 +142,15 @@ export const ContractFormStep3 = ({
       const newInstallments: InstallmentData[] = [];
       
       // Calcular distribución temporal uniforme
-      const totalDays = Math.ceil((watchedEndDate.getTime() - watchedStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      const startTime = watchedStartDate.getTime();
+      const endTime = watchedEndDate.getTime();
+      const totalDays = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24));
       const daysBetweenInstallments = Math.ceil(totalDays / numberOfInstallments);
       
       for (let i = 0; i < numberOfInstallments; i++) {
-        const dueDate = new Date(watchedStartDate);
-        dueDate.setDate(dueDate.getDate() + (daysBetweenInstallments * (i + 1)));
+        // Crear nueva fecha a partir del timestamp para evitar mutaciones
+        const dueDateTime = startTime + ((daysBetweenInstallments * (i + 1)) * 24 * 60 * 60 * 1000);
+        const dueDate = new Date(dueDateTime);
         
         // La última cuota incluye el remainder para cuadrar el total exacto
         const amount = i === numberOfInstallments - 1 ? baseAmount + remainder : baseAmount;
@@ -146,19 +158,22 @@ export const ContractFormStep3 = ({
         newInstallments.push({
           description: `Cuota ${i + 1} de ${numberOfInstallments}`,
           amount: amount,
-          dueDate,
+          dueDate: dueDate,
         });
       }
       
       setInstallments(newInstallments);
       form.setValue("installments", newInstallments);
+      setHasManuallyEditedInstallments(true);
     }
   }, [watchedPaymentType, watchedStartDate, watchedEndDate, watchedCostTotal, numberOfInstallments, form]);
 
-  // Ejecutar cálculo cuando cambien los parámetros
+  // Ejecutar cálculo cuando cambien los parámetros (solo si no se ha editado manualmente)
   useEffect(() => {
-    calculateInstallments();
-  }, [calculateInstallments]);
+    if (!hasManuallyEditedInstallments && watchedPaymentType === "installments") {
+      calculateInstallments();
+    }
+  }, [calculateInstallments, hasManuallyEditedInstallments, watchedPaymentType]);
 
   // Calcular automáticamente cuando se cambia a "installments"
   useEffect(() => {
@@ -177,47 +192,67 @@ export const ContractFormStep3 = ({
     const newInstallments = [...installments, newInstallment];
     setInstallments(newInstallments);
     form.setValue("installments", newInstallments);
+    setHasManuallyEditedInstallments(true);
   };
 
   const removeInstallment = (index: number) => {
     const newInstallments = installments.filter((_, i) => i !== index);
     setInstallments(newInstallments);
     form.setValue("installments", newInstallments);
+    setHasManuallyEditedInstallments(true);
   };
 
   const updateInstallment = (index: number, field: keyof InstallmentData, value: string | number | Date) => {
     const newInstallments = [...installments];
-    newInstallments[index] = { ...newInstallments[index], [field]: value };
+    // Si es una fecha, crear una copia nueva para evitar mutaciones
+    const finalValue = value instanceof Date ? new Date(value.getTime()) : value;
+    newInstallments[index] = { ...newInstallments[index], [field]: finalValue };
     setInstallments(newInstallments);
     form.setValue("installments", newInstallments);
+    setHasManuallyEditedInstallments(true);
   };
 
   const updateCollaboratorPayment = (index: number, field: keyof CollaboratorPaymentData, value: string | number | Date) => {
     const newPayments = [...collaboratorPayments];
-    newPayments[index] = { ...newPayments[index], [field]: value };
+    // Si es una fecha, crear una copia nueva para evitar mutaciones
+    const finalValue = value instanceof Date ? new Date(value.getTime()) : value;
+    newPayments[index] = { ...newPayments[index], [field]: finalValue };
     setCollaboratorPayments(newPayments);
     form.setValue("collaboratorPayments", newPayments);
   };
 
   const handleSubmit = (data: Step3FormData) => {
-    // Si es pago en cuotas, usar las cuotas configuradas
-    if (data.paymentType === "installments") {
-      data.installments = installments;
+    // Crear copias profundas de las fechas para evitar mutaciones
+    const safeData = {
+      ...data,
+      startDate: new Date(data.startDate.getTime()),
+      endDate: new Date(data.endDate.getTime()),
+    };
+    
+    // Si es pago en cuotas, usar las cuotas configuradas con fechas copiadas
+    if (safeData.paymentType === "installments") {
+      safeData.installments = installments.map(inst => ({
+        ...inst,
+        dueDate: new Date(inst.dueDate.getTime())
+      }));
     } else {
       // Si es pago al contado, crear una sola cuota
-      data.installments = [{
+      safeData.installments = [{
         description: "Pago único",
-        amount: data.costTotal,
-        dueDate: data.endDate,
+        amount: safeData.costTotal,
+        dueDate: new Date(safeData.endDate.getTime()),
       }];
     }
     
     // Agregar pagos de colaborador si es externo
     if (isExternalCollaborator) {
-      data.collaboratorPayments = collaboratorPayments;
+      safeData.collaboratorPayments = collaboratorPayments.map(payment => ({
+        ...payment,
+        dueDate: new Date(payment.dueDate.getTime())
+      }));
     }
     
-    onNext(data);
+    onNext(safeData);
   };
 
   const totalInstallments = installments.reduce((sum, inst) => sum + inst.amount, 0);
@@ -423,7 +458,10 @@ export const ContractFormStep3 = ({
                     <label className="text-sm font-medium">Número de Cuotas *</label>
                     <Select 
                       value={numberOfInstallments.toString()} 
-                      onValueChange={(value) => setNumberOfInstallments(Number(value))}
+                      onValueChange={(value) => {
+                        setNumberOfInstallments(Number(value));
+                        setHasManuallyEditedInstallments(false);
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar cuotas" />
@@ -441,7 +479,10 @@ export const ContractFormStep3 = ({
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={calculateInstallments}
+                      onClick={() => {
+                        setHasManuallyEditedInstallments(false);
+                        calculateInstallments();
+                      }}
                       className="w-full"
                     >
                       Recalcular Cuotas
