@@ -8,8 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, FileText, Calendar, MessageSquare, AlertCircle } from "lucide-react";
 import { IContract, IContractDeliverable } from "@/features/contract/types/contract.types";
 import { useUpdateDeliverable } from "@/features/contract/hooks/useContracts";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 interface ProjectDeliverablesTabProps {
   contract: IContract;
@@ -64,6 +62,19 @@ export const ProjectDeliverablesTab = ({ contract }: ProjectDeliverablesTabProps
       return 'En Revisión';
     } else {
       return 'Pendiente';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString("es-PE", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+    } catch {
+      return "Fecha inválida";
     }
   };
 
@@ -130,12 +141,12 @@ export const ProjectDeliverablesTab = ({ contract }: ProjectDeliverablesTabProps
                       </p>
                       <div className="flex items-center text-sm text-muted-foreground mt-1">
                         <Calendar className="h-4 w-4 mr-1" />
-                        Asignado: {format(new Date(deliverable.assignedAt), 'dd MMM yyyy', { locale: es })}
+                        Asignado: {formatDate(deliverable.assignedAt)}
                       </div>
                       {deliverable.completedAt && (
                         <div className="flex items-center text-sm text-green-600 dark:text-green-400 mt-1">
                           <CheckCircle className="h-4 w-4 mr-1" />
-                          Completado: {format(new Date(deliverable.completedAt), 'dd MMM yyyy', { locale: es })}
+                          Completado: {formatDate(deliverable.completedAt)}
                         </div>
                       )}
                     </div>
@@ -169,7 +180,7 @@ export const ProjectDeliverablesTab = ({ contract }: ProjectDeliverablesTabProps
                         placeholder="Añade notas sobre el progreso o detalles del entregable..."
                         value={notes[deliverable.deliverableId] || ''}
                         onChange={(e) => handleNotesChange(deliverable.deliverableId, e.target.value)}
-                        className="min-h-[80px]"
+                        className="min-h-20"
                       />
                     </div>
                     <Button
