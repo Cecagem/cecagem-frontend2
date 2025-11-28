@@ -132,7 +132,7 @@ export const getContractColumns = ({
 
       return (
         <div className="flex items-center gap-2">
-          {/* ✅ Botón de Editar agregado */}
+          {/* Botón de Editar agregado */}
           {onEdit && (
             <Button
               size="sm"

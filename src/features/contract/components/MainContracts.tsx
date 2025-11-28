@@ -289,6 +289,8 @@ const handleEditContract = useCallback(
         <DialogContent
           className="max-w-[95vw] w-[95vw] max-h-[85vh] overflow-y-auto"
           style={{ width: "80vw", maxWidth: "70vw" }}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle>Nuevo Contrato</DialogTitle>

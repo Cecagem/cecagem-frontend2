@@ -487,16 +487,23 @@ export const NewContractForm = ({
       {renderCurrentStep()}
     </div>
   );
-
+  
   // Si se pasan props de modal, renderizar con Dialog
   if (open !== undefined && onOpenChange) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent 
-          className="max-w-6xl max-h-[90vh] overflow-y-auto"
-          onPointerDownOutside={(e) => e.preventDefault()} // ✅ CORRECCIÓN: Evita cerrar al hacer click fuera
-          onEscapeKeyDown={(e) => e.preventDefault()}     // ✅ CORRECCIÓN: Evita cerrar con ESC
-        >
+      <Dialog
+  open={open}
+  modal={true} // Fuerza modo modal REAL
+  onOpenChange={(value) => {
+    if (!value) onOpenChange(false); // Solo permitir cierre intencional
+  }}
+>
+  <DialogContent
+    className="max-w-6xl max-h-[90vh] overflow-y-auto"
+    onPointerDownOutside={(e) => e.preventDefault()} // evita cierre al hacer click fuera
+    onInteractOutside={(e) => e.preventDefault()} // evita cierre al interactuar fuera
+    onEscapeKeyDown={(e) => e.preventDefault()} // evita cierre con ESC
+  >
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-xl">
               Crear Nuevo Contrato

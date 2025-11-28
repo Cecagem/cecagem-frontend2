@@ -27,7 +27,7 @@ export const ContractTable = ({
   data,
   isLoading = false,
   onDelete,
-  onEdit, // ✅ Nuevo prop para editar
+  onEdit, // Nuevo prop para editar
   serverPagination = false,
   paginationMeta,
   onPageChange,
