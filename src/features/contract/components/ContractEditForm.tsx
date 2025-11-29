@@ -34,10 +34,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 
 import type { IContract } from '../types';
+import { contractService } from '../services/contract.service';
 
 // Esquema de validación completo
 const contractFormSchema = z.object({
-  // Información básica del contrato
   serviceId: z.string().optional(),
   name: z.string()
     .min(1, 'El nombre del proyecto es obligatorio')
@@ -82,13 +82,12 @@ const contractFormSchema = z.object({
   endDate: z.string()
     .min(1, 'La fecha de fin es obligatoria'),
   
-  // Cuotas (Installments) - CORREGIDO
   installments: z.array(z.object({
     id: z.string().optional(),
     description: z.string().min(1, 'La descripción es obligatoria'),
     amount: z.number().min(0, 'El monto debe ser mayor o igual a 0'),
     dueDate: z.string().min(1, 'La fecha de vencimiento es obligatoria'),
-    userCompanyId: z.string().nullable().optional(), // ✅ CORREGIDO: acepta null
+    userCompanyId: z.string().nullable().optional(),
     contractUserId: z.string().optional(),
   })).optional(),
 });
@@ -111,6 +110,7 @@ export function ContractEditForm({
   mode = 'edit'
 }: ContractEditFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<ContractFormData>({
     resolver: zodResolver(contractFormSchema),
@@ -156,7 +156,7 @@ export function ContractEditForm({
           description: inst.description,
           amount: inst.amount,
           dueDate: formatDateForInput(inst.dueDate),
-          userCompanyId: inst.userCompanyId, // ✅ Ya acepta null
+          userCompanyId: inst.userCompanyId,
           contractUserId: inst.contractId,
         })) || [],
       });
@@ -179,30 +179,121 @@ export function ContractEditForm({
     }
   }, [mode, contract, open, form]);
 
+  // FUNCIÓN CORREGIDA SEGÚN SWAGGER
   const handleSubmit = async (data: ContractFormData) => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
-    
+    setError(null);
+
     try {
-      console.log('Datos del contrato a guardar:', data);
+      // Preparar payload según especificación de Swagger
+      // Convertir costTotal a número válido con 2 decimales
+      let costTotalValue = typeof data.costTotal === 'string' 
+        ? parseFloat(data.costTotal) 
+        : Number(data.costTotal);
+
+      // Redondear a 2 decimales
+      costTotalValue = Math.round(costTotalValue * 100) / 100;
+
+      // Validar que costTotal sea un número válido
+      if (isNaN(costTotalValue) || !isFinite(costTotalValue)) {
+        throw new Error('El costo total debe ser un número válido');
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const payload: any = {
+        name: data.name,
+        university: data.university,
+        career: data.career,
+        observation: data.observation || '',
+        costTotal: costTotalValue, // Número validado y redondeado
+        currency: data.currency,
+        startDate: data.startDate,
+        endDate: data.endDate,
+      };
+
+      // Agregar serviceId solo si existe y no está vacío
+      if (data.serviceId && data.serviceId.trim() !== '') {
+        payload.serviceId = data.serviceId;
+      }
+
+      // Limpiar installments - NUNCA enviar 'id' en creación ni edición
+      if (data.installments && data.installments.length > 0) {
+        payload.installments = data.installments.map(i => {
+          let amountValue = typeof i.amount === 'string' 
+            ? parseFloat(i.amount) 
+            : Number(i.amount);
+
+          // Redondear a 2 decimales
+          amountValue = Math.round(amountValue * 100) / 100;
+
+          if (isNaN(amountValue) || !isFinite(amountValue)) {
+            throw new Error(`El monto de la cuota "${i.description}" debe ser un número válido`);
+          }
+
+          return {
+            description: i.description,
+            amount: amountValue, 
+            dueDate: i.dueDate, 
+          };
+        });
+      }
+
+      console.log("📤 DEBUG COMPLETO:");
+      console.log("1. data.costTotal ORIGINAL:", data.costTotal, "tipo:", typeof data.costTotal);
+      console.log("2. costTotalValue CONVERTIDO:", costTotalValue, "tipo:", typeof costTotalValue);
+      console.log("3. isNaN(costTotalValue):", isNaN(costTotalValue));
+      console.log("4. Payload completo:", JSON.stringify(payload, null, 2));
+      console.log("📝 Modo:", mode);
+      console.log("🆔 Contract ID:", contract?.id);
+
+      let response;
+
+      if (mode === "edit" && contract?.id) {
+        console.log("🔄 Actualizando contrato...");
+        response = await contractService.updateContract(contract.id, payload);
+        console.log("✅ Respuesta actualización:", response);
+      } else {
+        console.log("➕ Creando contrato...");
+        response = await contractService.createContract(payload);
+        console.log("✅ Respuesta creación:", response);
+      }
+
+      // Verificar que la respuesta sea válida
+      if (!response) {
+        throw new Error("No se recibió respuesta del servidor");
+      }
+
+      console.log("🎉 Operación exitosa, cerrando modal...");
+
+      //  Solo ejecutar estas líneas si la operación fue exitosa
+      form.reset();
+      onOpenChange(false); // Cerrar el modal
+      onContractSaved(); // Notificar al componente padre
+
+    } catch (error: unknown) {
+      console.error("❌ Error en operación del contrato:", error);
       
-      // Aquí iría tu llamada a la API
-      // const response = await fetch('/api/contracts', {
-      //   method: mode === 'edit' ? 'PUT' : 'POST',
-      //   body: JSON.stringify(data),
-      // });
+      // ✅ Manejo detallado de errores
+      let errorMessage = 'Ocurrió un error al guardar el contrato.';
       
-      setTimeout(() => {
-        form.reset();
-        onOpenChange(false);
-        onContractSaved();
-        setIsSubmitting(false);
-      }, 1000);
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      } else if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { data?: { message?: string } } };
+        errorMessage = apiError.response?.data?.message || errorMessage;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
       
-    } catch (error) {
-      console.error('Error en operación del contrato:', error);
+      setError(errorMessage);
+      
+      // No cerrar el modal si hay error
+      console.log("⚠️ Modal permanece abierto debido al error");
+    } finally {
       setIsSubmitting(false);
+      console.log("🏁 Proceso finalizado");
     }
   };
 
@@ -246,6 +337,13 @@ export function ContractEditForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 py-4">
             
+            {/*  Mostrar errores si existen */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+                {error}
+              </div>
+            )}
+
             {/* Información Básica del Contrato */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Información del Proyecto</h3>
@@ -329,9 +427,22 @@ export function ContractEditForm({
                         <Input 
                           type="number"
                           step="0.01"
+                          min="0"
                           placeholder="1800"
-                          {...field}
-                          onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value || ''}
+                          onChange={e => {
+                            const value = e.target.value;
+                            // Si está vacío, establecer 0
+                            if (value === '') {
+                              field.onChange(0);
+                              return;
+                            }
+                            // Convertir a número
+                            const numValue = parseFloat(value);
+                            field.onChange(isNaN(numValue) ? 0 : numValue);
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
                         />
                       </FormControl>
                       <FormMessage />
@@ -452,9 +563,20 @@ export function ContractEditForm({
                             <Input 
                               type="number"
                               step="0.01"
+                              min="0"
                               placeholder="500"
-                              {...field}
-                              onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                              value={field.value || ''}
+                              onChange={e => {
+                                const value = e.target.value;
+                                if (value === '') {
+                                  field.onChange(0);
+                                  return;
+                                }
+                                const numValue = parseFloat(value);
+                                field.onChange(isNaN(numValue) ? 0 : numValue);
+                              }}
+                              onBlur={field.onBlur}
+                              name={field.name}
                             />
                           </FormControl>
                           <FormMessage />
