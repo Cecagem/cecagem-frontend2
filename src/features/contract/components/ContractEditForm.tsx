@@ -36,7 +36,7 @@ import { Loader2, Plus, Trash2 } from 'lucide-react';
 import type { IContract } from '../types';
 import { contractService } from '../services/contract.service';
 
-// Esquema de validación completo
+// Esquema de validación SIN costTotal
 const contractFormSchema = z.object({
   serviceId: z.string().optional(),
   name: z.string()
@@ -57,10 +57,6 @@ const contractFormSchema = z.object({
   observation: z.string()
     .max(500, 'La observación no puede exceder 500 caracteres')
     .optional(),
-  
-  costTotal: z.number()
-    .min(0, 'El costo total debe ser mayor o igual a 0')
-    .max(1000000, 'El costo total no puede exceder 1,000,000'),
   
   currency: z.enum(['PEN', 'USD']),
   
@@ -120,7 +116,6 @@ export function ContractEditForm({
       university: '',
       career: '',
       observation: '',
-      costTotal: 0,
       currency: 'PEN',
       deliverablesPercentage: 0,
       paymentPercentage: 0,
@@ -144,7 +139,6 @@ export function ContractEditForm({
         university: contract.university || '',
         career: contract.career || '',
         observation: contract.observation || '',
-        costTotal: contract.costTotal || 0,
         currency: contract.currency || 'PEN',
         deliverablesPercentage: contract.deliverablesPercentage || 0,
         paymentPercentage: contract.paymentPercentage || 0,
@@ -167,7 +161,6 @@ export function ContractEditForm({
         university: '',
         career: '',
         observation: '',
-        costTotal: 0,
         currency: 'PEN',
         deliverablesPercentage: 0,
         paymentPercentage: 0,
@@ -179,7 +172,6 @@ export function ContractEditForm({
     }
   }, [mode, contract, open, form]);
 
-  // FUNCIÓN CORREGIDA SEGÚN SWAGGER
   const handleSubmit = async (data: ContractFormData) => {
     if (isSubmitting) return;
     
@@ -187,27 +179,12 @@ export function ContractEditForm({
     setError(null);
 
     try {
-      // Preparar payload según especificación de Swagger
-      // Convertir costTotal a número válido con 2 decimales
-      let costTotalValue = typeof data.costTotal === 'string' 
-        ? parseFloat(data.costTotal) 
-        : Number(data.costTotal);
-
-      // Redondear a 2 decimales
-      costTotalValue = Math.round(costTotalValue * 100) / 100;
-
-      // Validar que costTotal sea un número válido
-      if (isNaN(costTotalValue) || !isFinite(costTotalValue)) {
-        throw new Error('El costo total debe ser un número válido');
-      }
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const payload: any = {
         name: data.name,
         university: data.university,
         career: data.career,
         observation: data.observation || '',
-        costTotal: costTotalValue, // Número validado y redondeado
         currency: data.currency,
         startDate: data.startDate,
         endDate: data.endDate,
@@ -240,24 +217,20 @@ export function ContractEditForm({
         });
       }
 
-      console.log("📤 DEBUG COMPLETO:");
-      console.log("1. data.costTotal ORIGINAL:", data.costTotal, "tipo:", typeof data.costTotal);
-      console.log("2. costTotalValue CONVERTIDO:", costTotalValue, "tipo:", typeof costTotalValue);
-      console.log("3. isNaN(costTotalValue):", isNaN(costTotalValue));
-      console.log("4. Payload completo:", JSON.stringify(payload, null, 2));
-      console.log("📝 Modo:", mode);
-      console.log("🆔 Contract ID:", contract?.id);
+      console.log(" Payload completo:", JSON.stringify(payload, null, 2));
+      console.log(" Modo:", mode);
+      console.log(" Contract ID:", contract?.id);
 
       let response;
 
       if (mode === "edit" && contract?.id) {
-        console.log("🔄 Actualizando contrato...");
+        console.log(" Actualizando contrato...");
         response = await contractService.updateContract(contract.id, payload);
-        console.log("✅ Respuesta actualización:", response);
+        console.log(" Respuesta actualización:", response);
       } else {
-        console.log("➕ Creando contrato...");
+        console.log(" Creando contrato...");
         response = await contractService.createContract(payload);
-        console.log("✅ Respuesta creación:", response);
+        console.log(" Respuesta creación:", response);
       }
 
       // Verificar que la respuesta sea válida
@@ -265,17 +238,15 @@ export function ContractEditForm({
         throw new Error("No se recibió respuesta del servidor");
       }
 
-      console.log("🎉 Operación exitosa, cerrando modal...");
+      console.log(" Operación exitosa, cerrando modal...");
 
-      //  Solo ejecutar estas líneas si la operación fue exitosa
       form.reset();
-      onOpenChange(false); // Cerrar el modal
-      onContractSaved(); // Notificar al componente padre
+      onOpenChange(false);
+      onContractSaved();
 
     } catch (error: unknown) {
-      console.error("❌ Error en operación del contrato:", error);
+      console.error(" Error en operación del contrato:", error);
       
-      // ✅ Manejo detallado de errores
       let errorMessage = 'Ocurrió un error al guardar el contrato.';
       
       if (error && typeof error === 'object' && 'message' in error) {
@@ -288,12 +259,10 @@ export function ContractEditForm({
       }
       
       setError(errorMessage);
-      
-      // No cerrar el modal si hay error
-      console.log("⚠️ Modal permanece abierto debido al error");
+      console.log(" Modal permanece abierto debido al error");
     } finally {
       setIsSubmitting(false);
-      console.log("🏁 Proceso finalizado");
+      console.log(" Proceso finalizado");
     }
   };
 
@@ -337,7 +306,6 @@ export function ContractEditForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 py-4">
             
-            {/*  Mostrar errores si existen */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
                 {error}
@@ -416,62 +384,30 @@ export function ContractEditForm({
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Información Financiera</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="costTotal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Costo Total *</FormLabel>
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Moneda *</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                    >
                       <FormControl>
-                        <Input 
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="1800"
-                          value={field.value || ''}
-                          onChange={e => {
-                            const value = e.target.value;
-                            // Si está vacío, establecer 0
-                            if (value === '') {
-                              field.onChange(0);
-                              return;
-                            }
-                            // Convertir a número
-                            const numValue = parseFloat(value);
-                            field.onChange(isNaN(numValue) ? 0 : numValue);
-                          }}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                        />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar moneda" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Moneda *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar moneda" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="PEN">Soles (PEN)</SelectItem>
-                          <SelectItem value="USD">Dólares (USD)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent>
+                        <SelectItem value="PEN">Soles (PEN)</SelectItem>
+                        <SelectItem value="USD">Dólares (USD)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Fechas */}
@@ -603,7 +539,7 @@ export function ContractEditForm({
 
               {(!form.watch('installments') || form.watch('installments')?.length === 0) && (
                 <div className="text-center py-8 text-gray-500">
-                  No hay cuotas registradas. Haz clic en &quot;Agregar Cuota&quot; para comenzar.
+                  No hay cuotas registradas. {mode === 'create' && 'Haz clic en "Agregar Cuota" para comenzar.'}
                 </div>
               )}
             </div>
