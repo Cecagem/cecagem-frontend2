@@ -240,3 +240,21 @@ export interface IUpdatePaymentResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+// DTO para actualizar una cuota
+export interface IUpdateInstallmentDto {
+  description?: string;
+  amount?: number;
+  dueDate?: string;
+}
+
+// Respuesta de actualización de cuota
+export interface IUpdateInstallmentResponse {
+  id: string;
+  contractId: string;
+  description: string;
+  amount: number;
+  dueDate: string;
+  createdAt: string;
+  updatedAt: string;
+}

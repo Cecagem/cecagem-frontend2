@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractService } from "../services";
-import type { IContractFilters, IUpdateDeliverableDto, ICreateContractDto, IUpdateContractDto } from "../types";
+import type { IContractFilters, IUpdateDeliverableDto, ICreateContractDto, IUpdateContractDto, IUpdateInstallmentDto } from "../types";
 import { useToast } from "@/hooks/use-toast";
 
 // Query keys para cache
@@ -213,6 +213,48 @@ export const useUpdatePayment = () => {
       showError("error", {
         title: "Error al actualizar pago",
         description: error?.message || "No se pudo actualizar el pago"
+      });
+    },
+  });
+};
+
+// Hook para actualizar una cuota
+export const useUpdateInstallment = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ 
+      contractId, 
+      installmentId, 
+      data 
+    }: { 
+      contractId: string; 
+      installmentId: string; 
+      data: IUpdateInstallmentDto 
+    }) => contractService.updateInstallment(contractId, installmentId, data),
+    onSuccess: async () => {
+      // Invalidar todas las queries de contratos para refrescar la lista principal
+      await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.all });
+      await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.lists() });
+      
+      // Refrescar los datos inmediatamente para actualización en tiempo real
+      await queryClient.refetchQueries({ 
+        queryKey: CONTRACT_QUERY_KEYS.lists(),
+        exact: false 
+      });
+      
+      // Mostrar notificación de éxito
+      showSuccess("updated", { 
+        title: "Cuota actualizada",
+        description: "La cuota ha sido actualizada exitosamente"
+      });
+    },
+    onError: (error: Error) => {
+      // Mostrar notificación de error
+      showError("error", {
+        title: "Error al actualizar cuota",
+        description: error?.message || "No se pudo actualizar la cuota"
       });
     },
   });
