@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -36,9 +37,8 @@ import { Loader2, Plus, Trash2 } from 'lucide-react';
 import type { IContract } from '../types';
 import { contractService } from '../services/contract.service';
 
-// Esquema de validación SIN costTotal
+// ✅ Esquema con IDs ocultos para el usuario
 const contractFormSchema = z.object({
-  serviceId: z.string().optional(),
   name: z.string()
     .min(1, 'El nombre del proyecto es obligatorio')
     .min(5, 'El nombre debe tener al menos 5 caracteres')
@@ -60,31 +60,28 @@ const contractFormSchema = z.object({
   
   currency: z.enum(['PEN', 'USD']),
   
-  deliverablesPercentage: z.number()
-    .min(0, 'El porcentaje debe ser mayor o igual a 0')
-    .max(100, 'El porcentaje no puede exceder 100'),
-  
-  paymentPercentage: z.number()
-    .min(0, 'El porcentaje debe ser mayor o igual a 0')
-    .max(100, 'El porcentaje no puede exceder 100'),
-  
-  overallProgress: z.number()
-    .min(0, 'El progreso debe ser mayor o igual a 0')
-    .max(100, 'El progreso no puede exceder 100'),
-  
   startDate: z.string()
     .min(1, 'La fecha de inicio es obligatoria'),
   
   endDate: z.string()
     .min(1, 'La fecha de fin es obligatoria'),
   
+  userNames: z.array(z.string()).optional(),
+  
   installments: z.array(z.object({
-    id: z.string().optional(),
+    id: z.number().optional(), // ✅ ID oculto (solo interno)
     description: z.string().min(1, 'La descripción es obligatoria'),
     amount: z.number().min(0, 'El monto debe ser mayor o igual a 0'),
     dueDate: z.string().min(1, 'La fecha de vencimiento es obligatoria'),
-    userCompanyId: z.string().nullable().optional(),
-    contractUserId: z.string().optional(),
+  })).optional(),
+  
+  collaboratorPayments: z.array(z.object({
+    id: z.number().optional(), // ✅ ID oculto (solo interno)
+    userId: z.string().optional(), // ✅ userId oculto (solo interno)
+    userName: z.string().min(1, 'El nombre del colaborador es obligatorio'),
+    amount: z.number().min(0, 'El monto debe ser mayor o igual a 0'),
+    dueDate: z.string().min(1, 'La fecha de vencimiento es obligatoria'),
+    description: z.string().min(1, 'La descripción es obligatoria'),
   })).optional(),
 });
 
@@ -111,75 +108,130 @@ export function ContractEditForm({
   const form = useForm<ContractFormData>({
     resolver: zodResolver(contractFormSchema),
     defaultValues: {
-      serviceId: '',
       name: '',
       university: '',
       career: '',
       observation: '',
       currency: 'PEN',
-      deliverablesPercentage: 0,
-      paymentPercentage: 0,
-      overallProgress: 0,
       startDate: '',
       endDate: '',
+      userNames: [],
       installments: [],
+      collaboratorPayments: [],
     },
   });
 
-  // Cargar datos del contrato para edición
+  // Función para formatear fechas para input (YYYY-MM-DD)
+  const formatDateForInput = (dateString: string | Date) => {
+    if (!dateString) return '';
+    
+    try {
+      if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+      }
+
+      const date = new Date(dateString);
+      
+      if (isNaN(date.getTime())) return '';
+      
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error al formatear fecha:', error);
+      return '';
+    }
+  };
+
+  // ✅ Cargar datos del contrato para edición (con IDs ocultos)
   useEffect(() => {
     if (mode === 'edit' && contract && open) {
-      const formatDateForInput = (dateString: string) => {
-        return new Date(dateString).toISOString().split('T')[0];
-      };
+      console.log('📋 Contrato completo recibido:', JSON.stringify(contract, null, 2));
 
-      form.reset({
-        serviceId: contract.serviceId || '',
+      const userNames = contract.users?.map((user: { name: any; email: any; }) => user.name || user.email || 'Usuario sin nombre') || [];
+      
+      console.log('👥 Usuarios extraídos:', userNames);
+
+      // ✅ Extraer colaboradores CON sus IDs y userId (OCULTOS)
+      const collaboratorPayments = contract.collaboratorPayments?.map((cp: any) => {
+        console.log('💰 Pago colaborador:', cp);
+        return {
+          id: cp.id, // ✅ ID del pago (oculto para el usuario)
+          userId: cp.userId || cp.user?.id, // ✅ userId del colaborador (oculto)
+          userName: cp.user?.name || cp.user?.email || cp.userName || 'Colaborador sin nombre',
+          amount: cp.amount || 0,
+          dueDate: formatDateForInput(cp.dueDate),
+          description: cp.description || '',
+        };
+      }) || [];
+
+      console.log('💼 Pagos a colaboradores extraídos (con IDs ocultos):', collaboratorPayments);
+
+      // ✅ Extraer cuotas CON sus IDs (OCULTOS)
+      const installments = contract.installments?.map((inst: any) => {
+        const formattedDate = formatDateForInput(inst.dueDate);
+        console.log('📄 Cuota:', inst, '-> Fecha formateada:', formattedDate);
+        return {
+          id: inst.id, // ✅ ID de la cuota (oculto para el usuario)
+          description: inst.description || '',
+          amount: inst.amount || 0,
+          dueDate: formattedDate,
+        };
+      }) || [];
+
+      console.log('📋 Cuotas extraídas (con IDs ocultos):', installments);
+
+      const formData = {
         name: contract.name || '',
         university: contract.university || '',
         career: contract.career || '',
         observation: contract.observation || '',
         currency: contract.currency || 'PEN',
-        deliverablesPercentage: contract.deliverablesPercentage || 0,
-        paymentPercentage: contract.paymentPercentage || 0,
-        overallProgress: contract.overallProgress || 0,
-        startDate: contract.startDate ? formatDateForInput(contract.startDate) : '',
-        endDate: contract.endDate ? formatDateForInput(contract.endDate) : '',
-        installments: contract.installments?.map(inst => ({
-          id: inst.id,
-          description: inst.description,
-          amount: inst.amount,
-          dueDate: formatDateForInput(inst.dueDate),
-          userCompanyId: inst.userCompanyId,
-          contractUserId: inst.contractId,
-        })) || [],
-      });
+        startDate: formatDateForInput(contract.startDate),
+        endDate: formatDateForInput(contract.endDate),
+        userNames: userNames,
+        installments: installments,
+        collaboratorPayments: collaboratorPayments,
+      };
+
+      console.log('📝 Datos del formulario a cargar:', formData);
+
+      form.reset(formData);
+
+      console.log('✅ Datos cargados en el formulario');
     } else if (mode === 'create' && open) {
       form.reset({
-        serviceId: '',
         name: '',
         university: '',
         career: '',
         observation: '',
         currency: 'PEN',
-        deliverablesPercentage: 0,
-        paymentPercentage: 0,
-        overallProgress: 0,
         startDate: '',
         endDate: '',
+        userNames: [],
         installments: [],
+        collaboratorPayments: [],
       });
     }
   }, [mode, contract, open, form]);
 
   const handleSubmit = async (data: ContractFormData) => {
-    if (isSubmitting) return;
+    console.log('🚀 handleSubmit ejecutado');
+    console.log('📊 Datos recibidos:', data);
+    
+    if (isSubmitting) {
+      console.log('⏸️ Ya hay un submit en proceso, cancelando...');
+      return;
+    }
     
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.log('📤 Datos del formulario ANTES de procesar:', JSON.stringify(data, null, 2));
+
       const payload: any = {
         name: data.name,
         university: data.university,
@@ -190,62 +242,123 @@ export function ContractEditForm({
         endDate: data.endDate,
       };
 
-      // Agregar serviceId solo si existe y no está vacío
-      if (data.serviceId && data.serviceId.trim() !== '') {
-        payload.serviceId = data.serviceId;
-      }
+      console.log('📅 Fechas del contrato:', {
+        startDate: payload.startDate,
+        endDate: payload.endDate,
+      });
 
-      // Limpiar installments - NUNCA enviar 'id' en creación ni edición
+      // ✅ Procesar installments CON IDs (ocultos para usuario)
       if (data.installments && data.installments.length > 0) {
-        payload.installments = data.installments.map(i => {
+        payload.installments = data.installments.map((i, index) => {
           let amountValue = typeof i.amount === 'string' 
             ? parseFloat(i.amount) 
             : Number(i.amount);
 
-          // Redondear a 2 decimales
           amountValue = Math.round(amountValue * 100) / 100;
 
           if (isNaN(amountValue) || !isFinite(amountValue)) {
             throw new Error(`El monto de la cuota "${i.description}" debe ser un número válido`);
           }
 
-          return {
+          console.log(`📋 Procesando cuota ${index + 1}:`, {
+            id: i.id, // ✅ Se ve en consola pero NO en UI
+            description: i.description,
+            amount: amountValue,
+            dueDate: i.dueDate,
+          });
+
+          const installment: any = {
             description: i.description,
             amount: amountValue, 
-            dueDate: i.dueDate, 
+            dueDate: i.dueDate,
           };
+
+          // ✅ IMPORTANTE: Incluir el ID si existe (para actualizar)
+          if (i.id) {
+            installment.id = i.id;
+          }
+
+          return installment;
         });
+
+        console.log('📋 Cuotas procesadas para enviar:', JSON.stringify(payload.installments, null, 2));
       }
 
-      console.log(" Payload completo:", JSON.stringify(payload, null, 2));
-      console.log(" Modo:", mode);
-      console.log(" Contract ID:", contract?.id);
+      // ✅ Procesar collaboratorPayments CON IDs y userId (ocultos para usuario)
+      if (data.collaboratorPayments && data.collaboratorPayments.length > 0) {
+        payload.collaboratorPayments = data.collaboratorPayments.map((cp, index) => {
+          let amountValue = typeof cp.amount === 'string' 
+            ? parseFloat(cp.amount) 
+            : Number(cp.amount);
+
+          amountValue = Math.round(amountValue * 100) / 100;
+
+          if (isNaN(amountValue) || !isFinite(amountValue)) {
+            throw new Error(`El monto del pago al colaborador debe ser un número válido`);
+          }
+
+          console.log(`💼 Procesando pago colaborador ${index + 1}:`, {
+            id: cp.id, // ✅ Se ve en consola pero NO en UI
+            userId: cp.userId, // ✅ Se ve en consola pero NO en UI
+            userName: cp.userName,
+            amount: amountValue,
+            dueDate: cp.dueDate,
+            description: cp.description,
+          });
+
+          const payment: any = {
+            amount: amountValue,
+            dueDate: cp.dueDate,
+            description: cp.description,
+          };
+
+          // ✅ IMPORTANTE: Incluir el ID si existe (para actualizar)
+          if (cp.id) {
+            payment.id = cp.id;
+          }
+
+          // ✅ IMPORTANTE: Incluir el userId si existe
+          if (cp.userId) {
+            payment.userId = cp.userId;
+          }
+
+          return payment;
+        });
+
+        console.log('💼 Pagos a colaboradores procesados:', JSON.stringify(payload.collaboratorPayments, null, 2));
+      }
+
+      console.log("📤 ====================================");
+      console.log("📤 PAYLOAD COMPLETO A ENVIAR:");
+      console.log("📤 ====================================");
+      console.log(JSON.stringify(payload, null, 2));
+      console.log("📤 ====================================");
+      console.log("📝 Modo:", mode);
 
       let response;
 
       if (mode === "edit" && contract?.id) {
-        console.log(" Actualizando contrato...");
+        console.log("🔄 Actualizando contrato con ID:", contract.id);
         response = await contractService.updateContract(contract.id, payload);
-        console.log(" Respuesta actualización:", response);
+        console.log("✅ Respuesta actualización:", response);
       } else {
-        console.log(" Creando contrato...");
+        console.log("➕ Creando contrato nuevo");
         response = await contractService.createContract(payload);
-        console.log(" Respuesta creación:", response);
+        console.log("✅ Respuesta creación:", response);
       }
 
-      // Verificar que la respuesta sea válida
       if (!response) {
         throw new Error("No se recibió respuesta del servidor");
       }
 
-      console.log(" Operación exitosa, cerrando modal...");
+      console.log("🎉 Operación exitosa, cerrando modal...");
 
       form.reset();
       onOpenChange(false);
       onContractSaved();
 
     } catch (error: unknown) {
-      console.error(" Error en operación del contrato:", error);
+      console.error("❌ Error en operación del contrato:", error);
       
       let errorMessage = 'Ocurrió un error al guardar el contrato.';
       
@@ -259,10 +372,9 @@ export function ContractEditForm({
       }
       
       setError(errorMessage);
-      console.log(" Modal permanece abierto debido al error");
+      console.log("⚠️ Modal permanece abierto debido al error");
     } finally {
       setIsSubmitting(false);
-      console.log(" Proceso finalizado");
     }
   };
 
@@ -276,18 +388,37 @@ export function ContractEditForm({
         amount: 0,
         dueDate: '',
       }
-    ]);
+    ], { shouldValidate: false, shouldDirty: true });
   };
 
   const removeInstallment = (index: number) => {
     const currentInstallments = form.getValues('installments') || [];
-    form.setValue('installments', currentInstallments.filter((_, i) => i !== index));
+    form.setValue('installments', currentInstallments.filter((_, i) => i !== index), { shouldValidate: false, shouldDirty: true });
+  };
+
+  // Funciones para manejar pagos a colaboradores
+  const addCollaboratorPayment = () => {
+    const currentPayments = form.getValues('collaboratorPayments') || [];
+    form.setValue('collaboratorPayments', [
+      ...currentPayments,
+      {
+        userName: '',
+        amount: 0,
+        dueDate: '',
+        description: '',
+      }
+    ], { shouldValidate: false, shouldDirty: true });
+  };
+
+  const removeCollaboratorPayment = (index: number) => {
+    const currentPayments = form.getValues('collaboratorPayments') || [];
+    form.setValue('collaboratorPayments', currentPayments.filter((_, i) => i !== index), { shouldValidate: false, shouldDirty: true });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="sm:max-w-[800px] max-w-[95vw] max-h-[90vh] overflow-y-auto"
+        className="sm:max-w-[900px] max-w-[95vw] max-h-[90vh] overflow-y-auto"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -445,7 +576,24 @@ export function ContractEditForm({
               </div>
             </div>
 
-            {/* Cuotas (Installments) */}
+            {/* Usuarios Asignados - SOLO LECTURA */}
+            {mode === 'edit' && form.watch('userNames') && form.watch('userNames')!.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Usuarios Asignados</h3>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <ul className="list-disc list-inside space-y-1">
+                    {form.watch('userNames')?.map((userName, index) => (
+                      <li key={index} className="text-sm text-gray-700">{userName}</li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Los usuarios asignados no se pueden modificar desde este formulario
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Cuotas (Installments) - IDs OCULTOS */}
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b pb-2">
                 <h3 className="text-lg font-semibold">Cuotas de Pago</h3>
@@ -460,9 +608,10 @@ export function ContractEditForm({
                 </Button>
               </div>
 
-              {form.watch('installments')?.map((_, index) => (
+              {form.watch('installments')?.map((installment, index) => (
                 <div key={index} className="p-4 border rounded-lg space-y-4 bg-gray-50">
                   <div className="flex justify-between items-center">
+                    {/* ✅ SIN mostrar el ID al usuario */}
                     <h4 className="font-medium">Cuota {index + 1}</h4>
                     <Button
                       type="button"
@@ -527,7 +676,11 @@ export function ContractEditForm({
                         <FormItem>
                           <FormLabel>Fecha de Vencimiento *</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input 
+                              type="date" 
+                              {...field}
+                              value={field.value || ''}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -539,31 +692,158 @@ export function ContractEditForm({
 
               {(!form.watch('installments') || form.watch('installments')?.length === 0) && (
                 <div className="text-center py-8 text-gray-500">
-                  No hay cuotas registradas. {mode === 'create' && 'Haz clic en "Agregar Cuota" para comenzar.'}
+                  No hay cuotas registradas. Haz clic en &quot;Agregar Cuota&quot; para comenzar.
                 </div>
               )}
             </div>
 
-            <DialogFooter className="gap-2 border-t pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {mode === 'edit' ? 'Actualizar Contrato' : 'Crear Contrato'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
+            {/* Pagos a Colaboradores - IDs OCULTOS */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b pb-2">
+                <h3 className="text-lg font-semibold">Pagos a Colaboradores</h3>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={addCollaboratorPayment}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Pago
+                </Button>
+              </div>
+
+              {form.watch('collaboratorPayments')?.map((payment, index) => (
+                <div key={index} className="p-4 border rounded-lg space-y-4 bg-blue-50">
+                  <div className="flex justify-between items-center">
+                    {/* ✅ SIN mostrar el ID ni userId al usuario */}
+                    <h4 className="font-medium">Pago a Colaborador {index + 1}</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeCollaboratorPayment(index)}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name={`collaboratorPayments.${index}.userName`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre del Colaborador *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Juan Pérez" 
+                              {...field}
+                              disabled={mode === 'edit'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          {mode === 'edit' && (
+                            <p className="text-xs text-gray-500">
+                              El colaborador no se puede cambiar en modo edición
+                            </p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`collaboratorPayments.${index}.amount`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Monto *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="1200.50"
+                              value={field.value || ''}
+                              onChange={e => {
+                                const value = e.target.value;
+                                if (value === '') {
+                                  field.onChange(0);
+                                  return;
+                                }
+                                const numValue = parseFloat(value);
+                                field.onChange(isNaN(numValue) ? 0 : numValue);
+                              }}
+                              onBlur={field.onBlur}
+                              name={field.name}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`collaboratorPayments.${index}.dueDate`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha de Vencimiento *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="date" 
+                              {...field}
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`collaboratorPayments.${index}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descripción *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Pago colaborador - Desarrollo capítulo 1" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {(!form.watch('collaboratorPayments') || form.watch('collaboratorPayments')?.length === 0) && (
+                <div className="text-center py-8 text-gray-500">
+                  No hay pagos a colaboradores registrados. Haz clic en &quot;Agregar Pago&quot; para comenzar.
+                </div>
+              )}
+              </div>
+
+        <DialogFooter className="gap-2 border-t pt-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {mode === 'edit' ? 'Actualizar Contrato' : 'Crear Contrato'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  </DialogContent>
+</Dialog>
+);
 }

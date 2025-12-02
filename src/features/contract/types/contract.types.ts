@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Enums
 export enum PaymentStatus {
   PENDING = "PENDING",
@@ -110,6 +111,10 @@ export interface IContractDeliverable {
 }
 
 export interface IContract {
+  users: any;
+  collaboratorPayments: any;
+  deliverableIds: never[];
+  userIds: never[];
   id: string;
   serviceId: string;
   name: string;
