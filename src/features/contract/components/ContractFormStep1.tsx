@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,12 +14,28 @@ import { Button } from "@/components/ui/button";
 import { SearchableSelect, MultiSelect } from "@/components/shared";
 import type { SearchableSelectOption, MultiSelectOption } from "@/components/shared";
 
-import { useServices } from "@/features/engagements/hooks/useEngagements";
-import { useUsers } from "@/features/user/hooks/use-users";
-import { useResearchClients } from "@/features/research-clients/hooks/use-research-clients";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useServices, useServiceById } from "@/features/engagements/hooks/useEngagements";
+import { useUsers, useUser } from "@/features/user/hooks/use-users";
+import { useResearchClients, useResearchClient } from "@/features/research-clients/hooks/use-research-clients";
 import { UserRole } from "@/features/user/types/user.types";
 import { UserForm } from "@/features/user/components/UserForm";
 import { ResearchClientForm } from "@/features/research-clients/components/ResearchClientForm";
+import type { ServiceResponse } from "@/features/engagements/types/engagements.type";
+
+// Helper para extraer servicio de la respuesta (la API puede retornar {data: Service} o Service directamente)
+const getServiceFromResponse = (response: ServiceResponse | null | undefined): { id: string; name: string } | null => {
+  if (!response) return null;
+  // Si tiene 'data' como wrapper, extraerlo
+  if ('data' in response && response.data && typeof response.data === 'object' && 'id' in response.data) {
+    return response.data;
+  }
+  // La API retorna el servicio directamente (sin wrapper)
+  if ('id' in response && 'name' in response) {
+    return response as unknown as { id: string; name: string };
+  }
+  return null;
+};
 
 // Schema de validación para el paso 1
 const step1Schema = z.object({
@@ -44,7 +60,20 @@ interface ContractFormStep1Props {
 }
 
 export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Props) => {
-  const [searchCollaborators] = useState("");
+  // Estados para búsqueda con debounce
+  const [searchCollaborator, setSearchCollaborator] = useState("");
+  const [searchClient, setSearchClient] = useState("");
+  const [searchService, setSearchService] = useState("");
+  
+  // Aplicar debounce a las búsquedas
+  const debouncedCollaboratorSearch = useDebounce(searchCollaborator, 300);
+  const debouncedClientSearch = useDebounce(searchClient, 300);
+  const debouncedServiceSearch = useDebounce(searchService, 300);
+  
+  // Estados para guardar las opciones seleccionadas (para mantenerlas al buscar y al volver de otros pasos)
+  const [selectedServiceOption, setSelectedServiceOption] = useState<SearchableSelectOption | null>(null);
+  const [selectedCollaboratorOption, setSelectedCollaboratorOption] = useState<SearchableSelectOption | null>(null);
+  const [selectedClientOptions, setSelectedClientOptions] = useState<MultiSelectOption[]>([]);
   
   // Estados para modales de creación
   const [showUserForm, setShowUserForm] = useState(false);
@@ -63,42 +92,177 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
     },
   });
 
-  // Obtener servicios activos
-  const { data: servicesData } = useServices({ isActive: true, limit: 100 });
+  // Queries para obtener datos de items seleccionados (cuando se vuelve de otro paso)
+  const { data: selectedServiceData } = useServiceById(initialData?.serviceId || "");
+  const { data: selectedCollaboratorData } = useUser(initialData?.collaboratorId || "");
+  
+  // Para clientes, usamos el primer ID para obtener datos (simplificado)
+  const firstClientId = initialData?.researchClientIds?.[0] || "";
+  const { data: selectedClient1Data } = useResearchClient(firstClientId);
+  const secondClientId = initialData?.researchClientIds?.[1] || "";
+  const { data: selectedClient2Data } = useResearchClient(secondClientId);
+  const thirdClientId = initialData?.researchClientIds?.[2] || "";
+  const { data: selectedClient3Data } = useResearchClient(thirdClientId);
 
-  // Obtener todos los usuarios activos del sistema
-  const { data: usersData, refetch: refetchUsers } = useUsers({
-    search: searchCollaborators.length >= 2 ? searchCollaborators : undefined,
+  // Calcular opciones seleccionadas directamente desde los datos de la API
+  const computedServiceOption: SearchableSelectOption | null = useMemo(() => {
+    if (selectedServiceOption) return selectedServiceOption;
+    const service = getServiceFromResponse(selectedServiceData);
+    if (service) {
+      return {
+        value: service.id,
+        label: service.name,
+      };
+    }
+    return null;
+  }, [selectedServiceOption, selectedServiceData]);
+
+  const computedCollaboratorOption: SearchableSelectOption | null = useMemo(() => {
+    if (selectedCollaboratorOption) return selectedCollaboratorOption;
+    if (selectedCollaboratorData) {
+      return {
+        value: selectedCollaboratorData.id,
+        label: `${selectedCollaboratorData.profile.documentNumber} - ${selectedCollaboratorData.profile.firstName} ${selectedCollaboratorData.profile.lastName}`,
+      };
+    }
+    return null;
+  }, [selectedCollaboratorOption, selectedCollaboratorData]);
+
+  const computedClientOptions: MultiSelectOption[] = useMemo(() => {
+    if (selectedClientOptions.length > 0) return selectedClientOptions;
+    
+    const clients: MultiSelectOption[] = [];
+    if (selectedClient1Data) {
+      clients.push({
+        value: selectedClient1Data.id,
+        label: `${selectedClient1Data.profile.documentNumber} - ${selectedClient1Data.profile.firstName} ${selectedClient1Data.profile.lastName}`,
+      });
+    }
+    if (selectedClient2Data) {
+      clients.push({
+        value: selectedClient2Data.id,
+        label: `${selectedClient2Data.profile.documentNumber} - ${selectedClient2Data.profile.firstName} ${selectedClient2Data.profile.lastName}`,
+      });
+    }
+    if (selectedClient3Data) {
+      clients.push({
+        value: selectedClient3Data.id,
+        label: `${selectedClient3Data.profile.documentNumber} - ${selectedClient3Data.profile.firstName} ${selectedClient3Data.profile.lastName}`,
+      });
+    }
+    return clients;
+  }, [selectedClientOptions, selectedClient1Data, selectedClient2Data, selectedClient3Data]);
+
+  // Obtener servicios activos con búsqueda
+  const { data: servicesData, isLoading: isLoadingServices } = useServices({ 
+    isActive: true, 
+    limit: 10,
+    search: debouncedServiceSearch.length >= 2 ? debouncedServiceSearch : undefined,
+  });
+
+  // Obtener todos los usuarios activos del sistema con búsqueda
+  const { data: usersData, refetch: refetchUsers, isLoading: isLoadingUsers } = useUsers({
+    search: debouncedCollaboratorSearch.length >= 2 ? debouncedCollaboratorSearch : undefined,
     isActive: true,
-    limit: 100,
+    limit: 10,
   });
 
   // Filtrar colaboradores internos y externos manualmente
-  const collaborators = usersData?.data?.filter(user => 
-    user.role === UserRole.COLLABORATOR_INTERNAL || 
-    user.role === UserRole.COLLABORATOR_EXTERNAL
-  ) || [];
+  const collaborators = useMemo(() => 
+    usersData?.data?.filter(user => 
+      user.role === UserRole.COLLABORATOR_INTERNAL || 
+      user.role === UserRole.COLLABORATOR_EXTERNAL
+    ) || [],
+    [usersData?.data]
+  );
 
-  // Obtener clientes de investigación (TODOS, no solo activos)
-  const { data: researchClientsData, refetch: refetchClients } = useResearchClients({
-    limit: 100,
+  // Obtener clientes de investigación con búsqueda
+  const { data: researchClientsData, refetch: refetchClients, isLoading: isLoadingClients } = useResearchClients({
+    limit: 10,
+    search: debouncedClientSearch.length >= 2 ? debouncedClientSearch : undefined,
   });
   
-  // Convertir datos a opciones de select
-  const serviceOptions: SearchableSelectOption[] = servicesData?.data?.map(service => ({
-    value: service.id,
-    label: service.name,
-  })) || [];
+  // Opciones de servicios de la API
+  const apiServiceOptions: SearchableSelectOption[] = useMemo(() => 
+    servicesData?.data?.map(service => ({
+      value: service.id,
+      label: service.name,
+    })) || [], 
+    [servicesData?.data]
+  );
 
-  const collaboratorOptions: SearchableSelectOption[] = collaborators.map(user => ({
-    value: user.id,
-    label: `${user.profile.documentNumber} - ${user.profile.firstName} ${user.profile.lastName}`,
-  }));
+  // Combinar servicio seleccionado con las opciones de la API
+  const serviceOptions: SearchableSelectOption[] = useMemo(() => {
+    const combinedMap = new Map<string, SearchableSelectOption>();
+    
+    // Agregar el seleccionado primero
+    if (computedServiceOption) {
+      combinedMap.set(computedServiceOption.value, computedServiceOption);
+    }
+    
+    // Luego agregar las de la API
+    apiServiceOptions.forEach(opt => {
+      if (!combinedMap.has(opt.value)) {
+        combinedMap.set(opt.value, opt);
+      }
+    });
+    
+    return Array.from(combinedMap.values());
+  }, [computedServiceOption, apiServiceOptions]);
 
-  const researchClientOptions: MultiSelectOption[] = researchClientsData?.data?.map(client => ({
-    value: client.id,
-    label: `${client.profile.documentNumber} - ${client.profile.firstName} ${client.profile.lastName}`,
-  })) || [];
+  // Opciones de colaboradores de la API
+  const apiCollaboratorOptions: SearchableSelectOption[] = useMemo(() => 
+    collaborators.map(user => ({
+      value: user.id,
+      label: `${user.profile.documentNumber} - ${user.profile.firstName} ${user.profile.lastName}`,
+    })),
+    [collaborators]
+  );
+
+  // Combinar colaborador seleccionado con las opciones de la API
+  const collaboratorOptions: SearchableSelectOption[] = useMemo(() => {
+    const combinedMap = new Map<string, SearchableSelectOption>();
+    
+    // Agregar el seleccionado primero
+    if (computedCollaboratorOption) {
+      combinedMap.set(computedCollaboratorOption.value, computedCollaboratorOption);
+    }
+    
+    // Luego agregar las de la API
+    apiCollaboratorOptions.forEach(opt => {
+      if (!combinedMap.has(opt.value)) {
+        combinedMap.set(opt.value, opt);
+      }
+    });
+    
+    return Array.from(combinedMap.values());
+  }, [computedCollaboratorOption, apiCollaboratorOptions]);
+
+  // Opciones de clientes de la API
+  const apiClientOptions: MultiSelectOption[] = useMemo(() => 
+    researchClientsData?.data?.map(client => ({
+      value: client.id,
+      label: `${client.profile.documentNumber} - ${client.profile.firstName} ${client.profile.lastName}`,
+    })) || [],
+    [researchClientsData?.data]
+  );
+
+  // Combinar opciones seleccionadas con las de la API (sin duplicados)
+  const researchClientOptions: MultiSelectOption[] = useMemo(() => {
+    const combinedMap = new Map<string, MultiSelectOption>();
+    
+    // Primero agregar las seleccionadas (tienen prioridad) - usar computed
+    computedClientOptions.forEach(opt => combinedMap.set(opt.value, opt));
+    
+    // Luego agregar las de la API
+    apiClientOptions.forEach(opt => {
+      if (!combinedMap.has(opt.value)) {
+        combinedMap.set(opt.value, opt);
+      }
+    });
+    
+    return Array.from(combinedMap.values());
+  }, [computedClientOptions, apiClientOptions]);
 
   const handleSubmit = (data: Step1FormData) => {
     onNext(data);
@@ -148,10 +312,18 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
                       <SearchableSelect
                         options={serviceOptions}
                         value={field.value}
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Guardar la opción seleccionada
+                          const selected = serviceOptions.find(opt => opt.value === value);
+                          if (selected) setSelectedServiceOption(selected);
+                        }}
                         placeholder="Seleccionar servicio..."
                         searchPlaceholder="Buscar servicio..."
                         emptyMessage="No se encontraron servicios"
+                        onSearchChange={setSearchService}
+                        isLoading={isLoadingServices}
+                        selectedOption={computedServiceOption}
                       />
                     </FormControl>
                     <FormMessage />
@@ -252,13 +424,20 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
                     <FormLabel>Colaborador *</FormLabel>
                     <FormControl>
                       <SearchableSelect
-                        key={`collaborators-${collaborators.length}`}
                         options={collaboratorOptions}
                         value={field.value}
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Guardar la opción seleccionada
+                          const selected = collaboratorOptions.find(opt => opt.value === value);
+                          if (selected) setSelectedCollaboratorOption(selected);
+                        }}
                         placeholder="Seleccionar colaborador..."
                         searchPlaceholder="Buscar por nombre o DNI..."
                         emptyMessage="No se encontraron colaboradores"
+                        onSearchChange={setSearchCollaborator}
+                        isLoading={isLoadingUsers}
+                        selectedOption={computedCollaboratorOption}
                       />
                     </FormControl>
                     <FormMessage />
@@ -297,14 +476,23 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
                     <FormLabel>Clientes *</FormLabel>
                     <FormControl>
                       <MultiSelect
-                        key={`clients-${researchClientsData?.data?.length || 0}`}
                         options={researchClientOptions}
                         value={field.value}
-                        onValueChange={field.onChange}
+                        onValueChange={(newValues) => {
+                          field.onChange(newValues);
+                          // Guardar las opciones seleccionadas para mantenerlas al buscar
+                          const newSelectedOptions = researchClientOptions.filter(
+                            opt => newValues.includes(opt.value)
+                          );
+                          setSelectedClientOptions(newSelectedOptions);
+                        }}
                         placeholder="Seleccionar clientes..."
                         searchPlaceholder="Buscar por nombre o DNI..."
                         emptyMessage="No se encontraron clientes"
                         maxSelections={3}
+                        onSearchChange={setSearchClient}
+                        isLoading={isLoadingClients}
+                        selectedOptions={computedClientOptions}
                       />
                     </FormControl>
                     <FormMessage />

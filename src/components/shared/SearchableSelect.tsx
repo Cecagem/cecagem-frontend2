@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, forwardRef, useRef, useEffect } from "react";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface SearchableSelectOption {
@@ -20,6 +20,11 @@ interface SearchableSelectProps {
   className?: string;
   error?: boolean;
   emptyMessage?: string;
+  // Props para búsqueda en servidor
+  onSearchChange?: (search: string) => void;
+  isLoading?: boolean;
+  // Opción seleccionada (para mostrar aunque no esté en options)
+  selectedOption?: SearchableSelectOption | null;
 }
 
 export const SearchableSelect = forwardRef<HTMLButtonElement, SearchableSelectProps>(
@@ -32,15 +37,21 @@ export const SearchableSelect = forwardRef<HTMLButtonElement, SearchableSelectPr
     disabled,
     className,
     error,
-    emptyMessage = "No se encontraron opciones"
+    emptyMessage = "No se encontraron opciones",
+    onSearchChange,
+    isLoading = false,
+    selectedOption: externalSelectedOption
   }, ref) => {
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Filtrar opciones basado en el término de búsqueda
+    // Filtrar opciones basado en el término de búsqueda (solo si no hay búsqueda en servidor)
     const filteredOptions = useMemo(() => {
+      // Si hay búsqueda en servidor, no filtrar localmente
+      if (onSearchChange) return options;
+      
       if (!searchTerm) return options;
       
       const searchLower = searchTerm.toLowerCase();
@@ -58,10 +69,30 @@ export const SearchableSelect = forwardRef<HTMLButtonElement, SearchableSelectPr
         
         return labelMatch || valueMatch || dniMatch;
       });
-    }, [options, searchTerm]);
+    }, [options, searchTerm, onSearchChange]);
+
+    // Manejar cambio en búsqueda
+    const handleSearchChange = (searchValue: string) => {
+      setSearchTerm(searchValue);
+      // Si hay callback de búsqueda en servidor, llamarlo
+      if (onSearchChange) {
+        onSearchChange(searchValue);
+      }
+    };
 
     // Encontrar la opción seleccionada
-    const selectedOption = options.find(option => option.value === value);
+    // Primero buscar en la opción externa, luego en options
+    const selectedOption = useMemo(() => {
+      if (!value) return undefined;
+      
+      // Buscar primero en la opción externa
+      if (externalSelectedOption && externalSelectedOption.value === value) {
+        return externalSelectedOption;
+      }
+      
+      // Luego buscar en las opciones normales
+      return options.find(option => option.value === value);
+    }, [value, externalSelectedOption, options]);
 
     const handleSelect = (optionValue: string) => {
       onValueChange?.(optionValue);
@@ -134,14 +165,21 @@ export const SearchableSelect = forwardRef<HTMLButtonElement, SearchableSelectPr
                 type="text"
                 placeholder={searchPlaceholder}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
+              {isLoading && (
+                <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" />
+              )}
             </div>
 
             {/* Options List */}
             <div className="max-h-60 overflow-auto p-1">
-              {filteredOptions.length === 0 ? (
+              {isLoading ? (
+                <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                  Buscando...
+                </div>
+              ) : filteredOptions.length === 0 ? (
                 <div className="px-2 py-3 text-center text-sm text-muted-foreground">
                   {emptyMessage}
                 </div>

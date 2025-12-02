@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, forwardRef, useRef, useEffect } from "react";
-import { Check, ChevronDown, Search, X } from "lucide-react";
+import { Check, ChevronDown, Search, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -23,6 +23,11 @@ interface MultiSelectProps {
   emptyMessage?: string;
   maxSelections?: number;
   showSelectAll?: boolean;
+  // Props para búsqueda en servidor
+  onSearchChange?: (search: string) => void;
+  isLoading?: boolean;
+  // Opciones seleccionadas que vienen de fuera (para mantener selección al buscar)
+  selectedOptions?: MultiSelectOption[];
 }
 
 export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(
@@ -37,15 +42,21 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(
     error,
     emptyMessage = "No se encontraron opciones",
     maxSelections,
-    showSelectAll = false
+    showSelectAll = false,
+    onSearchChange,
+    isLoading = false,
+    selectedOptions: externalSelectedOptions
   }, ref) => {
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Filtrar opciones basado en el término de búsqueda
+    // Filtrar opciones basado en el término de búsqueda (solo si no hay búsqueda en servidor)
     const filteredOptions = useMemo(() => {
+      // Si hay búsqueda en servidor, no filtrar localmente
+      if (onSearchChange) return options;
+      
       if (!searchTerm) return options;
       
       const searchLower = searchTerm.toLowerCase();
@@ -59,10 +70,33 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(
         
         return labelMatch || valueMatch || dniMatch;
       });
-    }, [options, searchTerm]);
+    }, [options, searchTerm, onSearchChange]);
 
     // Encontrar las opciones seleccionadas
-    const selectedOptions = options.filter(option => value.includes(option.value));
+    // Primero buscar en externalSelectedOptions, luego en options
+    const selectedOptions = useMemo(() => {
+      return value.map(v => {
+        // Buscar primero en las opciones externas
+        const externalOption = externalSelectedOptions?.find(opt => opt.value === v);
+        if (externalOption) return externalOption;
+        
+        // Luego buscar en las opciones normales
+        const normalOption = options.find(opt => opt.value === v);
+        if (normalOption) return normalOption;
+        
+        // Si no se encuentra, crear una opción temporal con el ID
+        return { value: v, label: v };
+      });
+    }, [value, externalSelectedOptions, options]);
+
+    // Manejar cambio en búsqueda
+    const handleSearchChange = (searchValue: string) => {
+      setSearchTerm(searchValue);
+      // Si hay callback de búsqueda en servidor, llamarlo
+      if (onSearchChange) {
+        onSearchChange(searchValue);
+      }
+    };
 
     const handleSelect = (optionValue: string) => {
       if (disabled) return;
@@ -223,9 +257,12 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(
                 type="text"
                 placeholder={searchPlaceholder}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
+              {isLoading && (
+                <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" />
+              )}
             </div>
 
             {/* Select All Option */}
@@ -251,7 +288,11 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(
 
             {/* Options List */}
             <div className="max-h-60 overflow-auto p-1">
-              {filteredOptions.length === 0 ? (
+              {isLoading ? (
+                <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                  Buscando...
+                </div>
+              ) : filteredOptions.length === 0 ? (
                 <div className="px-2 py-3 text-center text-sm text-muted-foreground">
                   {emptyMessage}
                 </div>
