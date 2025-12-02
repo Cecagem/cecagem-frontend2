@@ -41,6 +41,7 @@ export interface IProfile {
 
 // Interface para User
 export interface IUser {
+  name: string;
   id: string;
   email: string;
   role: UserRole;

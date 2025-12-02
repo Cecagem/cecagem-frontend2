@@ -5,7 +5,6 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { BellComponent } from "@/components/shared/notification/BellComponent";
@@ -28,16 +27,9 @@ export function AdminHeader({ title }: AdminHeaderProps) {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <div className="ml-auto mr-4">
+      <div className="ml-auto mr-4 flex items-center">
         <ModeToggle />
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Notificaciones"
-          className="mr-2"
-        >
-          <BellComponent />
-        </Button>
+        <BellComponent />
       </div>
     </header>
   );

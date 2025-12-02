@@ -8,6 +8,7 @@ export { DeleteContractDialog } from './DeleteContractDialog';
 export { PaymentModal } from './PaymentModal';
 export { RejectDeliverableModal } from './RejectDeliverableModal';
 export { UploadPaymentModal } from './UploadPaymentModal';
+export { EditInstallmentModal } from './EditInstallmentModal';
 
 // Nuevos componentes del formulario
 export { NewContractForm } from './NewContractForm';

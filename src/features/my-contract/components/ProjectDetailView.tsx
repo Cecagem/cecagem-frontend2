@@ -21,8 +21,6 @@ import { useAuthStore } from "@/features/auth";
 import { ProjectPaymentTab } from "./ProjectPaymentTab";
 import { ProjectDeliverablesTab } from "./ProjectDeliverablesTab";
 import { ProjectMyPaymentTab } from "./ProjectMyPaymentTab";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 interface ProjectDetailViewProps {
   contract: IContract | null;
@@ -74,6 +72,19 @@ function ProjectDetailViewContent({
 
   // Verificar si el usuario actual es un colaborador externo
   const isExternalCollaborator = user?.role === 'COLLABORATOR_EXTERNAL';
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString("es-PE", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+    } catch {
+      return "Fecha inválida";
+    }
+  };
 
   if (isLoading || !contract) {
     return (
@@ -151,7 +162,7 @@ function ProjectDetailViewContent({
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Fecha de inicio</p>
                 <p className="font-medium">
-                  {format(new Date(contract.startDate), 'dd MMM yyyy', { locale: es })}
+                  {formatDate(contract.startDate)}
                 </p>
               </div>
             </div>
@@ -161,7 +172,7 @@ function ProjectDetailViewContent({
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Fecha de fin</p>
                 <p className="font-medium">
-                  {format(new Date(contract.endDate), 'dd MMM yyyy', { locale: es })}
+                  {formatDate(contract.endDate)}
                 </p>
               </div>
             </div>

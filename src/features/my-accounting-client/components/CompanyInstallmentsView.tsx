@@ -14,8 +14,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { ICompany, IInstallment, IPayment, IUser } from "@/features/accounting-clients/types/accounting-clients.types";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { UploadPaymentModal } from "./UploadPaymentModal";
 import { ViewPaymentsModal } from "./ViewPaymentsModal";
 
@@ -104,6 +102,19 @@ export const CompanyInstallmentsView = ({ company }: CompanyInstallmentsViewProp
     };
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString("es-PE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+    } catch {
+      return "Fecha inválida";
+    }
+  };
+
   const handleUploadPayment = (installment: ExtendedInstallment) => {
     setSelectedInstallment(installment);
     setUploadModalOpen(true);
@@ -169,7 +180,7 @@ export const CompanyInstallmentsView = ({ company }: CompanyInstallmentsViewProp
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-4"
                 >
                   <div className="flex items-center space-x-4 flex-1 min-w-0">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted flex-shrink-0">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted shrink-0">
                       <StatusIcon className={`h-5 w-5 ${status.iconColor}`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -178,13 +189,13 @@ export const CompanyInstallmentsView = ({ company }: CompanyInstallmentsViewProp
                       </h3>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-1 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 flex-shrink-0" />
+                          <DollarSign className="h-3 w-3 shrink-0" />
                           <span>S/ {installment.amount.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <Calendar className="h-3 w-3 shrink-0" />
                           <span className={overdue ? 'text-red-600' : ''}>
-                            {format(new Date(installment.dueDate), "dd/MM/yyyy", { locale: es })}
+                            {formatDate(installment.dueDate)}
                           </span>
                         </div>
                       </div>

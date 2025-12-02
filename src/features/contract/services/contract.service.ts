@@ -6,13 +6,16 @@ import type {
   IUpdateDeliverableDto, 
   IContractDeliverable,
   ICreateContractDto,
-  IUpdateContractDto
+  IUpdateContractDto,
+  IUpdateInstallmentDto,
+  IUpdateInstallmentResponse
 } from "../types";
 
 const ENDPOINTS = {
   contracts: "/contract",
   contract: (id: string) => `/contract/${id}`,
   deliverable: (contractId: string, deliverableId: string) => `/contract/${contractId}/deliverables/${deliverableId}`,
+  installment: (contractId: string, installmentId: string) => `/contract/${contractId}/installments/${installmentId}`,
 };
 
 export class ContractService {
@@ -79,6 +82,19 @@ export class ContractService {
     const response = await cecagemApi.patch<{ status: string; id: string }>(
       `/payments/${paymentId}`,
       data
+    );
+    return response;
+  }
+
+  // Actualizar una cuota específica
+  async updateInstallment(
+    contractId: string,
+    installmentId: string,
+    data: IUpdateInstallmentDto
+  ): Promise<IUpdateInstallmentResponse> {
+    const response = await cecagemApi.patch<IUpdateInstallmentResponse>(
+      ENDPOINTS.installment(contractId, installmentId),
+      data as unknown as Record<string, unknown>
     );
     return response;
   }

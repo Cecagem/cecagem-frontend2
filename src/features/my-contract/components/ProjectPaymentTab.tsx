@@ -8,8 +8,6 @@ import { Upload, CreditCard, Calendar, Eye } from "lucide-react";
 import { IContract, IContractInstallment, IContractPayment } from "@/features/contract/types/contract.types";
 import { UploadPaymentModal } from "./UploadPaymentModal";
 import { ViewPaymentsModal } from "./ViewPaymentsModal";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 interface ProjectPaymentTabProps {
   contract: IContract;
@@ -58,6 +56,19 @@ export const ProjectPaymentTab = ({ contract }: ProjectPaymentTabProps) => {
     }).format(amount);
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString("es-PE", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+    } catch {
+      return "Fecha inválida";
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Lista de cuotas */}
@@ -85,15 +96,15 @@ export const ProjectPaymentTab = ({ contract }: ProjectPaymentTabProps) => {
                 return (
                   <div key={installment.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-4">
                     <div className="flex items-center space-x-4 flex-1 min-w-0">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 flex-shrink-0">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 shrink-0">
                         <span className="text-sm font-medium text-primary">#{index + 1}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{installment.description || `Cuota ${index + 1}`}</p>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-muted-foreground mt-1">
                           <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
-                            <span>{format(new Date(installment.dueDate), 'dd MMM yyyy', { locale: es })}</span>
+                            <Calendar className="h-4 w-4 mr-1 shrink-0" />
+                            <span>{formatDate(installment.dueDate)}</span>
                           </div>
                           {hasPayments && (
                             <span className="text-xs text-muted-foreground">

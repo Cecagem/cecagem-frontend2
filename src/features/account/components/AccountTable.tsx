@@ -72,7 +72,6 @@ export const AccountTable = ({
   };
 
   const formatDate = (dateString: string) => {
-    // Usar UTC para evitar problemas de zona horaria
     const date = new Date(dateString);
     return new Intl.DateTimeFormat("es-PE", {
       timeZone: "UTC",

@@ -112,7 +112,7 @@ export const ProjectCards = ({
                 <CardTitle className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
                   {contract.name}
                 </CardTitle>
-                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 ml-2" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0 ml-2" />
               </div>
               <Badge variant="default">
                 Activo
@@ -120,17 +120,17 @@ export const ProjectCards = ({
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center text-sm text-muted-foreground">
-                <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                <Building2 className="h-4 w-4 mr-2 shrink-0" />
                 <span className="line-clamp-1">{contract.university}</span>
               </div>
               
               <div className="flex items-center text-sm text-muted-foreground">
-                <User className="h-4 w-4 mr-2 flex-shrink-0" />
+                <User className="h-4 w-4 mr-2 shrink-0" />
                 <span className="line-clamp-1">{contract.career}</span>
               </div>
 
               <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+                <Calendar className="h-4 w-4 mr-2 shrink-0" />
                 <span>
                   {format(new Date(contract.createdAt), 'dd MMM yyyy', { locale: es })}
                 </span>

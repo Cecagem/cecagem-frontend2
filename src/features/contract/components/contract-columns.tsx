@@ -103,6 +103,7 @@ export const getContractColumns = ({
             year: "numeric",
             month: "short",
             day: "numeric",
+            timeZone: "UTC",
           })}
         </div>
       );
@@ -119,6 +120,7 @@ export const getContractColumns = ({
             year: "numeric",
             month: "short",
             day: "numeric",
+            timeZone: "UTC"
           })}
         </div>
       );

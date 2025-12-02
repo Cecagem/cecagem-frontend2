@@ -36,6 +36,15 @@ interface StepInfo {
   description: string;
 }
 
+// Helper para formatear fechas sin problemas de zona horaria
+const formatDate = (date: Date): string => {
+  // Usar UTC para evitar problemas de zona horaria
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${day}/${month}/${year}`;
+};
+
 export const NewContractForm = ({ 
   onSuccess,
   onCancel,
@@ -95,6 +104,7 @@ export const NewContractForm = ({
   };
 
   const handleStep3Complete = (data: Step3FormData) => {
+    // Simplemente pasar los datos sin modificar nada
     setFormData(prev => ({ ...prev, ...data }));
     setCurrentStep(4);
   };
@@ -293,7 +303,7 @@ export const NewContractForm = ({
       </div>
 
       {/* Información General - Header destacado */}
-      <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 sm:p-6 border border-primary/20">
+      <div className="bg-linear-to-r from-primary/5 to-primary/10 rounded-lg p-4 sm:p-6 border border-primary/20">
         <div className="text-center space-y-2">
           <h3 className="text-xl sm:text-2xl font-bold text-primary">{formData.name}</h3>
           <p className="text-base sm:text-lg text-muted-foreground">{formData.university} - {formData.career}</p>
@@ -394,11 +404,11 @@ export const NewContractForm = ({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <span className="font-medium text-muted-foreground block">Fecha de Inicio</span>
-                  <span className="text-lg">{formData.startDate?.toLocaleDateString()}</span>
+                  <span className="text-lg">{formData.startDate ? formatDate(formData.startDate) : '-'}</span>
                 </div>
                 <div className="space-y-1">
                   <span className="font-medium text-muted-foreground block">Fecha de Fin</span>
-                  <span className="text-lg">{formData.endDate?.toLocaleDateString()}</span>
+                  <span className="text-lg">{formData.endDate ? formatDate(formData.endDate) : '-'}</span>
                 </div>
               </div>
               
@@ -436,7 +446,7 @@ export const NewContractForm = ({
                       {installment.amount.toFixed(2)} {formData.currency}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Vence: {installment.dueDate.toLocaleDateString()}
+                      Vence: {formatDate(installment.dueDate)}
                     </div>
                   </div>
                 </div>

@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "../utils";
-import { Eye, CheckCircle, X, Upload, MessageSquare } from "lucide-react";
+import { Eye, CheckCircle, X, Upload, MessageSquare, Pencil } from "lucide-react";
 import { useUpdateDeliverable } from '../hooks';
 import { PaymentModal } from './PaymentModal';
 import { RejectDeliverableModal } from './RejectDeliverableModal';
 import { UploadPaymentModal } from './UploadPaymentModal';
+import { EditInstallmentModal } from './EditInstallmentModal';
 import { WhatsAppNotificationButton } from "@/components/shared";
-import type { IContract, IContractPayment } from "../types";
+import type { IContract, IContractPayment, IContractInstallment } from "../types";
 
 interface ContractExpandedViewProps {
   contract: IContract;
@@ -78,6 +79,14 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
     installmentId: "",
   });
 
+  const [editInstallmentModal, setEditInstallmentModal] = useState<{
+    open: boolean;
+    installment: IContractInstallment | null;
+  }>({
+    open: false,
+    installment: null,
+  });
+
   const updateDeliverableMutation = useUpdateDeliverable();
 
   // Reset modal cuando el contrato cambie
@@ -99,6 +108,10 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
       contractId: "",
       installmentId: "",
     });
+    setEditInstallmentModal({
+      open: false,
+      installment: null,
+    });
   }, [contract.id]);
 
   const formatDate = (dateString: string) => {
@@ -106,6 +119,7 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
       day: "2-digit",
       month: "2-digit", 
       year: "numeric",
+      timeZone: "UTC",
     });
   };
 
@@ -423,6 +437,19 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  onClick={() => setEditInstallmentModal({
+                                    open: true,
+                                    installment: installment,
+                                  })}
+                                  className="gap-2 w-full sm:w-auto text-xs"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  <span className="sm:inline">Editar</span>
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   disabled={!hasPayments}
                                   onClick={() => handleViewPayments(installment.payments || [], installment.description, false)} // Cambiar a false
                                   className="gap-2 w-full sm:w-auto text-xs"
@@ -715,6 +742,14 @@ export const ContractExpandedView = ({ contract }: ContractExpandedViewProps) =>
         onOpenChange={(open) => setUploadPaymentModal(prev => ({ ...prev, open }))}
         contractId={uploadPaymentModal.contractId}
         installmentId={uploadPaymentModal.installmentId}
+      />
+
+      {/* Modal de edición de cuota */}
+      <EditInstallmentModal
+        open={editInstallmentModal.open}
+        onOpenChange={(open) => setEditInstallmentModal(prev => ({ ...prev, open }))}
+        installment={editInstallmentModal.installment}
+        contractId={contract.id}
       />
     </div>
   );

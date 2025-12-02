@@ -16,8 +16,6 @@ import {
 import { IContract, ICollaboratorInstallment } from "@/features/contract/types/contract.types";
 import { useAuthStore } from "@/features/auth";
 import { PaymentModal } from "@/features/contract/components/PaymentModal";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 interface ProjectMyPaymentTabProps {
   contract: IContract;
@@ -48,7 +46,16 @@ export const ProjectMyPaymentTab = ({ contract }: ProjectMyPaymentTabProps) => {
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd MMM yyyy', { locale: es });
+    try {
+      return new Date(dateString).toLocaleDateString("es-PE", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+    } catch {
+      return "Fecha inválida";
+    }
   };
 
   // Función para obtener el estado de la cuota basado en los pagos
@@ -152,7 +159,7 @@ export const ProjectMyPaymentTab = ({ contract }: ProjectMyPaymentTabProps) => {
                                 {installment.description}
                               </h3>
                               <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                <Calendar className="h-3 w-3 flex-shrink-0" />
+                                <Calendar className="h-3 w-3 shrink-0" />
                                 <span>Vence: {formatDate(installment.dueDate)}</span>
                               </p>
                             </div>
