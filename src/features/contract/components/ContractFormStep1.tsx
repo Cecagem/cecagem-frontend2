@@ -40,6 +40,56 @@ const getServiceFromResponse = (response: ServiceResponse | null | undefined): {
   return null;
 };
 
+// Tipos para las respuestas de usuario/cliente que pueden venir con wrapper
+interface UserLikeResponse {
+  id: string;
+  profile: {
+    documentNumber: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+interface WrappedUserResponse {
+  data?: UserLikeResponse;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyUserResponse = UserLikeResponse | WrappedUserResponse | any;
+
+// Helper para extraer usuario de la respuesta (puede venir envuelto en {data: User} o directamente)
+const getUserFromResponse = (response: AnyUserResponse | null | undefined): UserLikeResponse | null => {
+  if (!response) return null;
+  
+  // Si tiene 'data' como wrapper, extraerlo
+  if ('data' in response && response.data && typeof response.data === 'object') {
+    const data = response.data;
+    if ('id' in data && 'profile' in data && data.profile) {
+      return data as UserLikeResponse;
+    }
+  }
+  
+  // La API retorna el usuario directamente
+  if ('id' in response && 'profile' in response && response.profile) {
+    return response as UserLikeResponse;
+  }
+  
+  // Caso especial: puede ser que profile esté anidado de otra manera
+  // Intentar extraer de cualquier estructura conocida
+  if ('id' in response) {
+    // Si tiene profile como objeto con los campos necesarios
+    if (response.profile && 
+        typeof response.profile === 'object' &&
+        'documentNumber' in response.profile &&
+        'firstName' in response.profile &&
+        'lastName' in response.profile) {
+      return response as UserLikeResponse;
+    }
+  }
+  
+  return null;
+};
+
 // Schema de validación para el paso 1
 const step1Schema = z.object({
   serviceId: z.string().min(1, "Debe seleccionar un servicio"),
@@ -96,17 +146,25 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
     },
   });
 
-  // Queries para obtener datos de items seleccionados (cuando se vuelve de otro paso)
-  const { data: selectedServiceData } = useServiceById(initialData?.serviceId || "");
-  const { data: selectedCollaboratorData } = useUser(initialData?.collaboratorId || "");
+  // Queries para obtener datos de items seleccionados (cuando se vuelve de otro paso o en modo edición)
+  const { data: selectedServiceData, isLoading: isLoadingSelectedService } = useServiceById(initialData?.serviceId || "");
+  const { data: selectedCollaboratorData, isLoading: isLoadingSelectedCollaborator } = useUser(initialData?.collaboratorId || "");
   
-  // Para clientes, usamos el primer ID para obtener datos (simplificado)
+  // Para clientes, usamos cada ID para obtener datos
   const firstClientId = initialData?.researchClientIds?.[0] || "";
-  const { data: selectedClient1Data } = useResearchClient(firstClientId);
+  const { data: selectedClient1Data, isLoading: isLoadingClient1 } = useResearchClient(firstClientId);
   const secondClientId = initialData?.researchClientIds?.[1] || "";
-  const { data: selectedClient2Data } = useResearchClient(secondClientId);
+  const { data: selectedClient2Data, isLoading: isLoadingClient2 } = useResearchClient(secondClientId);
   const thirdClientId = initialData?.researchClientIds?.[2] || "";
-  const { data: selectedClient3Data } = useResearchClient(thirdClientId);
+  const { data: selectedClient3Data, isLoading: isLoadingClient3 } = useResearchClient(thirdClientId);
+
+  // Indicador de carga de items preseleccionados
+  const isLoadingPreselectedItems = 
+    (initialData?.serviceId && isLoadingSelectedService) ||
+    (initialData?.collaboratorId && isLoadingSelectedCollaborator) ||
+    (firstClientId && isLoadingClient1) ||
+    (secondClientId && isLoadingClient2) ||
+    (thirdClientId && isLoadingClient3);
 
   // Calcular opciones seleccionadas directamente desde los datos de la API
   const computedServiceOption: SearchableSelectOption | null = useMemo(() => {
@@ -118,44 +176,68 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
         label: service.name,
       };
     }
+    // Debug log para producción
+    if (initialData?.serviceId && selectedServiceData) {
+      console.log('[ContractFormStep1] Service data received but not parsed:', selectedServiceData);
+    }
     return null;
-  }, [selectedServiceOption, selectedServiceData]);
+  }, [selectedServiceOption, selectedServiceData, initialData?.serviceId]);
 
   const computedCollaboratorOption: SearchableSelectOption | null = useMemo(() => {
     if (selectedCollaboratorOption) return selectedCollaboratorOption;
-    if (selectedCollaboratorData) {
+    const collaborator = getUserFromResponse(selectedCollaboratorData);
+    if (collaborator && collaborator.profile) {
       return {
-        value: selectedCollaboratorData.id,
-        label: `${selectedCollaboratorData.profile.documentNumber} - ${selectedCollaboratorData.profile.firstName} ${selectedCollaboratorData.profile.lastName}`,
+        value: collaborator.id,
+        label: `${collaborator.profile.documentNumber} - ${collaborator.profile.firstName} ${collaborator.profile.lastName}`,
       };
     }
+    // Debug log para producción
+    if (initialData?.collaboratorId && selectedCollaboratorData) {
+      console.log('[ContractFormStep1] Collaborator data received but not parsed:', selectedCollaboratorData);
+    }
     return null;
-  }, [selectedCollaboratorOption, selectedCollaboratorData]);
+  }, [selectedCollaboratorOption, selectedCollaboratorData, initialData?.collaboratorId]);
 
   const computedClientOptions: MultiSelectOption[] = useMemo(() => {
     if (selectedClientOptions.length > 0) return selectedClientOptions;
     
     const clients: MultiSelectOption[] = [];
-    if (selectedClient1Data) {
+    const clientIds = initialData?.researchClientIds || [];
+    
+    const client1 = getUserFromResponse(selectedClient1Data);
+    if (client1 && client1.profile) {
       clients.push({
-        value: selectedClient1Data.id,
-        label: `${selectedClient1Data.profile.documentNumber} - ${selectedClient1Data.profile.firstName} ${selectedClient1Data.profile.lastName}`,
+        value: client1.id,
+        label: `${client1.profile.documentNumber} - ${client1.profile.firstName} ${client1.profile.lastName}`,
       });
+    } else if (clientIds[0] && selectedClient1Data) {
+      // Debug log para producción
+      console.log('[ContractFormStep1] Client1 data received but not parsed:', selectedClient1Data);
     }
-    if (selectedClient2Data) {
+    
+    const client2 = getUserFromResponse(selectedClient2Data);
+    if (client2 && client2.profile) {
       clients.push({
-        value: selectedClient2Data.id,
-        label: `${selectedClient2Data.profile.documentNumber} - ${selectedClient2Data.profile.firstName} ${selectedClient2Data.profile.lastName}`,
+        value: client2.id,
+        label: `${client2.profile.documentNumber} - ${client2.profile.firstName} ${client2.profile.lastName}`,
       });
+    } else if (clientIds[1] && selectedClient2Data) {
+      console.log('[ContractFormStep1] Client2 data received but not parsed:', selectedClient2Data);
     }
-    if (selectedClient3Data) {
+    
+    const client3 = getUserFromResponse(selectedClient3Data);
+    if (client3 && client3.profile) {
       clients.push({
-        value: selectedClient3Data.id,
-        label: `${selectedClient3Data.profile.documentNumber} - ${selectedClient3Data.profile.firstName} ${selectedClient3Data.profile.lastName}`,
+        value: client3.id,
+        label: `${client3.profile.documentNumber} - ${client3.profile.firstName} ${client3.profile.lastName}`,
       });
+    } else if (clientIds[2] && selectedClient3Data) {
+      console.log('[ContractFormStep1] Client3 data received but not parsed:', selectedClient3Data);
     }
+    
     return clients;
-  }, [selectedClientOptions, selectedClient1Data, selectedClient2Data, selectedClient3Data]);
+  }, [selectedClientOptions, selectedClient1Data, selectedClient2Data, selectedClient3Data, initialData?.researchClientIds]);
 
   // Obtener servicios activos con búsqueda
   const { data: servicesData, isLoading: isLoadingServices } = useServices({ 
@@ -293,6 +375,16 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
           Complete la información general del contrato y seleccione los participantes
         </p>
       </div>
+
+      {/* Indicador de carga de datos preseleccionados */}
+      {isLoadingPreselectedItems && (
+        <Alert variant="default" className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+          <AlertDescription className="text-blue-800 dark:text-blue-200 flex items-center gap-2">
+            <span className="animate-spin">⏳</span>
+            Cargando información del contrato...
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
