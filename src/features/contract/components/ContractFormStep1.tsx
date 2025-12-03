@@ -107,13 +107,22 @@ const step1Schema = z.object({
 
 export type Step1FormData = z.infer<typeof step1Schema>;
 
+// Opciones preseleccionadas que vienen del contrato existente
+interface PreselectedOptions {
+  service?: SearchableSelectOption | null;
+  collaborator?: SearchableSelectOption | null;
+  clients?: MultiSelectOption[];
+}
+
 interface ContractFormStep1Props {
   initialData?: Partial<Step1FormData>;
   onNext: (data: Step1FormData) => void;
   editRestrictions?: EditRestrictions;
+  // Opciones preseleccionadas para modo edición (evita llamadas API adicionales)
+  preselectedOptions?: PreselectedOptions;
 }
 
-export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: ContractFormStep1Props) => {
+export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, preselectedOptions }: ContractFormStep1Props) => {
   // Estados para búsqueda con debounce
   const [searchCollaborator, setSearchCollaborator] = useState("");
   const [searchClient, setSearchClient] = useState("");
@@ -146,29 +155,46 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
     },
   });
 
-  // Queries para obtener datos de items seleccionados (cuando se vuelve de otro paso o en modo edición)
-  const { data: selectedServiceData, isLoading: isLoadingSelectedService } = useServiceById(initialData?.serviceId || "");
-  const { data: selectedCollaboratorData, isLoading: isLoadingSelectedCollaborator } = useUser(initialData?.collaboratorId || "");
+  // Solo hacer queries API si NO hay opciones preseleccionadas (modo creación)
+  // En modo edición, los datos vienen directamente del contrato
+  const shouldFetchService = !preselectedOptions?.service && initialData?.serviceId;
+  const shouldFetchCollaborator = !preselectedOptions?.collaborator && initialData?.collaboratorId;
+  const shouldFetchClients = (!preselectedOptions?.clients || preselectedOptions.clients.length === 0) && 
+    (initialData?.researchClientIds?.length || 0) > 0;
+
+  // Queries para obtener datos de items seleccionados (solo cuando no hay preselectedOptions)
+  const { data: selectedServiceData, isLoading: isLoadingSelectedService } = useServiceById(
+    shouldFetchService ? initialData?.serviceId || "" : ""
+  );
+  const { data: selectedCollaboratorData, isLoading: isLoadingSelectedCollaborator } = useUser(
+    shouldFetchCollaborator ? initialData?.collaboratorId || "" : ""
+  );
   
-  // Para clientes, usamos cada ID para obtener datos
-  const firstClientId = initialData?.researchClientIds?.[0] || "";
+  // Para clientes, usamos cada ID para obtener datos (solo si no hay preselectedOptions)
+  const firstClientId = shouldFetchClients ? initialData?.researchClientIds?.[0] || "" : "";
   const { data: selectedClient1Data, isLoading: isLoadingClient1 } = useResearchClient(firstClientId);
-  const secondClientId = initialData?.researchClientIds?.[1] || "";
+  const secondClientId = shouldFetchClients ? initialData?.researchClientIds?.[1] || "" : "";
   const { data: selectedClient2Data, isLoading: isLoadingClient2 } = useResearchClient(secondClientId);
-  const thirdClientId = initialData?.researchClientIds?.[2] || "";
+  const thirdClientId = shouldFetchClients ? initialData?.researchClientIds?.[2] || "" : "";
   const { data: selectedClient3Data, isLoading: isLoadingClient3 } = useResearchClient(thirdClientId);
 
-  // Indicador de carga de items preseleccionados
+  // Indicador de carga de items preseleccionados (solo si estamos haciendo fetch)
   const isLoadingPreselectedItems = 
-    (initialData?.serviceId && isLoadingSelectedService) ||
-    (initialData?.collaboratorId && isLoadingSelectedCollaborator) ||
+    (shouldFetchService && isLoadingSelectedService) ||
+    (shouldFetchCollaborator && isLoadingSelectedCollaborator) ||
     (firstClientId && isLoadingClient1) ||
     (secondClientId && isLoadingClient2) ||
     (thirdClientId && isLoadingClient3);
 
-  // Calcular opciones seleccionadas directamente desde los datos de la API
+  // Calcular opciones seleccionadas - primero usar preselectedOptions, luego estado local, finalmente API
   const computedServiceOption: SearchableSelectOption | null = useMemo(() => {
+    // 1. Si hay opción seleccionada por el usuario en esta sesión
     if (selectedServiceOption) return selectedServiceOption;
+    
+    // 2. Si hay opciones preseleccionadas del contrato existente
+    if (preselectedOptions?.service) return preselectedOptions.service;
+    
+    // 3. Si hay datos de la API (fallback para modo creación)
     const service = getServiceFromResponse(selectedServiceData);
     if (service) {
       return {
@@ -176,15 +202,17 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
         label: service.name,
       };
     }
-    // Debug log para producción
-    if (initialData?.serviceId && selectedServiceData) {
-      console.log('[ContractFormStep1] Service data received but not parsed:', selectedServiceData);
-    }
     return null;
-  }, [selectedServiceOption, selectedServiceData, initialData?.serviceId]);
+  }, [selectedServiceOption, preselectedOptions?.service, selectedServiceData]);
 
   const computedCollaboratorOption: SearchableSelectOption | null = useMemo(() => {
+    // 1. Si hay opción seleccionada por el usuario en esta sesión
     if (selectedCollaboratorOption) return selectedCollaboratorOption;
+    
+    // 2. Si hay opciones preseleccionadas del contrato existente
+    if (preselectedOptions?.collaborator) return preselectedOptions.collaborator;
+    
+    // 3. Si hay datos de la API (fallback para modo creación)
     const collaborator = getUserFromResponse(selectedCollaboratorData);
     if (collaborator && collaborator.profile) {
       return {
@@ -192,18 +220,20 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
         label: `${collaborator.profile.documentNumber} - ${collaborator.profile.firstName} ${collaborator.profile.lastName}`,
       };
     }
-    // Debug log para producción
-    if (initialData?.collaboratorId && selectedCollaboratorData) {
-      console.log('[ContractFormStep1] Collaborator data received but not parsed:', selectedCollaboratorData);
-    }
     return null;
-  }, [selectedCollaboratorOption, selectedCollaboratorData, initialData?.collaboratorId]);
+  }, [selectedCollaboratorOption, preselectedOptions?.collaborator, selectedCollaboratorData]);
 
   const computedClientOptions: MultiSelectOption[] = useMemo(() => {
+    // 1. Si hay opciones seleccionadas por el usuario en esta sesión
     if (selectedClientOptions.length > 0) return selectedClientOptions;
     
+    // 2. Si hay opciones preseleccionadas del contrato existente
+    if (preselectedOptions?.clients && preselectedOptions.clients.length > 0) {
+      return preselectedOptions.clients;
+    }
+    
+    // 3. Si hay datos de la API (fallback para modo creación)
     const clients: MultiSelectOption[] = [];
-    const clientIds = initialData?.researchClientIds || [];
     
     const client1 = getUserFromResponse(selectedClient1Data);
     if (client1 && client1.profile) {
@@ -211,9 +241,6 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
         value: client1.id,
         label: `${client1.profile.documentNumber} - ${client1.profile.firstName} ${client1.profile.lastName}`,
       });
-    } else if (clientIds[0] && selectedClient1Data) {
-      // Debug log para producción
-      console.log('[ContractFormStep1] Client1 data received but not parsed:', selectedClient1Data);
     }
     
     const client2 = getUserFromResponse(selectedClient2Data);
@@ -222,8 +249,6 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
         value: client2.id,
         label: `${client2.profile.documentNumber} - ${client2.profile.firstName} ${client2.profile.lastName}`,
       });
-    } else if (clientIds[1] && selectedClient2Data) {
-      console.log('[ContractFormStep1] Client2 data received but not parsed:', selectedClient2Data);
     }
     
     const client3 = getUserFromResponse(selectedClient3Data);
@@ -232,12 +257,10 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: Con
         value: client3.id,
         label: `${client3.profile.documentNumber} - ${client3.profile.firstName} ${client3.profile.lastName}`,
       });
-    } else if (clientIds[2] && selectedClient3Data) {
-      console.log('[ContractFormStep1] Client3 data received but not parsed:', selectedClient3Data);
     }
     
     return clients;
-  }, [selectedClientOptions, selectedClient1Data, selectedClient2Data, selectedClient3Data, initialData?.researchClientIds]);
+  }, [selectedClientOptions, preselectedOptions?.clients, selectedClient1Data, selectedClient2Data, selectedClient3Data]);
 
   // Obtener servicios activos con búsqueda
   const { data: servicesData, isLoading: isLoadingServices } = useServices({ 

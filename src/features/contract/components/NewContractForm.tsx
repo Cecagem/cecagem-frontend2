@@ -216,6 +216,37 @@ export const NewContractForm = ({
     return initialData || {};
   }, [mode, contractToEdit, initialData]);
 
+  // Calcular opciones preseleccionadas desde el contrato (para evitar llamadas API adicionales)
+  const preselectedOptions = useMemo(() => {
+    if (mode !== "edit" || !contractToEdit) return undefined;
+
+    // Obtener el colaborador del contrato
+    const collaborator = contractToEdit.contractUsers.find(
+      cu => cu.user.role === "COLLABORATOR_INTERNAL" || cu.user.role === "COLLABORATOR_EXTERNAL"
+    );
+
+    // Obtener los clientes del contrato
+    const clients = contractToEdit.contractUsers.filter(
+      cu => cu.user.role === "CLIENT"
+    );
+
+    return {
+      // El servicio se obtiene de otra manera, pero podemos usar el nombre del contrato como referencia
+      // Para el servicio, necesitamos hacer una query separada ya que no viene en contractToEdit
+      service: null as { value: string; label: string } | null,
+      
+      collaborator: collaborator ? {
+        value: collaborator.userId,
+        label: `${collaborator.user.profile.documentNumber} - ${collaborator.user.profile.firstName} ${collaborator.user.profile.lastName}`,
+      } : null,
+      
+      clients: clients.map(c => ({
+        value: c.userId,
+        label: `${c.user.profile.documentNumber} - ${c.user.profile.firstName} ${c.user.profile.lastName}`,
+      })),
+    };
+  }, [mode, contractToEdit]);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<ContractFormData>>(computedInitialData);
 
@@ -522,6 +553,7 @@ export const NewContractForm = ({
             }}
             onNext={handleStep1Complete}
             editRestrictions={mode === "edit" ? editRestrictions : undefined}
+            preselectedOptions={preselectedOptions}
           />
         );
       case 2:

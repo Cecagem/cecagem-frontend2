@@ -584,7 +584,7 @@ export const ContractFormStep3 = ({
 
                   <div className="space-y-3">
                     {installments.map((installment, index) => (
-                      <div key={index} className="p-4 border rounded-lg">
+                      <div key={index} className={`p-4 border rounded-lg ${editRestrictions && !editRestrictions.canEditInstallments ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between mb-3">
                           <h5 className="font-medium">Cuota {index + 1}</h5>
                           {installments.length > 1 && (
@@ -607,6 +607,7 @@ export const ContractFormStep3 = ({
                               value={installment.description}
                               onChange={(e) => updateInstallment(index, "description", e.target.value)}
                               placeholder="Descripción de la cuota"
+                              disabled={editRestrictions && !editRestrictions.canEditInstallments}
                             />
                           </div>
                           
@@ -617,6 +618,7 @@ export const ContractFormStep3 = ({
                               value={installment.amount}
                               onChange={(e) => updateInstallment(index, "amount", Number(e.target.value))}
                               placeholder="0.00"
+                              disabled={editRestrictions && !editRestrictions.canEditInstallments}
                             />
                           </div>
                           
@@ -626,6 +628,7 @@ export const ContractFormStep3 = ({
                               value={installment.dueDate}
                               onChange={(date) => updateInstallment(index, "dueDate", date)}
                               placeholder="Seleccionar fecha"
+                              disabled={editRestrictions && !editRestrictions.canEditInstallments}
                             />
                           </div>
                         </div>
