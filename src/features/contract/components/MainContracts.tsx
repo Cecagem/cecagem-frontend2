@@ -21,7 +21,7 @@ import { ContractTable } from "./ContractTable";
 import { ContractStatsCards } from "./ContractStatsCards";
 import { DeleteContractDialog } from "./DeleteContractDialog";
 import { NewContractForm } from "./NewContractForm";
-import type { IContractFilters } from "../types";
+import type { IContractFilters, IContract } from "../types";
 
 export function MainContracts() {
   const searchParams = useSearchParams();
@@ -46,6 +46,15 @@ export function MainContracts() {
   // Estado para el modal de crear contrato
   const [createContractModal, setCreateContractModal] = useState({
     open: false,
+  });
+
+  // Estado para el modal de editar contrato
+  const [editContractModal, setEditContractModal] = useState<{
+    open: boolean;
+    contract: IContract | null;
+  }>({
+    open: false,
+    contract: null,
   });
 
   const {
@@ -125,6 +134,28 @@ export function MainContracts() {
   // Handler adicional para cuando el formulario se complete exitosamente
   const handleContractSuccess = () => {
     handleCloseContractModal();
+    refetch();
+  };
+
+  // Handler para editar contrato
+  const handleEditContract = useCallback((contract: IContract) => {
+    setEditContractModal({
+      open: true,
+      contract,
+    });
+  }, []);
+
+  // Handler para cerrar modal de edición
+  const handleCloseEditModal = () => {
+    setEditContractModal({
+      open: false,
+      contract: null,
+    });
+  };
+
+  // Handler para cuando la edición se complete exitosamente
+  const handleEditSuccess = () => {
+    handleCloseEditModal();
     refetch();
   };
 
@@ -218,6 +249,7 @@ export function MainContracts() {
           data={contracts}
           isLoading={isLoading}
           onDelete={handleDeleteContract}
+          onEdit={handleEditContract}
           // Props para paginación del servidor
           serverPagination={true}
           paginationMeta={paginationMeta}
@@ -258,6 +290,36 @@ export function MainContracts() {
             onSuccess={handleContractSuccess}
             onCancel={handleCloseContractModal}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de editar contrato */}
+      <Dialog
+        open={editContractModal.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseEditModal();
+          }
+        }}
+      >
+        <DialogContent
+          className="max-w-[95vw] w-[95vw] max-h-[85vh] overflow-y-auto"
+          style={{ width: "80vw", maxWidth: "70vw" }}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Editar Contrato</DialogTitle>
+          </DialogHeader>
+
+          {editContractModal.contract && (
+            <NewContractForm
+              mode="edit"
+              contractToEdit={editContractModal.contract}
+              onSuccess={handleEditSuccess}
+              onCancel={handleCloseEditModal}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

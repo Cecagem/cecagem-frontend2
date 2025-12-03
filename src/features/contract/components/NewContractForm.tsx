@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Building2, FileText, Calendar, Eye, Check, Users, User, CreditCard } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-import { useCreateContract } from "../hooks";
-import type { ICreateContractDto } from "../types";
+import { useCreateContract, useUpdateContract } from "../hooks";
+import type { ICreateContractDto, IUpdateContractDto, IContract } from "../types";
 import { useUsers } from "@/features/user/hooks/use-users";
 
 import { ContractFormStep1, type Step1FormData } from "./ContractFormStep1";
@@ -19,6 +19,23 @@ import { ContractFormStep3, type Step3FormData } from "./ContractFormStep3";
 // Interfaces para los datos completos del formulario
 export interface ContractFormData extends Step1FormData, Step2FormData, Step3FormData {}
 
+// Interface para las restricciones de edición
+export interface EditRestrictions {
+  canChangeService: boolean;
+  serviceChangeReason?: string;
+  canChangeCollaborator: boolean;
+  collaboratorChangeReason?: string;
+  canEditInstallments: boolean;
+  installmentsChangeReason?: string;
+  canEditCollaboratorPayments: boolean;
+  collaboratorPaymentsChangeReason?: string;
+  hasCompletedDeliverables: boolean;
+  hasCompletedProjectPayments: boolean;
+  hasCompletedCollaboratorPayments: boolean;
+  // IDs de entregables que están completados/aprobados y no pueden ser deseleccionados
+  lockedDeliverableIds: string[];
+}
+
 interface NewContractFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -27,6 +44,9 @@ interface NewContractFormProps {
   onOpenChange?: (open: boolean) => void;
   initialData?: Partial<ContractFormData>;
   onSubmit?: (data: ContractFormData) => void;
+  // Props para modo edición
+  mode?: "create" | "edit";
+  contractToEdit?: IContract;
 }
 
 interface StepInfo {
@@ -51,13 +71,167 @@ export const NewContractForm = ({
   open, 
   onOpenChange, 
   initialData,
-  onSubmit 
+  onSubmit,
+  mode = "create",
+  contractToEdit,
 }: NewContractFormProps) => {
+  
+  // ============================================================================
+  // FUNCIONES PARA CALCULAR RESTRICCIONES DE EDICIÓN
+  // ============================================================================
+  
+  // Calcular las restricciones de edición basadas en el estado del contrato
+  const calculateEditRestrictions = (contract: IContract | undefined): EditRestrictions => {
+    if (!contract) {
+      return {
+        canChangeService: true,
+        canChangeCollaborator: true,
+        canEditInstallments: true,
+        canEditCollaboratorPayments: true,
+        hasCompletedDeliverables: false,
+        hasCompletedProjectPayments: false,
+        hasCompletedCollaboratorPayments: false,
+        lockedDeliverableIds: [],
+      };
+    }
+
+    // Verificar si hay entregables completados o aprobados
+    const hasCompletedDeliverables = contract.contractDeliverables.some(
+      cd => cd.isCompleted || cd.isAproved
+    );
+
+    // Obtener IDs de entregables que están completados/aprobados (bloqueados)
+    const lockedDeliverableIds = contract.contractDeliverables
+      .filter(cd => cd.isCompleted || cd.isAproved)
+      .map(cd => cd.deliverableId);
+
+    // Verificar si hay pagos completados en las cuotas del proyecto
+    const hasCompletedProjectPayments = contract.installments.some(
+      inst => inst.payments.some(p => p.status === "COMPLETED")
+    );
+
+    // Obtener el colaborador actual
+    const currentCollaborator = contract.contractUsers.find(
+      cu => cu.user.role === "COLLABORATOR_INTERNAL" || cu.user.role === "COLLABORATOR_EXTERNAL"
+    );
+
+    // Verificar si el colaborador externo tiene pagos completados
+    const isExternalCollaborator = currentCollaborator?.user.role === "COLLABORATOR_EXTERNAL";
+    const hasCompletedCollaboratorPayments = isExternalCollaborator && 
+      (currentCollaborator?.installments?.some(
+        inst => inst.payments.some(p => p.status === "COMPLETED")
+      ) || false);
+
+    return {
+      // No se puede cambiar servicio si hay entregables completados/aprobados
+      canChangeService: !hasCompletedDeliverables,
+      serviceChangeReason: hasCompletedDeliverables 
+        ? "No se puede cambiar el servicio porque hay entregables completados o aprobados" 
+        : undefined,
+      
+      // No se puede cambiar colaborador si es externo y tiene pagos completados
+      canChangeCollaborator: !hasCompletedCollaboratorPayments,
+      collaboratorChangeReason: hasCompletedCollaboratorPayments 
+        ? "No se puede cambiar el colaborador porque ya tiene pagos completados" 
+        : undefined,
+      
+      // No se pueden editar cuotas si hay pagos completados
+      canEditInstallments: !hasCompletedProjectPayments,
+      installmentsChangeReason: hasCompletedProjectPayments 
+        ? "No se pueden modificar las cuotas porque ya existen pagos completados" 
+        : undefined,
+      
+      // No se pueden editar pagos de colaborador si ya hay pagos completados
+      canEditCollaboratorPayments: !hasCompletedCollaboratorPayments,
+      collaboratorPaymentsChangeReason: hasCompletedCollaboratorPayments 
+        ? "No se pueden modificar los pagos del colaborador porque ya tiene pagos completados" 
+        : undefined,
+      
+      hasCompletedDeliverables,
+      hasCompletedProjectPayments,
+      hasCompletedCollaboratorPayments,
+      lockedDeliverableIds,
+    };
+  };
+
+  // Calcular restricciones
+  const editRestrictions = useMemo(() => 
+    calculateEditRestrictions(contractToEdit), 
+    [contractToEdit]
+  );
+
+  // Función para transformar el contrato a datos del formulario
+  const transformContractToFormData = (contract: IContract): Partial<ContractFormData> => {
+    // Separar colaborador de clientes de investigación
+    // El colaborador es el que tiene role COLLABORATOR_INTERNAL o COLLABORATOR_EXTERNAL
+    const collaborator = contract.contractUsers.find(
+      cu => cu.user.role === "COLLABORATOR_INTERNAL" || cu.user.role === "COLLABORATOR_EXTERNAL"
+    );
+    const clients = contract.contractUsers.filter(
+      cu => cu.user.role === "CLIENT"
+    );
+
+    // Determinar tipo de pago basado en las cuotas
+    const paymentType = contract.installments.length > 1 ? "installments" : "cash";
+
+    // Transformar cuotas
+    const installments = contract.installments.map(inst => ({
+      description: inst.description,
+      amount: inst.amount,
+      dueDate: new Date(inst.dueDate),
+    }));
+
+    // Transformar pagos de colaborador (si existen)
+    const collaboratorPayments = collaborator?.installments?.map(inst => ({
+      userId: collaborator.userId,
+      amount: inst.amount,
+      dueDate: new Date(inst.dueDate),
+      description: inst.description,
+    })) || [];
+
+    return {
+      serviceId: contract.serviceId,
+      name: contract.name,
+      university: contract.university,
+      career: contract.career,
+      observation: contract.observation || "",
+      collaboratorId: collaborator?.userId || "",
+      researchClientIds: clients.map(c => c.userId),
+      deliverableIds: contract.contractDeliverables.map(d => d.deliverableId),
+      costTotal: contract.costTotal,
+      currency: contract.currency,
+      startDate: new Date(contract.startDate),
+      endDate: new Date(contract.endDate),
+      paymentType: paymentType as "cash" | "installments",
+      installments: installments,
+      collaboratorPayments: collaboratorPayments.length > 0 ? collaboratorPayments : undefined,
+    };
+  };
+
+  // Calcular datos iniciales basados en el modo
+  const computedInitialData = useMemo(() => {
+    if (mode === "edit" && contractToEdit) {
+      return transformContractToFormData(contractToEdit);
+    }
+    return initialData || {};
+  }, [mode, contractToEdit, initialData]);
+
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<Partial<ContractFormData>>(initialData || {});
+  const [formData, setFormData] = useState<Partial<ContractFormData>>(computedInitialData);
+
+  // Actualizar formData cuando cambie el contrato a editar
+  useEffect(() => {
+    if (mode === "edit" && contractToEdit) {
+      setFormData(transformContractToFormData(contractToEdit));
+      setCurrentStep(1); // Resetear al paso 1 cuando se abre para editar
+    }
+  }, [mode, contractToEdit]);
 
   // Hook para crear contratos
   const createContractMutation = useCreateContract();
+  
+  // Hook para actualizar contratos
+  const updateContractMutation = useUpdateContract();
 
   // Obtener información del colaborador seleccionado
   const { data: usersData } = useUsers({
@@ -94,7 +268,19 @@ export const NewContractForm = ({
   ];
 
   const handleStep1Complete = (data: Step1FormData) => {
-    setFormData(prev => ({ ...prev, ...data }));
+    // Si el servicio cambió, limpiar los entregables seleccionados
+    const serviceChanged = formData.serviceId && formData.serviceId !== data.serviceId;
+    
+    if (serviceChanged) {
+      // Limpiar entregables del servicio anterior
+      setFormData(prev => ({ 
+        ...prev, 
+        ...data,
+        deliverableIds: [] // Resetear entregables
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, ...data }));
+    }
     setCurrentStep(2);
   };
 
@@ -115,10 +301,18 @@ export const NewContractForm = ({
     }
 
     try {
-      const contractData = transformFormDataToDTO(formData as ContractFormData);
-      
-      // Crear nuevo contrato
-      await createContractMutation.mutateAsync(contractData);
+      if (mode === "edit" && contractToEdit) {
+        // Actualizar contrato existente
+        const updateData = transformFormDataToUpdateDTO(formData as ContractFormData);
+        await updateContractMutation.mutateAsync({ 
+          id: contractToEdit.id, 
+          data: updateData 
+        });
+      } else {
+        // Crear nuevo contrato
+        const contractData = transformFormDataToDTO(formData as ContractFormData);
+        await createContractMutation.mutateAsync(contractData);
+      }
       
       // Ejecutar callbacks de éxito
       onSuccess?.();
@@ -127,7 +321,7 @@ export const NewContractForm = ({
       // Cerrar formulario
       handleClose();
     } catch (error) {
-      console.error('Error al crear el contrato:', error);
+      console.error(`Error al ${mode === "edit" ? "actualizar" : "crear"} el contrato:`, error);
       // Los errores se manejan en los hooks mutations
     }
   };
@@ -154,6 +348,19 @@ export const NewContractForm = ({
     // Combinar colaborador y clientes de investigación en userIds
     const userIds = [data.collaboratorId, ...data.researchClientIds];
     
+    // Determinar si el colaborador seleccionado es externo
+    const isExternalCollaborator = selectedCollaborator?.role === "COLLABORATOR_EXTERNAL";
+    
+    // Solo incluir collaboratorPayments si el colaborador es externo y hay pagos definidos
+    const collaboratorPayments = isExternalCollaborator && data.collaboratorPayments?.length
+      ? data.collaboratorPayments.map(payment => ({
+          userId: data.collaboratorId,
+          amount: Number(payment.amount),
+          dueDate: payment.dueDate.toISOString(),
+          description: payment.description,
+        }))
+      : undefined;
+    
     return {
       serviceId: data.serviceId,
       name: data.name,
@@ -171,18 +378,73 @@ export const NewContractForm = ({
         amount: Number(installment.amount),
         dueDate: installment.dueDate.toISOString(),
       })) || [],
-      collaboratorPayments: data.collaboratorPayments?.map(payment => ({
-        userId: payment.userId,
-        amount: Number(payment.amount),
-        dueDate: payment.dueDate.toISOString(),
-        description: payment.description,
-      })) || undefined,
+      // Solo enviar collaboratorPayments si es colaborador externo
+      ...(collaboratorPayments && { collaboratorPayments }),
     };
+  };
+
+  // Función helper para transformar formData a DTO de actualización
+  const transformFormDataToUpdateDTO = (data: ContractFormData): IUpdateContractDto => {
+    // Combinar colaborador y clientes de investigación en userIds
+    const userIds = [data.collaboratorId, ...data.researchClientIds];
+    
+    // Determinar si el colaborador seleccionado es externo
+    const isExternalCollaborator = selectedCollaborator?.role === "COLLABORATOR_EXTERNAL";
+    
+    // Solo incluir collaboratorPayments si:
+    // 1. El colaborador es externo
+    // 2. Hay pagos definidos
+    // 3. Se pueden editar (no hay pagos completados del colaborador)
+    const collaboratorPayments = isExternalCollaborator && 
+      data.collaboratorPayments?.length &&
+      editRestrictions?.canEditCollaboratorPayments !== false
+      ? data.collaboratorPayments.map(payment => ({
+          userId: data.collaboratorId,
+          amount: Number(payment.amount),
+          dueDate: payment.dueDate.toISOString(),
+          description: payment.description,
+        }))
+      : undefined;
+    
+    // Solo incluir installments si se pueden editar (no hay pagos completados del proyecto)
+    const installments = editRestrictions?.canEditInstallments !== false
+      ? data.installments?.map(installment => ({
+          description: installment.description,
+          amount: Number(installment.amount),
+          dueDate: installment.dueDate.toISOString(),
+        })) || []
+      : undefined;
+    
+    const result: IUpdateContractDto = {
+      serviceId: data.serviceId,
+      name: data.name,
+      university: data.university,
+      career: data.career,
+      observation: data.observation || "",
+      costTotal: Number(data.costTotal),
+      currency: data.currency,
+      startDate: data.startDate.toISOString(),
+      endDate: data.endDate.toISOString(),
+      userIds: userIds,
+      deliverableIds: data.deliverableIds,
+    };
+    
+    // Solo agregar installments si se pueden editar
+    if (installments !== undefined) {
+      result.installments = installments;
+    }
+    
+    // Solo agregar collaboratorPayments si corresponde
+    if (collaboratorPayments) {
+      result.collaboratorPayments = collaboratorPayments;
+    }
+    
+    return result;
   };
 
   const handleClose = () => {
     setCurrentStep(1);
-    setFormData(initialData || {});
+    setFormData(mode === "edit" && contractToEdit ? transformContractToFormData(contractToEdit) : (initialData || {}));
     onOpenChange?.(false);
     onCancel?.();
   };
@@ -259,6 +521,7 @@ export const NewContractForm = ({
               researchClientIds: formData.researchClientIds || [],
             }}
             onNext={handleStep1Complete}
+            editRestrictions={mode === "edit" ? editRestrictions : undefined}
           />
         );
       case 2:
@@ -270,6 +533,7 @@ export const NewContractForm = ({
             }}
             onNext={handleStep2Complete}
             onBack={() => setCurrentStep(1)}
+            editRestrictions={mode === "edit" ? editRestrictions : undefined}
           />
         );
       case 3:
@@ -281,6 +545,7 @@ export const NewContractForm = ({
             collaboratorId={formData.collaboratorId}
             collaboratorRole={selectedCollaborator?.role}
             contractName={formData.name}
+            editRestrictions={mode === "edit" ? editRestrictions : undefined}
           />
         );
       case 4:
@@ -298,7 +563,7 @@ export const NewContractForm = ({
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold">Resumen del Contrato</h2>
         <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto px-4 sm:px-0">
-          Revise cuidadosamente toda la información antes de crear el contrato
+          Revise cuidadosamente toda la información antes de {mode === "edit" ? "guardar los cambios" : "crear el contrato"}
         </p>
       </div>
 
@@ -477,12 +742,14 @@ export const NewContractForm = ({
         
         <Button
           onClick={handleFinalSubmit}
-          disabled={createContractMutation.isPending}
+          disabled={createContractMutation.isPending || updateContractMutation.isPending}
           className="text-white w-full sm:w-auto"
           size="lg"
         >
-          {createContractMutation.isPending ? (
+          {(createContractMutation.isPending || updateContractMutation.isPending) ? (
             "Procesando..."
+          ) : mode === "edit" ? (
+            "Guardar Cambios"
           ) : (
             "Crear Contrato"
           )}
@@ -509,7 +776,7 @@ export const NewContractForm = ({
         >
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-xl">
-              Crear Nuevo Contrato
+              {mode === "edit" ? "Editar Contrato" : "Crear Nuevo Contrato"}
             </DialogTitle>
           </DialogHeader>
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calendar, DollarSign, CreditCard, Plus, Trash2, User } from "lucide-react";
+import { Calendar, DollarSign, CreditCard, Plus, Trash2, User, AlertTriangle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateInput } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { EditRestrictions } from "./NewContractForm";
 
 // Schema de validación para el paso 3
 const installmentSchema = z.object({
@@ -58,6 +60,7 @@ interface ContractFormStep3Props {
   collaboratorId?: string;
   collaboratorRole?: string;
   contractName?: string;
+  editRestrictions?: EditRestrictions;
 }
 
 export const ContractFormStep3 = ({ 
@@ -66,7 +69,8 @@ export const ContractFormStep3 = ({
   onBack, 
   collaboratorId, 
   collaboratorRole, 
-  contractName 
+  contractName,
+  editRestrictions
 }: ContractFormStep3Props) => {
   const [installments, setInstallments] = useState<InstallmentData[]>(
     initialData?.installments?.map(inst => ({
@@ -267,15 +271,44 @@ export const ContractFormStep3 = ({
         </p>
       </div>
 
+      {/* Alertas de restricciones de edición */}
+      {editRestrictions && (!editRestrictions.canEditInstallments || !editRestrictions.canEditCollaboratorPayments) && (
+        <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>Campos con restricciones:</strong>
+            <ul className="list-disc list-inside mt-1 space-y-1">
+              {!editRestrictions.canEditInstallments && (
+                <li>
+                  <strong>🔒 Información financiera y cuotas bloqueadas:</strong> Ya existen pagos completados del cliente. 
+                  El costo total, moneda y cuotas no se pueden modificar.
+                </li>
+              )}
+              {!editRestrictions.canEditCollaboratorPayments && (
+                <li>
+                  <strong>🔒 Pagos del colaborador bloqueados:</strong> El colaborador ya tiene pagos completados. 
+                  Sus cuotas no se modificarán al guardar.
+                </li>
+              )}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           
           {/* Información de Costos */}
-          <Card>
+          <Card className={editRestrictions && !editRestrictions.canEditInstallments ? "opacity-75" : ""}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
                 Información Financiera
+                {editRestrictions && !editRestrictions.canEditInstallments && (
+                  <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    🔒 Bloqueado
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -285,13 +318,19 @@ export const ContractFormStep3 = ({
                   name="costTotal"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Costo Total *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        Costo Total *
+                        {editRestrictions && !editRestrictions.canEditInstallments && (
+                          <span className="text-xs text-amber-600">(No modificable)</span>
+                        )}
+                      </FormLabel>
                       <FormControl>
                         <Input 
                           type="number"
                           placeholder="0.00"
                           {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
+                          disabled={editRestrictions && !editRestrictions.canEditInstallments}
                         />
                       </FormControl>
                       <FormMessage />
@@ -304,8 +343,17 @@ export const ContractFormStep3 = ({
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Moneda *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel className="flex items-center gap-2">
+                        Moneda *
+                        {editRestrictions && !editRestrictions.canEditInstallments && (
+                          <span className="text-xs text-amber-600">(No modificable)</span>
+                        )}
+                      </FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                        disabled={editRestrictions && !editRestrictions.canEditInstallments}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccionar moneda" />
@@ -375,11 +423,16 @@ export const ContractFormStep3 = ({
 
           {/* Pago de Colaborador Externo */}
           {isExternalCollaborator && (
-            <Card>
+            <Card className={editRestrictions && !editRestrictions.canEditCollaboratorPayments ? "opacity-75" : ""}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
                   Pago de Colaborador Externo
+                  {editRestrictions && !editRestrictions.canEditCollaboratorPayments && (
+                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                      🔒 Bloqueado
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -393,6 +446,7 @@ export const ContractFormStep3 = ({
                           value={payment.amount}
                           onChange={(e) => updateCollaboratorPayment(index, "amount", Number(e.target.value))}
                           placeholder="0.00"
+                          disabled={editRestrictions && !editRestrictions.canEditCollaboratorPayments}
                         />
                       </div>
                       
@@ -402,6 +456,7 @@ export const ContractFormStep3 = ({
                           value={payment.dueDate}
                           onChange={(date) => updateCollaboratorPayment(index, "dueDate", date)}
                           placeholder="Seleccionar fecha"
+                          disabled={editRestrictions && !editRestrictions.canEditCollaboratorPayments}
                         />
                       </div>
                     </div>
@@ -412,6 +467,7 @@ export const ContractFormStep3 = ({
                         value={payment.description}
                         onChange={(e) => updateCollaboratorPayment(index, "description", e.target.value)}
                         placeholder="Descripción del pago"
+                        disabled={editRestrictions && !editRestrictions.canEditCollaboratorPayments}
                       />
                     </div>
                   </div>
@@ -421,11 +477,16 @@ export const ContractFormStep3 = ({
           )}
 
           {/* Configuración de Pagos */}
-          <Card>
+          <Card className={editRestrictions && !editRestrictions.canEditInstallments ? "opacity-75" : ""}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Configuración de Pagos
+                Configuración de Pagos del Cliente
+                {editRestrictions && !editRestrictions.canEditInstallments && (
+                  <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    🔒 Bloqueado
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -435,7 +496,11 @@ export const ContractFormStep3 = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Pago *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      disabled={editRestrictions && !editRestrictions.canEditInstallments}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar tipo de pago" />
@@ -462,6 +527,7 @@ export const ContractFormStep3 = ({
                         setNumberOfInstallments(Number(value));
                         setHasManuallyEditedInstallments(false);
                       }}
+                      disabled={editRestrictions && !editRestrictions.canEditInstallments}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar cuotas" />
@@ -484,6 +550,7 @@ export const ContractFormStep3 = ({
                         calculateInstallments();
                       }}
                       className="w-full"
+                      disabled={editRestrictions && !editRestrictions.canEditInstallments}
                     >
                       Recalcular Cuotas
                     </Button>
@@ -507,6 +574,7 @@ export const ContractFormStep3 = ({
                         variant="outline"
                         size="sm"
                         onClick={addInstallment}
+                        disabled={editRestrictions && !editRestrictions.canEditInstallments}
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Agregar Cuota
@@ -525,6 +593,7 @@ export const ContractFormStep3 = ({
                               variant="outline"
                               size="sm"
                               onClick={() => removeInstallment(index)}
+                              disabled={editRestrictions && !editRestrictions.canEditInstallments}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

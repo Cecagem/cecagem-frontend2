@@ -4,13 +4,15 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Building2, User, Users, Plus } from "lucide-react";
+import { Building2, User, Users, Plus, AlertTriangle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { SearchableSelect, MultiSelect } from "@/components/shared";
 import type { SearchableSelectOption, MultiSelectOption } from "@/components/shared";
 
@@ -22,6 +24,7 @@ import { UserRole } from "@/features/user/types/user.types";
 import { UserForm } from "@/features/user/components/UserForm";
 import { ResearchClientForm } from "@/features/research-clients/components/ResearchClientForm";
 import type { ServiceResponse } from "@/features/engagements/types/engagements.type";
+import type { EditRestrictions } from "./NewContractForm";
 
 // Helper para extraer servicio de la respuesta (la API puede retornar {data: Service} o Service directamente)
 const getServiceFromResponse = (response: ServiceResponse | null | undefined): { id: string; name: string } | null => {
@@ -57,9 +60,10 @@ export type Step1FormData = z.infer<typeof step1Schema>;
 interface ContractFormStep1Props {
   initialData?: Partial<Step1FormData>;
   onNext: (data: Step1FormData) => void;
+  editRestrictions?: EditRestrictions;
 }
 
-export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Props) => {
+export const ContractFormStep1 = ({ initialData, onNext, editRestrictions }: ContractFormStep1Props) => {
   // Estados para búsqueda con debounce
   const [searchCollaborator, setSearchCollaborator] = useState("");
   const [searchClient, setSearchClient] = useState("");
@@ -293,6 +297,30 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           
+          {/* Alertas de restricciones de edición */}
+          {editRestrictions && (!editRestrictions.canChangeService || !editRestrictions.canChangeCollaborator) && (
+            <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                <strong>Campos con restricciones:</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  {!editRestrictions.canChangeService && (
+                    <li>
+                      <strong>🔒 Servicio bloqueado:</strong> Hay entregables completados o aprobados. 
+                      No se puede cambiar a otro servicio.
+                    </li>
+                  )}
+                  {!editRestrictions.canChangeCollaborator && (
+                    <li>
+                      <strong>🔒 Colaborador bloqueado:</strong> El colaborador actual tiene pagos completados. 
+                      No se puede cambiar a otro colaborador.
+                    </li>
+                  )}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Información del Contrato */}
           <Card>
             <CardHeader>
@@ -307,7 +335,14 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
                 name="serviceId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Servicio *</FormLabel>
+                    <FormLabel className="flex items-center gap-2">
+                      Servicio *
+                      {editRestrictions && !editRestrictions.canChangeService && (
+                        <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                          🔒 Bloqueado
+                        </Badge>
+                      )}
+                    </FormLabel>
                     <FormControl>
                       <SearchableSelect
                         options={serviceOptions}
@@ -324,6 +359,7 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
                         onSearchChange={setSearchService}
                         isLoading={isLoadingServices}
                         selectedOption={computedServiceOption}
+                        disabled={editRestrictions && !editRestrictions.canChangeService}
                       />
                     </FormControl>
                     <FormMessage />
@@ -396,12 +432,17 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
           </Card>
 
           {/* Colaborador */}
-          <Card>
+          <Card className={editRestrictions && !editRestrictions.canChangeCollaborator ? "opacity-75" : ""}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
                   Colaborador Responsable
+                  {editRestrictions && !editRestrictions.canChangeCollaborator && (
+                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                      🔒 Bloqueado
+                    </Badge>
+                  )}
                 </CardTitle>
                 <Button
                   type="button"
@@ -409,6 +450,7 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
                   size="sm"
                   onClick={() => setShowUserForm(true)}
                   className="flex items-center gap-2"
+                  disabled={editRestrictions && !editRestrictions.canChangeCollaborator}
                 >
                   <Plus className="h-4 w-4" />
                   Añadir Nuevo
@@ -421,7 +463,12 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
                 name="collaboratorId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Colaborador *</FormLabel>
+                    <FormLabel className="flex items-center gap-2">
+                      Colaborador *
+                      {editRestrictions && !editRestrictions.canChangeCollaborator && (
+                        <span className="text-xs text-amber-600">(No modificable)</span>
+                      )}
+                    </FormLabel>
                     <FormControl>
                       <SearchableSelect
                         options={collaboratorOptions}
@@ -438,6 +485,7 @@ export const ContractFormStep1 = ({ initialData, onNext }: ContractFormStep1Prop
                         onSearchChange={setSearchCollaborator}
                         isLoading={isLoadingUsers}
                         selectedOption={computedCollaboratorOption}
+                        disabled={editRestrictions && !editRestrictions.canChangeCollaborator}
                       />
                     </FormControl>
                     <FormMessage />
