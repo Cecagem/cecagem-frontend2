@@ -35,7 +35,7 @@ export const notificationService = {
     }
   },
 
-  // ✅ NUEVO: Marcar todas como leídas
+  
   markAllAsRead: async (): Promise<void> => {
     try {
       await cecagemApi.patch(`/notifications/mark-all-read`);

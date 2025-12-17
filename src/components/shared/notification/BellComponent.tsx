@@ -45,16 +45,14 @@ export const BellComponent = () => {
   const [open, setOpen] = useState(false);
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
 
-  // ✅ NUEVA FUNCIÓN: Marcar todas como leídas (con persistencia en backend)
   const handleMarkAllAsRead = async () => {
     if (isMarkingAllAsRead || unreadCount === 0) return;
 
     setIsMarkingAllAsRead(true);
     try {
-      // 1. Llamar al backend para persistir el cambio
+
       await notificationService.markAllAsRead();
-      
-      // 2. Actualizar el store local
+
       markAllAsRead();
 
       toast.success("Todas las notificaciones marcadas como leídas");
@@ -62,7 +60,7 @@ export const BellComponent = () => {
       console.error("Error al marcar todas las notificaciones como leídas:", error);
       toast.error("Error al marcar las notificaciones");
       
-      // 3. Si falla, recargar las notificaciones del servidor para mantener sincronización
+      
       try {
         const updatedNotifications = await notificationService.getUserNotifications();
         setNotifications(updatedNotifications);
@@ -80,7 +78,7 @@ export const BellComponent = () => {
   ) => {
     event.stopPropagation();
 
-    // Solo marcar como leída si no es temporal Y no está ya leída
+    
     if (!notification.id.startsWith("temp-") && notification.status !== "READ") {
       try {
         await notificationService.markAsRead(notification.id);
