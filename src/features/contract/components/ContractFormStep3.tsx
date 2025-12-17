@@ -56,7 +56,6 @@ interface ContractFormStep3Props {
   initialData?: Partial<Step3FormData>;
   onNext: (data: Step3FormData) => void;
   onBack: () => void;
-  // Nuevas props para manejar colaboradores externos
   collaboratorId?: string;
   collaboratorRole?: string;
   contractName?: string;
@@ -91,7 +90,6 @@ export const ContractFormStep3 = ({
     })) || []
   );
 
-  // Verificar si el colaborador es externo
   const isExternalCollaborator = collaboratorRole === "COLLABORATOR_EXTERNAL";
 
   const form = useForm<Step3FormData>({
@@ -137,24 +135,41 @@ export const ContractFormStep3 = ({
     }
   }, [isExternalCollaborator, collaboratorId, contractName, watchedEndDate, form]);
 
-  // Calcular cuotas automáticamente
+  // ✅ NUEVA FUNCIÓN: Calcular cuotas mensuales desde la fecha de inicio
   const calculateInstallments = useCallback(() => {
-    if (watchedPaymentType === "installments" && watchedStartDate && watchedEndDate && watchedCostTotal > 0 && numberOfInstallments > 0) {
-      // Generar cuotas automáticas con distribución equitativa
+    if (watchedPaymentType === "installments" && watchedStartDate && watchedCostTotal > 0 && numberOfInstallments > 0) {
+      // Calcular monto base y residuo
       const baseAmount = Math.floor((watchedCostTotal / numberOfInstallments) * 100) / 100;
       const remainder = Math.round((watchedCostTotal - (baseAmount * numberOfInstallments)) * 100) / 100;
       const newInstallments: InstallmentData[] = [];
       
-      // Calcular distribución temporal uniforme
-      const startTime = watchedStartDate.getTime();
-      const endTime = watchedEndDate.getTime();
-      const totalDays = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24));
-      const daysBetweenInstallments = Math.ceil(totalDays / numberOfInstallments);
+      // 🔧 FIX: Extraer componentes de fecha directamente para evitar conversiones de zona horaria
+      const startYear = watchedStartDate.getFullYear();
+      const startMonth = watchedStartDate.getMonth();
+      const startDay = watchedStartDate.getDate();
       
       for (let i = 0; i < numberOfInstallments; i++) {
-        // Crear nueva fecha a partir del timestamp para evitar mutaciones
-        const dueDateTime = startTime + ((daysBetweenInstallments * (i + 1)) * 24 * 60 * 60 * 1000);
-        const dueDate = new Date(dueDateTime);
+        // Calcular el mes y año de cada cuota (sumando i meses)
+        let targetMonth = startMonth + i;
+        let targetYear = startYear;
+        
+        // Ajustar año si el mes excede 11 (diciembre)
+        while (targetMonth > 11) {
+          targetMonth -= 12;
+          targetYear += 1;
+        }
+        
+        // 🔧 FIX: Calcular el último día del mes de destino
+        // Usando new Date(año, mes+1, 0) que retorna el último día del mes
+        const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+        
+        // Si el día de inicio no existe en el mes destino, usar el último día disponible
+        const targetDay = Math.min(startDay, lastDayOfMonth);
+        
+        // 🔧 FIX CRÍTICO: Crear fecha usando el constructor de Date con componentes individuales
+        // y forzar hora a mediodía local (no UTC) para evitar cambios de día
+        const dueDate = new Date(targetYear, targetMonth, targetDay);
+        dueDate.setHours(12, 0, 0, 0);
         
         // La última cuota incluye el remainder para cuadrar el total exacto
         const amount = i === numberOfInstallments - 1 ? baseAmount + remainder : baseAmount;
@@ -170,7 +185,7 @@ export const ContractFormStep3 = ({
       form.setValue("installments", newInstallments);
       setHasManuallyEditedInstallments(true);
     }
-  }, [watchedPaymentType, watchedStartDate, watchedEndDate, watchedCostTotal, numberOfInstallments, form]);
+  }, [watchedPaymentType, watchedStartDate, watchedCostTotal, numberOfInstallments, form]);
 
   // Ejecutar cálculo cuando cambien los parámetros (solo si no se ha editado manualmente)
   useEffect(() => {
@@ -208,7 +223,6 @@ export const ContractFormStep3 = ({
 
   const updateInstallment = (index: number, field: keyof InstallmentData, value: string | number | Date) => {
     const newInstallments = [...installments];
-    // Si es una fecha, crear una copia nueva para evitar mutaciones
     const finalValue = value instanceof Date ? new Date(value.getTime()) : value;
     newInstallments[index] = { ...newInstallments[index], [field]: finalValue };
     setInstallments(newInstallments);
@@ -218,7 +232,6 @@ export const ContractFormStep3 = ({
 
   const updateCollaboratorPayment = (index: number, field: keyof CollaboratorPaymentData, value: string | number | Date) => {
     const newPayments = [...collaboratorPayments];
-    // Si es una fecha, crear una copia nueva para evitar mutaciones
     const finalValue = value instanceof Date ? new Date(value.getTime()) : value;
     newPayments[index] = { ...newPayments[index], [field]: finalValue };
     setCollaboratorPayments(newPayments);
@@ -226,21 +239,18 @@ export const ContractFormStep3 = ({
   };
 
   const handleSubmit = (data: Step3FormData) => {
-    // Crear copias profundas de las fechas para evitar mutaciones
     const safeData = {
       ...data,
       startDate: new Date(data.startDate.getTime()),
       endDate: new Date(data.endDate.getTime()),
     };
     
-    // Si es pago en cuotas, usar las cuotas configuradas con fechas copiadas
     if (safeData.paymentType === "installments") {
       safeData.installments = installments.map(inst => ({
         ...inst,
         dueDate: new Date(inst.dueDate.getTime())
       }));
     } else {
-      // Si es pago al contado, crear una sola cuota
       safeData.installments = [{
         description: "Pago único",
         amount: safeData.costTotal,
@@ -248,7 +258,6 @@ export const ContractFormStep3 = ({
       }];
     }
     
-    // Agregar pagos de colaborador si es externo
     if (isExternalCollaborator) {
       safeData.collaboratorPayments = collaboratorPayments.map(payment => ({
         ...payment,
@@ -271,7 +280,6 @@ export const ContractFormStep3 = ({
         </p>
       </div>
 
-      {/* Alertas de restricciones de edición */}
       {editRestrictions && (!editRestrictions.canEditInstallments || !editRestrictions.canEditCollaboratorPayments) && (
         <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -298,7 +306,6 @@ export const ContractFormStep3 = ({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           
-          {/* Información de Costos */}
           <Card className={editRestrictions && !editRestrictions.canEditInstallments ? "opacity-75" : ""}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -372,7 +379,6 @@ export const ContractFormStep3 = ({
             </CardContent>
           </Card>
 
-          {/* Fechas del Proyecto */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -421,7 +427,6 @@ export const ContractFormStep3 = ({
             </CardContent>
           </Card>
 
-          {/* Pago de Colaborador Externo */}
           {isExternalCollaborator && (
             <Card className={editRestrictions && !editRestrictions.canEditCollaboratorPayments ? "opacity-75" : ""}>
               <CardHeader>
@@ -476,7 +481,6 @@ export const ContractFormStep3 = ({
             </Card>
           )}
 
-          {/* Configuración de Pagos */}
           <Card className={editRestrictions && !editRestrictions.canEditInstallments ? "opacity-75" : ""}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -516,7 +520,6 @@ export const ContractFormStep3 = ({
                 )}
               />
 
-              {/* Selector de número de cuotas */}
               {watchedPaymentType === "installments" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -558,7 +561,6 @@ export const ContractFormStep3 = ({
                 </div>
               )}
 
-              {/* Cuotas (solo si es pago en cuotas) */}
               {watchedPaymentType === "installments" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -651,7 +653,6 @@ export const ContractFormStep3 = ({
             </CardContent>
           </Card>
 
-          {/* Botones de navegación */}
           <div className="flex justify-between">
             <Button
               type="button"
