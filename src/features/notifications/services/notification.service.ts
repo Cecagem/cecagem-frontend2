@@ -31,6 +31,17 @@ export const notificationService = {
       await cecagemApi.patch(`/notifications/${notificationId}/read`);
     } catch (error) {
       console.error("Error marking notification as read:", error);
+      throw error;
+    }
+  },
+
+  // ✅ NUEVO: Marcar todas como leídas
+  markAllAsRead: async (): Promise<void> => {
+    try {
+      await cecagemApi.patch(`/notifications/mark-all-read`);
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      throw error;
     }
   },
 };

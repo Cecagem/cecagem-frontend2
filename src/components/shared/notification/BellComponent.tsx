@@ -36,12 +36,43 @@ import { es } from "date-fns/locale";
 import { cn, cleanNotificationMessage } from "@/lib/utils";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 import { UserRole } from "@/features/user/types/user.types";
+import { toast } from "sonner";
 
 export const BellComponent = () => {
   const { notifications, unreadCount, isConnected } = useNotifications();
-  const { markAsRead, markAllAsRead } = useNotificationStore();
+  const { markAsRead, markAllAsRead, setNotifications } = useNotificationStore();
   const { user } = useAuthStore();
   const [open, setOpen] = useState(false);
+  const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
+
+  // ✅ NUEVA FUNCIÓN: Marcar todas como leídas (con persistencia en backend)
+  const handleMarkAllAsRead = async () => {
+    if (isMarkingAllAsRead || unreadCount === 0) return;
+
+    setIsMarkingAllAsRead(true);
+    try {
+      // 1. Llamar al backend para persistir el cambio
+      await notificationService.markAllAsRead();
+      
+      // 2. Actualizar el store local
+      markAllAsRead();
+
+      toast.success("Todas las notificaciones marcadas como leídas");
+    } catch (error) {
+      console.error("Error al marcar todas las notificaciones como leídas:", error);
+      toast.error("Error al marcar las notificaciones");
+      
+      // 3. Si falla, recargar las notificaciones del servidor para mantener sincronización
+      try {
+        const updatedNotifications = await notificationService.getUserNotifications();
+        setNotifications(updatedNotifications);
+      } catch (refreshError) {
+        console.error("Error al refrescar notificaciones:", refreshError);
+      }
+    } finally {
+      setIsMarkingAllAsRead(false);
+    }
+  };
 
   const handleNotificationClick = async (
     notification: Notification,
@@ -49,15 +80,14 @@ export const BellComponent = () => {
   ) => {
     event.stopPropagation();
 
-    if (!notification.id.startsWith("temp-")) {
+    // Solo marcar como leída si no es temporal Y no está ya leída
+    if (!notification.id.startsWith("temp-") && notification.status !== "READ") {
       try {
         await notificationService.markAsRead(notification.id);
         markAsRead(notification.id);
       } catch (error) {
         console.error("Error al marcar notificación como leída:", error);
       }
-    } else {
-      markAsRead(notification.id);
     }
 
     let payload = notification.payload || {};
@@ -70,8 +100,6 @@ export const BellComponent = () => {
         payload = {};
       }
     }
-
-    console.log(payload);
 
     const { contractId, companyId } = payload;
     const isCollaborator =
@@ -211,11 +239,12 @@ export const BellComponent = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
+              disabled={isMarkingAllAsRead}
               className="text-xs"
             >
               <CheckCheck className="h-4 w-4 mr-1" />
-              Marcar todas
+              {isMarkingAllAsRead ? "Marcando..." : "Marcar todas"}
             </Button>
           )}
         </div>
