@@ -33,4 +33,16 @@ export const notificationService = {
       console.error("Error marking notification as read:", error);
     }
   },
+
+  markAllAsRead: async (): Promise<{ count: number }> => {
+    try {
+      const response = await cecagemApi.patch<{ count: number }>(
+        "/notifications/read-all"
+      );
+      return response;
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      return { count: 0 };
+    }
+  },
 };

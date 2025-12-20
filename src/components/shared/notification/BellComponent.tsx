@@ -39,9 +39,22 @@ import { UserRole } from "@/features/user/types/user.types";
 
 export const BellComponent = () => {
   const { notifications, unreadCount, isConnected } = useNotifications();
-  const { markAsRead, markAllAsRead } = useNotificationStore();
+  const { markAsRead, markAllAsRead: markAllAsReadStore } = useNotificationStore();
   const { user } = useAuthStore();
   const [open, setOpen] = useState(false);
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
+
+  const handleMarkAllAsRead = async () => {
+    setIsMarkingAll(true);
+    try {
+      await notificationService.markAllAsRead();
+      markAllAsReadStore();
+    } catch (error) {
+      console.error("Error al marcar todas como leídas:", error);
+    } finally {
+      setIsMarkingAll(false);
+    }
+  };
 
   const handleNotificationClick = async (
     notification: Notification,
@@ -211,11 +224,12 @@ export const BellComponent = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
+              disabled={isMarkingAll}
               className="text-xs"
             >
               <CheckCheck className="h-4 w-4 mr-1" />
-              Marcar todas
+              {isMarkingAll ? "Marcando..." : "Marcar todas"}
             </Button>
           )}
         </div>
