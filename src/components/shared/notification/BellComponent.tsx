@@ -25,7 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+// import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useNotificationStore } from "@/features/notifications/stores/notification.store";
@@ -39,7 +39,8 @@ import { UserRole } from "@/features/user/types/user.types";
 
 export const BellComponent = () => {
   const { notifications, unreadCount, isConnected } = useNotifications();
-  const { markAsRead, markAllAsRead: markAllAsReadStore } = useNotificationStore();
+  const { markAsRead, markAllAsRead: markAllAsReadStore } =
+    useNotificationStore();
   const { user } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
@@ -317,7 +318,7 @@ export const BellComponent = () => {
           )}
         </ScrollArea>
 
-        {notifications.length > 0 && (
+        {/* {notifications.length > 0 && (
           <>
             <Separator />
             <div className="p-2">
@@ -326,7 +327,7 @@ export const BellComponent = () => {
               </Button>
             </div>
           </>
-        )}
+        )} */}
       </PopoverContent>
     </Popover>
   );
