@@ -15,21 +15,30 @@ interface DateInputProps {
 
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ({ value, onChange, placeholder = "Seleccionar fecha", disabled, className, error, ...props }, ref) => {
-    // Convertir Date a string para el input
+    // ✅ FIX: Convertir Date a string sin usar UTC
     const getDateString = (date: Date | string | undefined): string => {
       if (!date) return "";
       
       const dateObj = date instanceof Date ? date : new Date(date);
       if (isNaN(dateObj.getTime())) return "";
       
-      // Formato YYYY-MM-DD para input type="date"
-      return dateObj.toISOString().split('T')[0];
+      // 🔧 SOLUCIÓN: Usar componentes de fecha local en vez de toISOString()
+      // toISOString() convierte a UTC y puede cambiar el día
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const dateString = e.target.value;
+      const dateString = e.target.value; // formato: "YYYY-MM-DD"
       if (dateString && onChange) {
-        const date = new Date(dateString);
+        // 🔧 SOLUCIÓN: Crear fecha en zona horaria local
+        const [year, month, day] = dateString.split('-').map(Number);
+        const date = new Date(year, month - 1, day); // month-1 porque Date usa 0-11
+        date.setHours(12, 0, 0, 0); // Establecer hora al mediodía para evitar problemas
+        
         if (!isNaN(date.getTime())) {
           onChange(date);
         }
