@@ -1010,7 +1010,8 @@ export const ContractExpandedView = ({
         onOpenChange={(open) => setPaymentModal((prev) => ({ ...prev, open }))}
         payments={paymentModal.payments}
         installmentDescription={paymentModal.description}
-        canManagePayments={!paymentModal.isCollaboratorPayment}
+        canManagePayments={true}
+        
       />
 
       {/* Modal de rechazo de entregables */}

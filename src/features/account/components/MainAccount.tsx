@@ -31,6 +31,8 @@ export const MainAccount = () => {
   const [filters, setFilters] = useState<Partial<ITransactionFilters>>({
     page: 1,
     limit: 10,
+    sortBy: "fecha" as const,
+    sortOrder: "desc" as const,
   });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

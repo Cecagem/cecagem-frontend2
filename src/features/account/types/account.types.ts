@@ -62,6 +62,8 @@ export interface ITransactionFilters {
   isRecurrent?: boolean;
   page?: number;
   limit?: number;
+  sortBy?: "fecha" | "monto" | "concepto"; // Opcional
+  sortOrder?: "asc" | "desc";
 }
 
 // RESPONSES
