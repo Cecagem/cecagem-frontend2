@@ -17,12 +17,14 @@ import {
   Calendar,
   Clock,
   Eye,
+  Upload,
 } from "lucide-react";
 
 import type { ICompany, IPayment } from "../types/accounting-clients.types";
 import { PaymentStatus } from "@/features/contract/types/contract.types";
 import { WhatsAppNotificationButton } from "@/components/shared";
 import { PaymentModal } from "./PaymentModal";
+import { UploadPaymentModal } from "@/features/my-accounting-client/components/UploadPaymentModal";
 
 interface CompanyExpandedViewProps {
   company: ICompany;
@@ -69,6 +71,16 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({
     description: "",
   });
 
+  const [uploadPaymentModal, setUploadPaymentModal] = useState<{
+    open: boolean;
+    installmentId: string;
+    installmentAmount: number;
+  }>({
+    open: false,
+    installmentId: "",
+    installmentAmount: 0,
+  });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-PE", {
       style: "currency",
@@ -95,6 +107,14 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({
       open: true,
       payments,
       description,
+    });
+  };
+
+  const handleUploadPayment = (installmentId: string, amount: number) => {
+    setUploadPaymentModal({
+      open: true,
+      installmentId,
+      installmentAmount: amount,
     });
   };
 
@@ -427,6 +447,22 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({
                                   </Button>
 
                                   {!isPaid && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        handleUploadPayment(
+                                          installment.id,
+                                          installment.amount
+                                        )
+                                      }
+                                      className="gap-2 w-full sm:w-auto"
+                                    >
+                                      <Upload className="h-4 w-4" />
+                                      <span className="sm:inline">Subir Pago</span>
+                                    </Button>
+                                  )}
+
+                                  {!isPaid && (
                                     <WhatsAppNotificationButton
                                       companyId={company.id}
                                       installmentId={installment.id}
@@ -465,6 +501,17 @@ export const CompanyExpandedView: React.FC<CompanyExpandedViewProps> = ({
         payments={paymentModal.payments}
         installmentDescription={paymentModal.description}
         canManagePayments={true} // Los administradores pueden gestionar pagos
+      />
+
+      {/* Modal de subir pago */}
+      <UploadPaymentModal
+        open={uploadPaymentModal.open}
+        onOpenChange={(open) =>
+          setUploadPaymentModal((prev) => ({ ...prev, open }))
+        }
+        installmentId={uploadPaymentModal.installmentId}
+        installmentAmount={uploadPaymentModal.installmentAmount}
+        installmentCurrency="PEN"
       />
     </div>
   );

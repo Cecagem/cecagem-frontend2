@@ -119,7 +119,7 @@ export const CompanyCards = ({
                 <CardTitle className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
                   {company.businessName}
                 </CardTitle>
-                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 ml-2" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0 ml-2" />
               </div>
               {company.tradeName && (
                 <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
@@ -133,12 +133,12 @@ export const CompanyCards = ({
             
             <CardContent className="space-y-3">
               <div className="flex items-center text-sm text-muted-foreground">
-                <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                <Building2 className="h-4 w-4 mr-2 shrink-0" />
                 <span className="line-clamp-1">{company.ruc}</span>
               </div>
               
               <div className="flex items-center text-sm text-muted-foreground">
-                <User className="h-4 w-4 mr-2 flex-shrink-0" />
+                <User className="h-4 w-4 mr-2 shrink-0" />
                 <span className="line-clamp-1">{company.contactName}</span>
               </div>
             </CardContent>
