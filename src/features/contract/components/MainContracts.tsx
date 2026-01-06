@@ -64,7 +64,7 @@ export function MainContracts() {
     refetch,
   } = useContracts(filters);
 
-  const { data: specificContract } = useContract(contractIdFromUrl || "");
+  const { data: specificContract, isLoading: isLoadingSpecificContract } = useContract(contractIdFromUrl || "");
 
   const deleteContractMutation = useDeleteContract();
 
@@ -247,7 +247,7 @@ export function MainContracts() {
       <div className="space-y-4">
         <ContractTable
           data={contracts}
-          isLoading={isLoading}
+          isLoading={isLoading || isLoadingSpecificContract}
           onDelete={handleDeleteContract}
           onEdit={handleEditContract}
           // Props para paginación del servidor
