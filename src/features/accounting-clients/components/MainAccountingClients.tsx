@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { useCompanies, useCompaniesStats } from '../hooks/use-accounting-clients';
+import { useCompanies, useCompaniesStats, useCompany } from '../hooks/use-accounting-clients';
 import { AccountingClientFilters } from './AccountingClientFilters';
 import { AccountingClientTable } from './AccountingClientTable';
 import { CompanyForm } from './CompanyForm';
@@ -15,6 +16,10 @@ import type {
 } from '../types/accounting-clients.types';
 
 export function MainAccountingClients() {
+  // Leer parámetros de URL para carga directa desde notificaciones
+  const searchParams = useSearchParams();
+  const companyIdFromUrl = searchParams.get('id');
+
   // Estado para filtros y paginación
   const [filters, setFilters] = useState<Partial<ICompanyFilters>>({
     page: 1,
@@ -27,21 +32,39 @@ export function MainAccountingClients() {
   const [selectedCompany, setSelectedCompany] = useState<ICompany | null>(null);
 
   // Obtener datos
-  const { 
-    data: companiesData, 
-    isLoading, 
-    error, 
-    refetch 
+  const {
+    data: companiesData,
+    isLoading,
+    error,
+    refetch
   } = useCompanies(filters);
 
+  // Hook para cargar empresa específica por ID (para URLs directas desde notificaciones)
+  const {
+    data: companyFromUrl,
+    isLoading: isLoadingCompanyFromUrl
+  } = useCompany(companyIdFromUrl || "");
+
   // Obtener estadísticas
-  const { 
-    data: stats, 
-    isLoading: isLoadingStats 
+  const {
+    data: stats,
+    isLoading: isLoadingStats
   } = useCompaniesStats();
 
-  const companies = companiesData?.data || [];
   const paginationMeta = companiesData?.pagination;
+
+  // Combinar: Si hay empresa cargada por URL que no está en la lista, agregarla
+  const companies = useMemo(() => {
+    const companiesFromList = companiesData?.data || [];
+    if (!companyFromUrl) return companiesFromList;
+
+    // Verificar si la empresa de URL ya está en la lista
+    const existsInList = companiesFromList.some(c => c.id === companyFromUrl.id);
+    if (existsInList) return companiesFromList;
+
+    // Agregar al inicio para que sea visible
+    return [companyFromUrl, ...companiesFromList];
+  }, [companiesData?.data, companyFromUrl]);
 
   // Handlers para paginación
   const handlePageChange = useCallback((page: number) => {
@@ -156,7 +179,7 @@ export function MainAccountingClients() {
       <div className="space-y-4">
         <AccountingClientTable
           data={companies}
-          isLoading={isLoading}
+          isLoading={isLoading || isLoadingCompanyFromUrl}
           onEdit={handleEditCompany}
           onDelete={handleDeleteCompany}
           // Props para paginación del servidor

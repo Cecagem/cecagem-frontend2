@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AdminHeader } from "@/components/shared";
 
 // Importar hooks de contratos (reutilizando desde features/contract)
-import { useContracts } from "@/features/contract/hooks/useContracts";
+import { useContracts, useContract } from "@/features/contract/hooks/useContracts";
 import { IContract, IContractFilters } from "@/features/contract/types/contract.types";
 
 // Importar componentes de my-contract
@@ -20,12 +20,15 @@ function MyContractsContent() {
   const [selectedContract, setSelectedContract] = useState<IContract | null>(null);
   const [isDetailView, setIsDetailView] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  
+
+  // Obtener contractId de URL para carga directa
+  const contractIdFromUrl = searchParams.get('id');
+
   // Solo renderizar en el cliente para evitar problemas de SSR
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
+
   // Estado para filtros con paginación
   const [filters, setFilters] = useState<Partial<IContractFilters>>({
     page: 1,
@@ -36,25 +39,40 @@ function MyContractsContent() {
   // Hook para obtener contratos con filtros
   const { data: contractsData, isLoading: isLoadingContracts } = useContracts(filters);
 
+  // Hook para cargar contrato específico por ID (para URLs directas desde notificaciones)
+  const {
+    data: contractFromUrl,
+    isLoading: isLoadingContractFromUrl
+  } = useContract(contractIdFromUrl || "");
+
   const userContracts = useMemo(() => contractsData?.data || [], [contractsData?.data]);
   const paginationMeta = contractsData?.meta;
 
   // Leer parámetros de URL y establecer el contrato seleccionado
   useEffect(() => {
-    if (isClient && userContracts.length > 0) {
-      const contractId = searchParams.get('id');
-      if (contractId) {
-        const contract = userContracts.find(c => c.id === contractId);
-        if (contract) {
-          setSelectedContract(contract);
-          setIsDetailView(true);
-        }
-      } else {
-        setIsDetailView(false);
-        setSelectedContract(null);
+    if (!isClient) return;
+
+    if (contractIdFromUrl) {
+      // Prioridad 1: Contrato cargado directamente por ID
+      if (contractFromUrl) {
+        setSelectedContract(contractFromUrl);
+        setIsDetailView(true);
+        return;
       }
+      // Prioridad 2: Buscar en lista paginada
+      const contractInList = userContracts.find(c => c.id === contractIdFromUrl);
+      if (contractInList) {
+        setSelectedContract(contractInList);
+        setIsDetailView(true);
+        return;
+      }
+      // Si está cargando, esperar
+      if (isLoadingContractFromUrl) return;
+    } else {
+      setIsDetailView(false);
+      setSelectedContract(null);
     }
-  }, [isClient, userContracts, searchParams]);
+  }, [isClient, contractIdFromUrl, contractFromUrl, userContracts, isLoadingContractFromUrl]);
 
   const handleSearch = (search: string) => {
     setFilters(prev => ({
@@ -126,7 +144,7 @@ function MyContractsContent() {
           <ProjectDetailView
             contract={selectedContract}
             onBack={handleBackToList}
-            isLoading={false}
+            isLoading={isLoadingContractFromUrl && !selectedContract}
           />
         )}
       </div>
