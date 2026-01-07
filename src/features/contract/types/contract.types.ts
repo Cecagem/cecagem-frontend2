@@ -62,6 +62,7 @@ export interface IContractPayment {
   updatedAt: string;
 }
 
+// ✅ MODIFICACIÓN: Agregada la relación deliverable
 export interface IContractInstallment {
   id: string;
   contractId: string;
@@ -72,6 +73,9 @@ export interface IContractInstallment {
   createdAt: string;
   updatedAt: string;
   payments: IContractPayment[];
+  deliverable?: {
+    deliverable: IDeliverable;
+  } | null;
 }
 
 // Nueva interfaz para las cuotas de colaboradores
@@ -110,6 +114,7 @@ export interface IContractDeliverable {
 }
 
 export interface IContract {
+  contractType: "CUOTA" | "CONTADO" | "ENTREGABLE" | null;
   id: string;
   serviceId: string;
   name: string;

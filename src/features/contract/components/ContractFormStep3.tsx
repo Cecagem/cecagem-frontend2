@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calendar, DollarSign, CreditCard, Plus, Trash2, User, AlertTriangle } from "lucide-react";
+import { Calendar, DollarSign, CreditCard, Plus, Trash2, User, AlertTriangle, Package } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -33,13 +33,15 @@ const collaboratorPaymentSchema = z.object({
 const step3Schema = z.object({
   costTotal: z.number().min(1, "El costo total debe ser mayor a 0"),
   currency: z.enum(["PEN", "USD"]),
+  contractType: z.enum(["CUOTA", "CONTADO", "ENTREGABLE"]).optional(),
   startDate: z.date(),
-  endDate: z.date(),
-  paymentType: z.enum(["cash", "installments"]),
+  endDate: z.date().optional(),
+  paymentType: z.enum(["cash", "installments", "deliverables"]),
   installments: z.array(installmentSchema).optional(),
   collaboratorPayments: z.array(collaboratorPaymentSchema).optional(),
 }).refine((data) => {
-  if (data.startDate && data.endDate) {
+  // Solo validar endDate si el tipo no es ENTREGABLE
+  if (data.paymentType !== "deliverables" && data.startDate && data.endDate) {
     return data.startDate < data.endDate;
   }
   return true;
@@ -60,17 +62,27 @@ interface ContractFormStep3Props {
   collaboratorRole?: string;
   contractName?: string;
   editRestrictions?: EditRestrictions;
+  numberOfDeliverables?: number;
+  selectedDeliverables?: Array<{ id: string; name: string }>; // ✅ PROP AGREGADA
 }
 
-export const ContractFormStep3 = ({ 
-  initialData, 
-  onNext, 
-  onBack, 
-  collaboratorId, 
-  collaboratorRole, 
+export const ContractFormStep3 = ({
+  initialData,
+  onNext,
+  onBack,
+  collaboratorId,
+  collaboratorRole,
   contractName,
-  editRestrictions
+  editRestrictions,
+  numberOfDeliverables = 0,
+  selectedDeliverables = [], // ✅ PROP AGREGADA CON DEFAULT
 }: ContractFormStep3Props) => {
+  // ✅ AGREGAR CONSOLE LOG PARA DEBUG
+  console.log("🔍 [Step3] Props recibidas:", {
+    numberOfDeliverables,
+    selectedDeliverables,
+  });
+
   const [installments, setInstallments] = useState<InstallmentData[]>(
     initialData?.installments?.map(inst => ({
       ...inst,
@@ -97,6 +109,7 @@ export const ContractFormStep3 = ({
     defaultValues: {
       costTotal: initialData?.costTotal || 0,
       currency: initialData?.currency || "PEN",
+      contractType: initialData?.contractType || "CUOTA",
       startDate: initialData?.startDate ? new Date(initialData.startDate.getTime()) : new Date(),
       endDate: initialData?.endDate ? new Date(initialData.endDate.getTime()) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       paymentType: initialData?.paymentType || "cash",
@@ -135,71 +148,124 @@ export const ContractFormStep3 = ({
     }
   }, [isExternalCollaborator, collaboratorId, contractName, watchedEndDate, form]);
 
-  // ✅ NUEVA FUNCIÓN: Calcular cuotas mensuales desde la fecha de inicio
+  // ✅ MODIFICADO: Usar los nombres de los entregables
+  const calculateDeliverablesInstallments = useCallback(() => {
+    console.log("🔍 [calculateDeliverablesInstallments] Iniciando cálculo...");
+    console.log("🔍 numberOfDeliverables:", numberOfDeliverables);
+    console.log("🔍 selectedDeliverables:", selectedDeliverables);
+    console.log("🔍 watchedPaymentType:", watchedPaymentType);
+    console.log("🔍 watchedCostTotal:", watchedCostTotal);
+
+    if (watchedPaymentType === "deliverables" && watchedStartDate && watchedCostTotal > 0 && numberOfDeliverables > 0) {
+      // Calcular monto base por entregable y residuo
+      const baseAmount = Math.floor((watchedCostTotal / numberOfDeliverables) * 100) / 100;
+      const remainder = Math.round((watchedCostTotal - (baseAmount * numberOfDeliverables)) * 100) / 100;
+      const newInstallments: InstallmentData[] = [];
+
+      console.log("✅ Generando", numberOfDeliverables, "pagos");
+
+      for (let i = 0; i < numberOfDeliverables; i++) {
+        // Todos los pagos tienen la misma fecha (fecha de inicio)
+        const dueDate = new Date(watchedStartDate);
+        dueDate.setHours(12, 0, 0, 0);
+
+        // La última cuota incluye el remainder para cuadrar el total exacto
+        const amount = i === numberOfDeliverables - 1 ? baseAmount + remainder : baseAmount;
+
+        // ✅ USAR EL NOMBRE DEL ENTREGABLE SI ESTÁ DISPONIBLE
+        const deliverableName = selectedDeliverables[i]?.name || `Entregable ${i + 1}`;
+
+        newInstallments.push({
+          description: deliverableName, // ✅ CAMBIO PRINCIPAL
+          amount: amount,
+          dueDate: dueDate,
+        });
+      }
+
+      console.log("✅ Pagos generados con nombres:", newInstallments);
+
+      setInstallments(newInstallments);
+      form.setValue("installments", newInstallments);
+      setHasManuallyEditedInstallments(true);
+    }
+  }, [watchedPaymentType, watchedStartDate, watchedCostTotal, numberOfDeliverables, selectedDeliverables, form]);
+
+  // ✅ FUNCIÓN EXISTENTE: Calcular cuotas mensuales desde la fecha de inicio
   const calculateInstallments = useCallback(() => {
     if (watchedPaymentType === "installments" && watchedStartDate && watchedCostTotal > 0 && numberOfInstallments > 0) {
       // Calcular monto base y residuo
       const baseAmount = Math.floor((watchedCostTotal / numberOfInstallments) * 100) / 100;
       const remainder = Math.round((watchedCostTotal - (baseAmount * numberOfInstallments)) * 100) / 100;
       const newInstallments: InstallmentData[] = [];
-      
-      // 🔧 FIX: Extraer componentes de fecha directamente para evitar conversiones de zona horaria
+
       const startYear = watchedStartDate.getFullYear();
       const startMonth = watchedStartDate.getMonth();
       const startDay = watchedStartDate.getDate();
-      
+
       for (let i = 0; i < numberOfInstallments; i++) {
-        // Calcular el mes y año de cada cuota (sumando i meses)
         let targetMonth = startMonth + i;
         let targetYear = startYear;
-        
-        // Ajustar año si el mes excede 11 (diciembre)
+
         while (targetMonth > 11) {
           targetMonth -= 12;
           targetYear += 1;
         }
-        
-        // 🔧 FIX: Calcular el último día del mes de destino
-        // Usando new Date(año, mes+1, 0) que retorna el último día del mes
+
         const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-        
-        // Si el día de inicio no existe en el mes destino, usar el último día disponible
         const targetDay = Math.min(startDay, lastDayOfMonth);
-        
-        // 🔧 FIX CRÍTICO: Crear fecha usando el constructor de Date con componentes individuales
-        // y forzar hora a mediodía local (no UTC) para evitar cambios de día
+
         const dueDate = new Date(targetYear, targetMonth, targetDay);
         dueDate.setHours(12, 0, 0, 0);
-        
-        // La última cuota incluye el remainder para cuadrar el total exacto
+
         const amount = i === numberOfInstallments - 1 ? baseAmount + remainder : baseAmount;
-        
+
         newInstallments.push({
           description: `Cuota ${i + 1} de ${numberOfInstallments}`,
           amount: amount,
           dueDate: dueDate,
         });
       }
-      
+
       setInstallments(newInstallments);
       form.setValue("installments", newInstallments);
       setHasManuallyEditedInstallments(true);
     }
   }, [watchedPaymentType, watchedStartDate, watchedCostTotal, numberOfInstallments, form]);
 
-  // Ejecutar cálculo cuando cambien los parámetros (solo si no se ha editado manualmente)
+  // Ejecutar cálculo cuando cambien los parámetros
   useEffect(() => {
-    if (!hasManuallyEditedInstallments && watchedPaymentType === "installments") {
-      calculateInstallments();
+    if (!hasManuallyEditedInstallments) {
+      if (watchedPaymentType === "installments") {
+        calculateInstallments();
+      } else if (watchedPaymentType === "deliverables") {
+        calculateDeliverablesInstallments();
+      }
     }
-  }, [calculateInstallments, hasManuallyEditedInstallments, watchedPaymentType]);
+  }, [calculateInstallments, calculateDeliverablesInstallments, hasManuallyEditedInstallments, watchedPaymentType]);
 
-  // Calcular automáticamente cuando se cambia a "installments"
+  // Calcular automáticamente cuando se cambia el tipo de pago
   useEffect(() => {
     if (watchedPaymentType === "installments" && installments.length === 0) {
       calculateInstallments();
+    } else if (watchedPaymentType === "deliverables" && installments.length === 0) {
+      calculateDeliverablesInstallments();
     }
-  }, [watchedPaymentType, installments.length, calculateInstallments]);
+  }, [watchedPaymentType, installments.length, calculateInstallments, calculateDeliverablesInstallments]);
+
+  // Sincronizar contractType con paymentType
+  useEffect(() => {
+    if (watchedPaymentType === "cash") {
+      form.setValue("contractType", "CONTADO");
+    } else if (watchedPaymentType === "installments") {
+      form.setValue("contractType", "CUOTA");
+    } else if (watchedPaymentType === "deliverables") {
+      form.setValue("contractType", "ENTREGABLE");
+      // Para tipo ENTREGABLE, endDate = startDate
+      if (watchedStartDate) {
+        form.setValue("endDate", new Date(watchedStartDate.getTime()));
+      }
+    }
+  }, [watchedPaymentType, watchedStartDate, form]);
 
   const addInstallment = () => {
     const newInstallment: InstallmentData = {
@@ -207,7 +273,7 @@ export const ContractFormStep3 = ({
       amount: 0,
       dueDate: new Date(),
     };
-    
+
     const newInstallments = [...installments, newInstallment];
     setInstallments(newInstallments);
     form.setValue("installments", newInstallments);
@@ -242,10 +308,10 @@ export const ContractFormStep3 = ({
     const safeData = {
       ...data,
       startDate: new Date(data.startDate.getTime()),
-      endDate: new Date(data.endDate.getTime()),
+      endDate: data.endDate ? new Date(data.endDate.getTime()) : new Date(data.startDate.getTime()),
     };
-    
-    if (safeData.paymentType === "installments") {
+
+    if (safeData.paymentType === "installments" || safeData.paymentType === "deliverables") {
       safeData.installments = installments.map(inst => ({
         ...inst,
         dueDate: new Date(inst.dueDate.getTime())
@@ -257,14 +323,14 @@ export const ContractFormStep3 = ({
         dueDate: new Date(safeData.endDate.getTime()),
       }];
     }
-    
+
     if (isExternalCollaborator) {
       safeData.collaboratorPayments = collaboratorPayments.map(payment => ({
         ...payment,
         dueDate: new Date(payment.dueDate.getTime())
       }));
     }
-    
+
     onNext(safeData);
   };
 
@@ -288,13 +354,13 @@ export const ContractFormStep3 = ({
             <ul className="list-disc list-inside mt-1 space-y-1">
               {!editRestrictions.canEditInstallments && (
                 <li>
-                  <strong>🔒 Información financiera y cuotas bloqueadas:</strong> Ya existen pagos completados del cliente. 
+                  <strong>🔒 Información financiera y cuotas bloqueadas:</strong> Ya existen pagos completados del cliente.
                   El costo total, moneda y cuotas no se pueden modificar.
                 </li>
               )}
               {!editRestrictions.canEditCollaboratorPayments && (
                 <li>
-                  <strong>🔒 Pagos del colaborador bloqueados:</strong> El colaborador ya tiene pagos completados. 
+                  <strong>🔒 Pagos del colaborador bloqueados:</strong> El colaborador ya tiene pagos completados.
                   Sus cuotas no se modificarán al guardar.
                 </li>
               )}
@@ -305,7 +371,7 @@ export const ContractFormStep3 = ({
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          
+
           <Card className={editRestrictions && !editRestrictions.canEditInstallments ? "opacity-75" : ""}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -332,7 +398,7 @@ export const ContractFormStep3 = ({
                         )}
                       </FormLabel>
                       <FormControl>
-                        <Input 
+                        <Input
                           type="number"
                           placeholder="0.00"
                           {...field}
@@ -356,8 +422,8 @@ export const ContractFormStep3 = ({
                           <span className="text-xs text-amber-600">(No modificable)</span>
                         )}
                       </FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                         disabled={editRestrictions && !editRestrictions.canEditInstallments}
                       >
@@ -406,23 +472,39 @@ export const ContractFormStep3 = ({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="endDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fecha de Finalización *</FormLabel>
-                      <FormControl>
-                        <DateInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Seleccionar fecha de fin"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {watchedPaymentType !== "deliverables" && (
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha de Finalización *</FormLabel>
+                        <FormControl>
+                          <DateInput
+                            value={field.value || new Date()}
+                            onChange={field.onChange}
+                            placeholder="Seleccionar fecha de fin"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {watchedPaymentType === "deliverables" && (
+                  <div className="flex items-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <Package className="h-5 w-5 text-blue-600 mr-2" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                        Contrato por Entregables
+                      </p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        Sin fecha de finalización definida
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -454,7 +536,7 @@ export const ContractFormStep3 = ({
                           disabled={editRestrictions && !editRestrictions.canEditCollaboratorPayments}
                         />
                       </div>
-                      
+
                       <div>
                         <label className="text-sm font-medium">Fecha de Pago *</label>
                         <DateInput
@@ -465,7 +547,7 @@ export const ContractFormStep3 = ({
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="text-sm font-medium">Descripción *</label>
                       <Input
@@ -500,8 +582,8 @@ export const ContractFormStep3 = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Pago *</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       disabled={editRestrictions && !editRestrictions.canEditInstallments}
                     >
@@ -513,6 +595,12 @@ export const ContractFormStep3 = ({
                       <SelectContent>
                         <SelectItem value="cash">Pago al Contado</SelectItem>
                         <SelectItem value="installments">Pago en Cuotas</SelectItem>
+                        <SelectItem value="deliverables">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            Por Entregables
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -520,12 +608,22 @@ export const ContractFormStep3 = ({
                 )}
               />
 
+              {watchedPaymentType === "deliverables" && (
+                <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                  <Package className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800 dark:text-blue-200">
+                    <strong>Pago por Entregables:</strong> Se generarán {numberOfDeliverables} pagos automáticamente,
+                    uno por cada entregable seleccionado. Puedes ajustar los montos manteniendo el total.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {watchedPaymentType === "installments" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">Número de Cuotas *</label>
-                    <Select 
-                      value={numberOfInstallments.toString()} 
+                    <Select
+                      value={numberOfInstallments.toString()}
                       onValueChange={(value) => {
                         setNumberOfInstallments(Number(value));
                         setHasManuallyEditedInstallments(false);
@@ -561,26 +659,51 @@ export const ContractFormStep3 = ({
                 </div>
               )}
 
-              {watchedPaymentType === "installments" && (
+              {watchedPaymentType === "deliverables" && (
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setHasManuallyEditedInstallments(false);
+                      calculateDeliverablesInstallments();
+                    }}
+                    className="w-full"
+                    disabled={editRestrictions && !editRestrictions.canEditInstallments}
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Recalcular Pagos por Entregables
+                  </Button>
+                </div>
+              )}
+
+              {(watchedPaymentType === "installments" || watchedPaymentType === "deliverables") && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Cronograma de Cuotas ({installments.length} cuotas)</h4>
+                    <h4 className="font-medium">
+                      {watchedPaymentType === "deliverables"
+                        ? `Pagos por Entregables (${installments.length} pagos)`
+                        : `Cronograma de Cuotas (${installments.length} cuotas)`
+                      }
+                    </h4>
                     <div className="flex items-center gap-2">
                       {installmentsDifference !== 0 && (
                         <Badge variant={installmentsDifference > 0 ? "destructive" : "secondary"}>
                           {installmentsDifference > 0 ? "Faltan" : "Sobran"}: {Math.abs(installmentsDifference).toFixed(2)}
                         </Badge>
                       )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addInstallment}
-                        disabled={editRestrictions && !editRestrictions.canEditInstallments}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar Cuota
-                      </Button>
+                      {watchedPaymentType === "installments" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addInstallment}
+                          disabled={editRestrictions && !editRestrictions.canEditInstallments}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Cuota
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -588,8 +711,13 @@ export const ContractFormStep3 = ({
                     {installments.map((installment, index) => (
                       <div key={index} className={`p-4 border rounded-lg ${editRestrictions && !editRestrictions.canEditInstallments ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between mb-3">
-                          <h5 className="font-medium">Cuota {index + 1}</h5>
-                          {installments.length > 1 && (
+                          <h5 className="font-medium">
+                            {watchedPaymentType === "deliverables"
+                              ? `Pago ${index + 1}: ${selectedDeliverables[index]?.name || `Entregable ${index + 1}`}` // ✅ MOSTRAR NOMBRE
+                              : `Cuota ${index + 1}`
+                            }
+                          </h5>
+                          {installments.length > 1 && watchedPaymentType === "installments" && (
                             <Button
                               type="button"
                               variant="outline"
@@ -601,18 +729,18 @@ export const ContractFormStep3 = ({
                             </Button>
                           )}
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div>
                             <label className="text-sm font-medium">Descripción</label>
                             <Input
                               value={installment.description}
                               onChange={(e) => updateInstallment(index, "description", e.target.value)}
-                              placeholder="Descripción de la cuota"
+                              placeholder="Descripción"
                               disabled={editRestrictions && !editRestrictions.canEditInstallments}
                             />
                           </div>
-                          
+
                           <div>
                             <label className="text-sm font-medium">Monto</label>
                             <Input
@@ -623,14 +751,19 @@ export const ContractFormStep3 = ({
                               disabled={editRestrictions && !editRestrictions.canEditInstallments}
                             />
                           </div>
-                          
+
                           <div>
-                            <label className="text-sm font-medium">Fecha de Vencimiento</label>
+                            <label className="text-sm font-medium">
+                              {watchedPaymentType === "deliverables"
+                                ? "Fecha de Creación"
+                                : "Fecha de Vencimiento"
+                              }
+                            </label>
                             <DateInput
                               value={installment.dueDate}
                               onChange={(date) => updateInstallment(index, "dueDate", date)}
                               placeholder="Seleccionar fecha"
-                              disabled={editRestrictions && !editRestrictions.canEditInstallments}
+                              disabled={watchedPaymentType === "deliverables" || (editRestrictions && !editRestrictions.canEditInstallments)}
                             />
                           </div>
                         </div>
@@ -641,7 +774,9 @@ export const ContractFormStep3 = ({
                   {installments.length > 0 && (
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">Total en Cuotas:</span>
+                        <span className="font-medium">
+                          {watchedPaymentType === "deliverables" ? "Total en Pagos:" : "Total en Cuotas:"}
+                        </span>
                         <span className="font-bold">
                           {totalInstallments.toFixed(2)} {form.watch("currency")}
                         </span>
@@ -661,10 +796,10 @@ export const ContractFormStep3 = ({
             >
               Anterior: Entregables
             </Button>
-            
+
             <Button
               type="submit"
-              disabled={watchedPaymentType === "installments" && installmentsDifference !== 0}
+              disabled={(watchedPaymentType === "installments" || watchedPaymentType === "deliverables") && installmentsDifference !== 0}
             >
               Siguiente: Resumen
             </Button>

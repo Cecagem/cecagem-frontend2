@@ -37,18 +37,15 @@ export const ContractExpandedView = ({
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
 
-  // Solo renderizar en el cliente para evitar problemas de SSR
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Leer el tab activo desde los query parameters solo en el cliente
   const activeTabFromUrl = isClient
     ? searchParams.get("tab") || "general"
     : "general";
   const [activeTab, setActiveTab] = useState(activeTabFromUrl);
 
-  // Función para cambiar tab y actualizar URL sin recargar
   const handleTabChange = (value: string) => {
     const url = new URL(window.location.href);
     url.searchParams.set("tab", value);
@@ -56,10 +53,10 @@ export const ContractExpandedView = ({
     setActiveTab(value);
   };
 
-  // Sincronizar el estado local cuando cambien los query parameters
   useEffect(() => {
     setActiveTab(activeTabFromUrl);
   }, [activeTabFromUrl]);
+
   const [paymentModal, setPaymentModal] = useState<{
     open: boolean;
     payments: IContractPayment[];
@@ -104,7 +101,6 @@ export const ContractExpandedView = ({
 
   const updateDeliverableMutation = useUpdateDeliverable();
 
-  // Reset modal cuando el contrato cambie
   useEffect(() => {
     setPaymentModal({
       open: false,
@@ -138,7 +134,6 @@ export const ContractExpandedView = ({
     });
   };
 
-  // Handlers para acciones
   const handleViewPayments = (
     payments: IContractPayment[],
     description: string,
@@ -162,7 +157,6 @@ export const ContractExpandedView = ({
         deliverableId,
         data: { isAproved: true },
       });
-      // La actualización automática se maneja en el hook
     } catch (error) {
       console.error("Error al verificar entregable:", error);
     }
@@ -203,7 +197,6 @@ export const ContractExpandedView = ({
     }
   };
 
-  // Función para verificar si hay un colaborador externo
   const hasExternalCollaborator = () => {
     return (
       contract.contractUsers?.some(
@@ -212,14 +205,12 @@ export const ContractExpandedView = ({
     );
   };
 
-  // Función para obtener el cliente del contrato
   const getContractClient = () => {
     return contract.contractUsers?.find(
       (contractUser) => contractUser.user.role === "CLIENT"
     );
   };
 
-  // Handler para abrir modal de subir pago
   const handleUploadPayment = (installmentId: string) => {
     setUploadPaymentModal({
       open: true,
@@ -353,7 +344,7 @@ export const ContractExpandedView = ({
                     </h5>
                     <div className="space-y-2">
                       {contract.contractUsers &&
-                      contract.contractUsers.length > 0 ? (
+                        contract.contractUsers.length > 0 ? (
                         contract.contractUsers
                           .filter(
                             (cu) =>
@@ -380,7 +371,7 @@ export const ContractExpandedView = ({
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   {contractUser.user.role ===
-                                  "COLLABORATOR_INTERNAL"
+                                    "COLLABORATOR_INTERNAL"
                                     ? "Colaborador Interno"
                                     : "Colaborador Externo"}
                                 </p>
@@ -405,7 +396,7 @@ export const ContractExpandedView = ({
                     </h5>
                     <div className="space-y-2">
                       {contract.contractUsers &&
-                      contract.contractUsers.length > 0 ? (
+                        contract.contractUsers.length > 0 ? (
                         contract.contractUsers
                           .filter((cu) => cu.user.role === "CLIENT")
                           .map((contractUser) => (
@@ -499,33 +490,40 @@ export const ContractExpandedView = ({
                     return (
                       <Card
                         key={installment.id}
-                        className={`${
-                          isPaid
+                        className={`${isPaid
                             ? "border-l-4 border-l-primary"
                             : "border-l-4 border-l-muted-foreground"
-                        }`}
+                          }`}
                       >
                         <CardContent>
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-center gap-3">
                               <div
-                                className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                                  isPaid
+                                className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${isPaid
                                     ? "bg-primary text-primary-foreground"
                                     : "bg-muted text-muted-foreground"
-                                }`}
+                                  }`}
                               >
                                 {index + 1}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium truncate">
-                                  {installment.description}
+                                  {installment.deliverable?.deliverable?.name ||
+                                    installment.description}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  <span className="block sm:inline">
-                                    Vence: {formatDate(installment.dueDate)}
-                                  </span>
-                                  <span className="hidden sm:inline"> • </span>
+                                  {/* ✅ Solo mostrar fecha de vencimiento si NO es contrato ENTREGABLE */}
+                                  {contract.contractType !== "ENTREGABLE" && (
+                                    <>
+                                      <span className="block sm:inline">
+                                        Vence: {formatDate(installment.dueDate)}
+                                      </span>
+                                      <span className="hidden sm:inline">
+                                        {" "}
+                                        •{" "}
+                                      </span>
+                                    </>
+                                  )}
                                   <span className="block sm:inline">
                                     {formatCurrency(
                                       installment.amount,
@@ -556,20 +554,19 @@ export const ContractExpandedView = ({
                                   isPaid
                                     ? "default"
                                     : hasPendingPayments
-                                    ? "outline"
-                                    : "secondary"
+                                      ? "outline"
+                                      : "secondary"
                                 }
-                                className={`self-start sm:self-center ${
-                                  hasPendingPayments && !isPaid
+                                className={`self-start sm:self-center ${hasPendingPayments && !isPaid
                                     ? "border-yellow-500 text-yellow-600"
                                     : ""
-                                }`}
+                                  }`}
                               >
                                 {isPaid
                                   ? "Pagado"
                                   : hasPendingPayments
-                                  ? "En Verificación"
-                                  : "Pendiente"}
+                                    ? "En Verificación"
+                                    : "Pendiente"}
                               </Badge>
 
                               <div className="flex flex-col sm:flex-row gap-2">
@@ -598,7 +595,7 @@ export const ContractExpandedView = ({
                                       installment.description,
                                       false
                                     )
-                                  } // Cambiar a false
+                                  }
                                   className="gap-2 w-full sm:w-auto text-xs"
                                 >
                                   <Eye className="h-3 w-3" />
@@ -717,21 +714,19 @@ export const ContractExpandedView = ({
                               return (
                                 <Card
                                   key={installment.id}
-                                  className={`ml-4 ${
-                                    isPaid
+                                  className={`ml-4 ${isPaid
                                       ? "border-l-4 border-l-primary"
                                       : "border-l-4 border-l-muted-foreground"
-                                  }`}
+                                    }`}
                                 >
                                   <CardContent>
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                       <div className="flex items-center gap-3">
                                         <div
-                                          className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                                            isPaid
+                                          className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${isPaid
                                               ? "bg-blue-500 text-white"
                                               : "bg-muted text-muted-foreground"
-                                          }`}
+                                            }`}
                                         >
                                           {index + 1}
                                         </div>
@@ -740,14 +735,22 @@ export const ContractExpandedView = ({
                                             {installment.description}
                                           </div>
                                           <div className="text-sm text-muted-foreground">
-                                            <span className="block sm:inline">
-                                              Vence:{" "}
-                                              {formatDate(installment.dueDate)}
-                                            </span>
-                                            <span className="hidden sm:inline">
-                                              {" "}
-                                              •{" "}
-                                            </span>
+                                            {/* ✅ Solo mostrar fecha de vencimiento si NO es contrato ENTREGABLE */}
+                                            {contract.contractType !==
+                                              "ENTREGABLE" && (
+                                                <>
+                                                  <span className="block sm:inline">
+                                                    Vence:{" "}
+                                                    {formatDate(
+                                                      installment.dueDate
+                                                    )}
+                                                  </span>
+                                                  <span className="hidden sm:inline">
+                                                    {" "}
+                                                    •{" "}
+                                                  </span>
+                                                </>
+                                              )}
                                             <span className="block sm:inline">
                                               {formatCurrency(
                                                 installment.amount,
@@ -764,22 +767,20 @@ export const ContractExpandedView = ({
                                             isPaid
                                               ? "default"
                                               : hasPendingPayments
-                                              ? "outline"
-                                              : "secondary"
+                                                ? "outline"
+                                                : "secondary"
                                           }
-                                          className={`self-start sm:self-center text-xs ${
-                                            isPaid ? "bg-blue-700" : ""
-                                          } ${
-                                            hasPendingPayments && !isPaid
+                                          className={`self-start sm:self-center text-xs ${isPaid ? "bg-blue-700" : ""
+                                            } ${hasPendingPayments && !isPaid
                                               ? "border-yellow-500 text-yellow-600"
                                               : ""
-                                          }`}
+                                            }`}
                                         >
                                           {isPaid
                                             ? "Pagado"
                                             : hasPendingPayments
-                                            ? "En Verificación"
-                                            : "Pendiente"}
+                                              ? "En Verificación"
+                                              : "Pendiente"}
                                         </Badge>
 
                                         <div className="flex flex-col sm:flex-row gap-2">
@@ -847,7 +848,7 @@ export const ContractExpandedView = ({
             </CardHeader>
             <CardContent>
               {!contract.contractDeliverables ||
-              contract.contractDeliverables.length === 0 ? (
+                contract.contractDeliverables.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No hay entregables registrados para este contrato.</p>
                 </div>
@@ -862,25 +863,23 @@ export const ContractExpandedView = ({
                     return (
                       <Card
                         key={deliverable.id}
-                        className={`${
-                          isApproved
+                        className={`${isApproved
                             ? "border-l-4 border-l-green-500/50"
                             : isCompleted
-                            ? "border-l-4 border-l-primary"
-                            : "border-l-4 border-l-muted-foreground"
-                        }`}
+                              ? "border-l-4 border-l-primary"
+                              : "border-l-4 border-l-muted-foreground"
+                          }`}
                       >
                         <CardContent>
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-start gap-3">
                               <div
-                                className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
-                                  isApproved
+                                className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${isApproved
                                     ? "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300"
                                     : isCompleted
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted text-muted-foreground"
-                                }`}
+                                      ? "bg-primary text-primary-foreground"
+                                      : "bg-muted text-muted-foreground"
+                                  }`}
                               >
                                 {index + 1}
                               </div>
@@ -959,10 +958,10 @@ export const ContractExpandedView = ({
                                     {updateDeliverableMutation.isPending
                                       ? "Verificando..."
                                       : canVerify
-                                      ? "Aprobar"
-                                      : isApproved
-                                      ? "Aprobado"
-                                      : "No Disponible"}
+                                        ? "Aprobar"
+                                        : isApproved
+                                          ? "Aprobado"
+                                          : "No Disponible"}
                                   </span>
                                 </Button>
 
@@ -978,7 +977,7 @@ export const ContractExpandedView = ({
                                       contract.id,
                                       deliverable.deliverableId,
                                       deliverable.deliverable?.name ||
-                                        `Entregable #${index + 1}`
+                                      `Entregable #${index + 1}`
                                     )
                                   }
                                   className="gap-2 w-full sm:w-auto"
