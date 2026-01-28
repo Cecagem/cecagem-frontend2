@@ -18,11 +18,13 @@ export const transactionKeys = {
   summary: () => [...transactionKeys.all, "summary"] as const,
 };
 
+// 🔄 Hook actualizado - Reducido staleTime y agregado refetchOnWindowFocus
 export const useTransactions = (filters?: ITransactionFilters) => {
   return useQuery({
     queryKey: transactionKeys.list(filters),
     queryFn: () => transactionService.getAll(filters),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // 🔄 CAMBIADO: De 5 * 60 * 1000 a 0 para siempre tener datos frescos
+    refetchOnWindowFocus: true, // 🆕 AGREGADO: Refrescar cuando vuelvas a la ventana
   });
 };
 
@@ -31,15 +33,17 @@ export const useTransaction = (id: string) => {
     queryKey: transactionKeys.detail(id),
     queryFn: () => transactionService.getById(id),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Sin cambios - Los detalles individuales pueden mantener cache
   });
 };
 
+// 🔄 Hook actualizado - Reducido staleTime y agregado refetchOnWindowFocus
 export const useTransactionSummary = () => {
   return useQuery({
     queryKey: transactionKeys.summary(),
     queryFn: () => transactionService.getSummary(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // 🔄 CAMBIADO: De 5 * 60 * 1000 a 0 para siempre tener datos frescos
+    refetchOnWindowFocus: true, // 🆕 AGREGADO: Refrescar cuando vuelvas a la ventana
   });
 };
 
@@ -52,6 +56,9 @@ export const useCreateTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
+
+      // 🆕 Mostrar toast de éxito
+      toast.success("Transacción creada exitosamente");
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -73,6 +80,9 @@ export const useUpdateTransaction = () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
+
+      // 🆕 Mostrar toast de éxito
+      toast.success("Transacción actualizada exitosamente");
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -92,6 +102,9 @@ export const useDeleteTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
+
+      // 🆕 Mostrar toast de éxito
+      toast.success("Transacción eliminada exitosamente");
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -112,6 +125,9 @@ export const useUpdateTransactionStatus = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
+
+      // 🆕 Mostrar toast de éxito
+      toast.success("Estado de transacción actualizado exitosamente");
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
