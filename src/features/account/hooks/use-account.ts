@@ -18,13 +18,12 @@ export const transactionKeys = {
   summary: () => [...transactionKeys.all, "summary"] as const,
 };
 
-// 🔄 Hook actualizado - Reducido staleTime y agregado refetchOnWindowFocus
 export const useTransactions = (filters?: ITransactionFilters) => {
   return useQuery({
     queryKey: transactionKeys.list(filters),
     queryFn: () => transactionService.getAll(filters),
-    staleTime: 0, // 🔄 CAMBIADO: De 5 * 60 * 1000 a 0 para siempre tener datos frescos
-    refetchOnWindowFocus: true, // 🆕 AGREGADO: Refrescar cuando vuelvas a la ventana
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -33,17 +32,16 @@ export const useTransaction = (id: string) => {
     queryKey: transactionKeys.detail(id),
     queryFn: () => transactionService.getById(id),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // Sin cambios - Los detalles individuales pueden mantener cache
+    staleTime: 5 * 60 * 1000,
   });
 };
 
-// 🔄 Hook actualizado - Reducido staleTime y agregado refetchOnWindowFocus
 export const useTransactionSummary = () => {
   return useQuery({
     queryKey: transactionKeys.summary(),
     queryFn: () => transactionService.getSummary(),
-    staleTime: 0, // 🔄 CAMBIADO: De 5 * 60 * 1000 a 0 para siempre tener datos frescos
-    refetchOnWindowFocus: true, // 🆕 AGREGADO: Refrescar cuando vuelvas a la ventana
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -53,11 +51,17 @@ export const useCreateTransaction = () => {
   return useMutation({
     mutationFn: (data: ICreateTransactionDto) =>
       transactionService.create(data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
 
-      // 🆕 Mostrar toast de éxito
+      // 🆕 Forzar refetch inmediato del summary
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
+
       toast.success("Transacción creada exitosamente");
     },
     onError: (
@@ -76,12 +80,18 @@ export const useUpdateTransaction = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: IUpdateTransactionDto }) =>
       transactionService.update(id, data),
-    onSuccess: (response, { id }) => {
+    onSuccess: async (response, { id }) => {
+      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
 
-      // 🆕 Mostrar toast de éxito
+      // 🆕 Forzar refetch inmediato del summary
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
+
       toast.success("Transacción actualizada exitosamente");
     },
     onError: (
@@ -99,11 +109,17 @@ export const useDeleteTransaction = () => {
 
   return useMutation({
     mutationFn: (id: string) => transactionService.delete(id),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
 
-      // 🆕 Mostrar toast de éxito
+      // 🆕 Forzar refetch inmediato del summary
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
+
       toast.success("Transacción eliminada exitosamente");
     },
     onError: (
@@ -122,11 +138,17 @@ export const useUpdateTransactionStatus = () => {
   return useMutation({
     mutationFn: ({ id, estado }: { id: string; estado: TransactionStatus }) =>
       transactionService.update(id, { estado }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
 
-      // 🆕 Mostrar toast de éxito
+      // 🆕 Forzar refetch inmediato del summary
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
+
       toast.success("Estado de transacción actualizado exitosamente");
     },
     onError: (

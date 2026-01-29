@@ -20,8 +20,8 @@ export const useContracts = (filters: Partial<IContractFilters> = {}) => {
     queryKey: CONTRACT_QUERY_KEYS.list(filters),
     queryFn: () => contractService.getContracts(filters),
     retry: 1,
-    refetchOnWindowFocus: true, // Actualizar cuando regrese a la ventana
-    staleTime: 0, // Siempre considerar los datos como obsoletos
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };
 
@@ -44,30 +44,30 @@ export const useDeleteContract = () => {
   return useMutation({
     mutationFn: (id: string) => contractService.deleteContract(id),
     onSuccess: async (data, contractId) => {
-      // Invalidar todas las queries de contratos para refrescar la lista
+      // Invalidar contratos
       queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.all });
-
-      // Remover el contrato específico del cache
       queryClient.removeQueries({ queryKey: CONTRACT_QUERY_KEYS.detail(contractId) });
 
-      // 🆕 INVALIDAR TRANSACCIONES - Esto refresca automáticamente la lista de transacciones
+      // 🆕 INVALIDAR TRANSACCIONES
       await queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       await queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
 
-      // 🆕 Forzar refetch inmediato para actualizar la UI de transacciones
+      // 🆕 FORZAR REFETCH INMEDIATO - ESTO ES LO MÁS IMPORTANTE
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
       await queryClient.refetchQueries({
         queryKey: transactionKeys.lists(),
         exact: false
       });
 
-      // Mostrar notificación de éxito
       showSuccess("deleted", {
         title: "Contrato eliminado",
         description: "El contrato y todas sus transacciones asociadas han sido eliminadas exitosamente"
       });
     },
     onError: (error: Error) => {
-      // Mostrar notificación de error
       showError("error", {
         title: "Error al eliminar",
         description: error?.message || "No se pudo eliminar el contrato"
@@ -75,6 +75,8 @@ export const useDeleteContract = () => {
     },
   });
 };
+
+// ... resto de los hooks sin cambios ...
 
 // Hook para actualizar entregables
 export const useUpdateDeliverable = () => {
@@ -92,17 +94,14 @@ export const useUpdateDeliverable = () => {
       data: IUpdateDeliverableDto;
     }) => contractService.updateDeliverable(contractId, deliverableId, data),
     onSuccess: async (response) => {
-      // Invalidar todas las queries de contratos para refrescar la lista principal
       await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.all });
       await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.lists() });
 
-      // Refrescar los datos inmediatamente para actualización en tiempo real
       await queryClient.refetchQueries({
         queryKey: CONTRACT_QUERY_KEYS.lists(),
         exact: false
       });
 
-      // Determinar el tipo de acción basado en el estado del entregable
       let title = "Entregable actualizado";
       let description = "El entregable ha sido actualizado exitosamente";
 
@@ -114,14 +113,12 @@ export const useUpdateDeliverable = () => {
         description = "El entregable ha sido rechazado y vuelve a estar en progreso";
       }
 
-      // Mostrar notificación de éxito
       showSuccess("updated", {
         title,
         description
       });
     },
     onError: (error: Error) => {
-      // Mostrar notificación de error
       showError("error", {
         title: "Error al actualizar",
         description: error?.message || "No se pudo actualizar el entregable"
@@ -138,10 +135,8 @@ export const useCreateContract = () => {
   return useMutation({
     mutationFn: (data: ICreateContractDto) => contractService.createContract(data),
     onSuccess: (response) => {
-      // Invalidar todas las queries de contratos para refrescar la lista
       queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.all });
 
-      // Mostrar notificación de éxito
       showSuccess("created", {
         title: "Contrato creado",
         description: `El contrato "${response.name}" ha sido creado exitosamente`
@@ -150,7 +145,6 @@ export const useCreateContract = () => {
       return response;
     },
     onError: (error: Error) => {
-      // Mostrar notificación de error
       showError("error", {
         title: "Error al crear",
         description: error?.message || "No se pudo crear el contrato"
@@ -168,13 +162,9 @@ export const useUpdateContract = () => {
     mutationFn: ({ id, data }: { id: string; data: IUpdateContractDto }) =>
       contractService.updateContract(id, data),
     onSuccess: (response, { id }) => {
-      // Invalidar todas las queries de contratos para refrescar la lista
       queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.all });
-
-      // Invalidar el contrato específico
       queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.detail(id) });
 
-      // Mostrar notificación de éxito
       showSuccess("updated", {
         title: "Contrato actualizado",
         description: `El contrato "${response.name}" ha sido actualizado exitosamente`
@@ -183,7 +173,6 @@ export const useUpdateContract = () => {
       return response;
     },
     onError: (error: Error) => {
-      // Mostrar notificación de error
       showError("error", {
         title: "Error al actualizar",
         description: error?.message || "No se pudo actualizar el contrato"
@@ -201,17 +190,14 @@ export const useUpdatePayment = () => {
     mutationFn: ({ paymentId, data }: { paymentId: string; data: { status: string } }) =>
       contractService.updatePayment(paymentId, data),
     onSuccess: async (response: { status: string; id: string }) => {
-      // Invalidar todas las queries de contratos para refrescar la lista principal
       await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.all });
       await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.lists() });
 
-      // Refrescar los datos inmediatamente para actualización en tiempo real
       await queryClient.refetchQueries({
         queryKey: CONTRACT_QUERY_KEYS.lists(),
         exact: false
       });
 
-      // Mostrar notificación de éxito
       const statusText = response.status === "COMPLETED" ? "aprobado" :
                         response.status === "FAILED" ? "rechazado" : "actualizado";
       showSuccess("updated", {
@@ -220,7 +206,6 @@ export const useUpdatePayment = () => {
       });
     },
     onError: (error: Error) => {
-      // Mostrar notificación de error
       showError("error", {
         title: "Error al actualizar pago",
         description: error?.message || "No se pudo actualizar el pago"
@@ -245,24 +230,20 @@ export const useUpdateInstallment = () => {
       data: IUpdateInstallmentDto
     }) => contractService.updateInstallment(contractId, installmentId, data),
     onSuccess: async () => {
-      // Invalidar todas las queries de contratos para refrescar la lista principal
       await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.all });
       await queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.lists() });
 
-      // Refrescar los datos inmediatamente para actualización en tiempo real
       await queryClient.refetchQueries({
         queryKey: CONTRACT_QUERY_KEYS.lists(),
         exact: false
       });
 
-      // Mostrar notificación de éxito
       showSuccess("updated", {
         title: "Cuota actualizada",
         description: "La cuota ha sido actualizada exitosamente"
       });
     },
     onError: (error: Error) => {
-      // Mostrar notificación de error
       showError("error", {
         title: "Error al actualizar cuota",
         description: error?.message || "No se pudo actualizar la cuota"
