@@ -22,7 +22,8 @@ export const useTransactions = (filters?: ITransactionFilters) => {
   return useQuery({
     queryKey: transactionKeys.list(filters),
     queryFn: () => transactionService.getAll(filters),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -39,7 +40,8 @@ export const useTransactionSummary = () => {
   return useQuery({
     queryKey: transactionKeys.summary(),
     queryFn: () => transactionService.getSummary(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -49,9 +51,18 @@ export const useCreateTransaction = () => {
   return useMutation({
     mutationFn: (data: ICreateTransactionDto) =>
       transactionService.create(data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
+
+      // 🆕 Forzar refetch inmediato del summary
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
+
+      toast.success("Transacción creada exitosamente");
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -69,10 +80,19 @@ export const useUpdateTransaction = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: IUpdateTransactionDto }) =>
       transactionService.update(id, data),
-    onSuccess: (response, { id }) => {
+    onSuccess: async (response, { id }) => {
+      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
+
+      // 🆕 Forzar refetch inmediato del summary
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
+
+      toast.success("Transacción actualizada exitosamente");
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -89,9 +109,18 @@ export const useDeleteTransaction = () => {
 
   return useMutation({
     mutationFn: (id: string) => transactionService.delete(id),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
+
+      // 🆕 Forzar refetch inmediato del summary
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
+
+      toast.success("Transacción eliminada exitosamente");
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
@@ -109,9 +138,18 @@ export const useUpdateTransactionStatus = () => {
   return useMutation({
     mutationFn: ({ id, estado }: { id: string; estado: TransactionStatus }) =>
       transactionService.update(id, { estado }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.summary() });
+
+      // 🆕 Forzar refetch inmediato del summary
+      await queryClient.refetchQueries({
+        queryKey: transactionKeys.summary(),
+        exact: true
+      });
+
+      toast.success("Estado de transacción actualizado exitosamente");
     },
     onError: (
       error: Error & { response?: { data?: { message?: string } } }
