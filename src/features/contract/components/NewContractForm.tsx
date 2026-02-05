@@ -17,7 +17,9 @@ import { ContractFormStep2, type Step2FormData } from "./ContractFormStep2";
 import { ContractFormStep3, type Step3FormData } from "./ContractFormStep3";
 
 // Interfaces para los datos completos del formulario
-export interface ContractFormData extends Step1FormData, Step2FormData, Step3FormData {}
+export interface ContractFormData extends Step1FormData, Step2FormData, Step3FormData {
+  selectedDeliverables?: Array<{ id: string; name: string }>;
+}
 
 // Interface para las restricciones de edición
 export interface EditRestrictions {
@@ -65,21 +67,21 @@ const formatDate = (date: Date): string => {
   return `${day}/${month}/${year}`;
 };
 
-export const NewContractForm = ({ 
+export const NewContractForm = ({
   onSuccess,
   onCancel,
-  open, 
-  onOpenChange, 
+  open,
+  onOpenChange,
   initialData,
   onSubmit,
   mode = "create",
   contractToEdit,
 }: NewContractFormProps) => {
-  
+
   // ============================================================================
   // FUNCIONES PARA CALCULAR RESTRICCIONES DE EDICIÓN
   // ============================================================================
-  
+
   // Calcular las restricciones de edición basadas en el estado del contrato
   const calculateEditRestrictions = (contract: IContract | undefined): EditRestrictions => {
     if (!contract) {
@@ -117,7 +119,7 @@ export const NewContractForm = ({
 
     // Verificar si el colaborador externo tiene pagos completados
     const isExternalCollaborator = currentCollaborator?.user.role === "COLLABORATOR_EXTERNAL";
-    const hasCompletedCollaboratorPayments = isExternalCollaborator && 
+    const hasCompletedCollaboratorPayments = isExternalCollaborator &&
       (currentCollaborator?.installments?.some(
         inst => inst.payments.some(p => p.status === "COMPLETED")
       ) || false);
@@ -125,28 +127,28 @@ export const NewContractForm = ({
     return {
       // No se puede cambiar servicio si hay entregables completados/aprobados
       canChangeService: !hasCompletedDeliverables,
-      serviceChangeReason: hasCompletedDeliverables 
-        ? "No se puede cambiar el servicio porque hay entregables completados o aprobados" 
+      serviceChangeReason: hasCompletedDeliverables
+        ? "No se puede cambiar el servicio porque hay entregables completados o aprobados"
         : undefined,
-      
+
       // No se puede cambiar colaborador si es externo y tiene pagos completados
       canChangeCollaborator: !hasCompletedCollaboratorPayments,
-      collaboratorChangeReason: hasCompletedCollaboratorPayments 
-        ? "No se puede cambiar el colaborador porque ya tiene pagos completados" 
+      collaboratorChangeReason: hasCompletedCollaboratorPayments
+        ? "No se puede cambiar el colaborador porque ya tiene pagos completados"
         : undefined,
-      
+
       // No se pueden editar cuotas si hay pagos completados
       canEditInstallments: !hasCompletedProjectPayments,
-      installmentsChangeReason: hasCompletedProjectPayments 
-        ? "No se pueden modificar las cuotas porque ya existen pagos completados" 
+      installmentsChangeReason: hasCompletedProjectPayments
+        ? "No se pueden modificar las cuotas porque ya existen pagos completados"
         : undefined,
-      
+
       // No se pueden editar pagos de colaborador si ya hay pagos completados
       canEditCollaboratorPayments: !hasCompletedCollaboratorPayments,
-      collaboratorPaymentsChangeReason: hasCompletedCollaboratorPayments 
-        ? "No se pueden modificar los pagos del colaborador porque ya tiene pagos completados" 
+      collaboratorPaymentsChangeReason: hasCompletedCollaboratorPayments
+        ? "No se pueden modificar los pagos del colaborador porque ya tiene pagos completados"
         : undefined,
-      
+
       hasCompletedDeliverables,
       hasCompletedProjectPayments,
       hasCompletedCollaboratorPayments,
@@ -155,8 +157,8 @@ export const NewContractForm = ({
   };
 
   // Calcular restricciones
-  const editRestrictions = useMemo(() => 
-    calculateEditRestrictions(contractToEdit), 
+  const editRestrictions = useMemo(() =>
+    calculateEditRestrictions(contractToEdit),
     [contractToEdit]
   );
 
@@ -202,7 +204,7 @@ export const NewContractForm = ({
       currency: contract.currency,
       startDate: new Date(contract.startDate),
       endDate: new Date(contract.endDate),
-      paymentType: paymentType as "cash" | "installments",
+      paymentType: paymentType as "cash" | "installments" | "deliverables",
       installments: installments,
       collaboratorPayments: collaboratorPayments.length > 0 ? collaboratorPayments : undefined,
     };
@@ -234,12 +236,12 @@ export const NewContractForm = ({
       // El servicio se obtiene de otra manera, pero podemos usar el nombre del contrato como referencia
       // Para el servicio, necesitamos hacer una query separada ya que no viene en contractToEdit
       service: null as { value: string; label: string } | null,
-      
+
       collaborator: collaborator ? {
         value: collaborator.userId,
         label: `${collaborator.user.profile.documentNumber} - ${collaborator.user.profile.firstName} ${collaborator.user.profile.lastName}`,
       } : null,
-      
+
       clients: clients.map(c => ({
         value: c.userId,
         label: `${c.user.profile.documentNumber} - ${c.user.profile.firstName} ${c.user.profile.lastName}`,
@@ -260,7 +262,7 @@ export const NewContractForm = ({
 
   // Hook para crear contratos
   const createContractMutation = useCreateContract();
-  
+
   // Hook para actualizar contratos
   const updateContractMutation = useUpdateContract();
 
@@ -272,40 +274,40 @@ export const NewContractForm = ({
   const selectedCollaborator = usersData?.data?.find(user => user.id === formData.collaboratorId);
 
   const steps: StepInfo[] = [
-    { 
-      number: 1, 
-      title: "Información Básica", 
-      icon: Building2, 
-      description: "Datos del contrato y participantes" 
+    {
+      number: 1,
+      title: "Información Básica",
+      icon: Building2,
+      description: "Datos del contrato y participantes"
     },
-    { 
-      number: 2, 
-      title: "Entregables", 
-      icon: FileText, 
-      description: "Selección de entregables" 
+    {
+      number: 2,
+      title: "Entregables",
+      icon: FileText,
+      description: "Selección de entregables"
     },
-    { 
-      number: 3, 
-      title: "Fechas y Pagos", 
-      icon: Calendar, 
-      description: "Cronograma y configuración financiera" 
+    {
+      number: 3,
+      title: "Fechas y Pagos",
+      icon: Calendar,
+      description: "Cronograma y configuración financiera"
     },
-    { 
-      number: 4, 
-      title: "Resumen", 
-      icon: Eye, 
-      description: "Revisión final antes de crear" 
+    {
+      number: 4,
+      title: "Resumen",
+      icon: Eye,
+      description: "Revisión final antes de crear"
     },
   ];
 
   const handleStep1Complete = (data: Step1FormData) => {
     // Si el servicio cambió, limpiar los entregables seleccionados
     const serviceChanged = formData.serviceId && formData.serviceId !== data.serviceId;
-    
+
     if (serviceChanged) {
       // Limpiar entregables del servicio anterior
-      setFormData(prev => ({ 
-        ...prev, 
+      setFormData(prev => ({
+        ...prev,
         ...data,
         deliverableIds: [] // Resetear entregables
       }));
@@ -335,20 +337,20 @@ export const NewContractForm = ({
       if (mode === "edit" && contractToEdit) {
         // Actualizar contrato existente
         const updateData = transformFormDataToUpdateDTO(formData as ContractFormData);
-        await updateContractMutation.mutateAsync({ 
-          id: contractToEdit.id, 
-          data: updateData 
+        await updateContractMutation.mutateAsync({
+          id: contractToEdit.id,
+          data: updateData
         });
       } else {
         // Crear nuevo contrato
         const contractData = transformFormDataToDTO(formData as ContractFormData);
         await createContractMutation.mutateAsync(contractData);
       }
-      
+
       // Ejecutar callbacks de éxito
       onSuccess?.();
       onSubmit?.(formData as ContractFormData);
-      
+
       // Cerrar formulario
       handleClose();
     } catch (error) {
@@ -359,6 +361,11 @@ export const NewContractForm = ({
 
   // Función helper para verificar si los datos están completos
   const isFormDataComplete = (data: Partial<ContractFormData>): boolean => {
+    // Para tipo ENTREGABLE, endDate es opcional
+    const hasRequiredDates = data.paymentType === "deliverables"
+      ? !!data.startDate
+      : !!(data.startDate && data.endDate);
+
     return !!(
       data.serviceId &&
       data.name &&
@@ -369,8 +376,7 @@ export const NewContractForm = ({
       data.deliverableIds?.length &&
       data.costTotal &&
       data.currency &&
-      data.startDate &&
-      data.endDate
+      hasRequiredDates
     );
   };
 
@@ -378,20 +384,25 @@ export const NewContractForm = ({
   const transformFormDataToDTO = (data: ContractFormData): ICreateContractDto => {
     // Combinar colaborador y clientes de investigación en userIds
     const userIds = [data.collaboratorId, ...data.researchClientIds];
-    
+
     // Determinar si el colaborador seleccionado es externo
     const isExternalCollaborator = selectedCollaborator?.role === "COLLABORATOR_EXTERNAL";
-    
+
     // Solo incluir collaboratorPayments si el colaborador es externo y hay pagos definidos
     const collaboratorPayments = isExternalCollaborator && data.collaboratorPayments?.length
       ? data.collaboratorPayments.map(payment => ({
-          userId: data.collaboratorId,
-          amount: Number(payment.amount),
-          dueDate: payment.dueDate.toISOString(),
-          description: payment.description,
-        }))
+        userId: data.collaboratorId,
+        amount: Number(payment.amount),
+        dueDate: payment.dueDate.toISOString(),
+        description: payment.description,
+      }))
       : undefined;
-    
+
+    // ✅ Para tipo ENTREGABLE, endDate = startDate, sino usar endDate proporcionado
+    const endDate = data.paymentType === "deliverables"
+      ? data.startDate.toISOString()
+      : (data.endDate?.toISOString() ?? data.startDate.toISOString()); // ✅ Fallback a startDate
+
     return {
       serviceId: data.serviceId,
       name: data.name,
@@ -400,8 +411,9 @@ export const NewContractForm = ({
       observation: data.observation || "",
       costTotal: Number(data.costTotal),
       currency: data.currency,
+      contractType: data.contractType,
       startDate: data.startDate.toISOString(),
-      endDate: data.endDate.toISOString(),
+      endDate: endDate, // ✅ Ahora siempre tiene un valor
       userIds: userIds,
       deliverableIds: data.deliverableIds,
       installments: data.installments?.map(installment => ({
@@ -418,34 +430,39 @@ export const NewContractForm = ({
   const transformFormDataToUpdateDTO = (data: ContractFormData): IUpdateContractDto => {
     // Combinar colaborador y clientes de investigación en userIds
     const userIds = [data.collaboratorId, ...data.researchClientIds];
-    
+
     // Determinar si el colaborador seleccionado es externo
     const isExternalCollaborator = selectedCollaborator?.role === "COLLABORATOR_EXTERNAL";
-    
+
     // Solo incluir collaboratorPayments si:
     // 1. El colaborador es externo
     // 2. Hay pagos definidos
     // 3. Se pueden editar (no hay pagos completados del colaborador)
-    const collaboratorPayments = isExternalCollaborator && 
+    const collaboratorPayments = isExternalCollaborator &&
       data.collaboratorPayments?.length &&
       editRestrictions?.canEditCollaboratorPayments !== false
       ? data.collaboratorPayments.map(payment => ({
-          userId: data.collaboratorId,
-          amount: Number(payment.amount),
-          dueDate: payment.dueDate.toISOString(),
-          description: payment.description,
-        }))
+        userId: data.collaboratorId,
+        amount: Number(payment.amount),
+        dueDate: payment.dueDate.toISOString(),
+        description: payment.description,
+      }))
       : undefined;
-    
+
     // Solo incluir installments si se pueden editar (no hay pagos completados del proyecto)
     const installments = editRestrictions?.canEditInstallments !== false
       ? data.installments?.map(installment => ({
-          description: installment.description,
-          amount: Number(installment.amount),
-          dueDate: installment.dueDate.toISOString(),
-        })) || []
+        description: installment.description,
+        amount: Number(installment.amount),
+        dueDate: installment.dueDate.toISOString(),
+      })) || []
       : undefined;
-    
+
+    // ✅ Para tipo ENTREGABLE, endDate = startDate, sino usar endDate proporcionado
+    const endDate = data.paymentType === "deliverables"
+      ? data.startDate.toISOString()
+      : (data.endDate?.toISOString() ?? data.startDate.toISOString()); // ✅ Fallback a startDate
+
     const result: IUpdateContractDto = {
       serviceId: data.serviceId,
       name: data.name,
@@ -454,22 +471,23 @@ export const NewContractForm = ({
       observation: data.observation || "",
       costTotal: Number(data.costTotal),
       currency: data.currency,
+      contractType: data.contractType,
       startDate: data.startDate.toISOString(),
-      endDate: data.endDate.toISOString(),
+      endDate: endDate, // ✅ Ahora siempre tiene un valor
       userIds: userIds,
       deliverableIds: data.deliverableIds,
     };
-    
+
     // Solo agregar installments si se pueden editar
     if (installments !== undefined) {
       result.installments = installments;
     }
-    
+
     // Solo agregar collaboratorPayments si corresponde
     if (collaboratorPayments) {
       result.collaboratorPayments = collaboratorPayments;
     }
-    
+
     return result;
   };
 
@@ -502,10 +520,10 @@ export const NewContractForm = ({
                 disabled={!isAccessible}
                 className={`
                   flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 transition-all
-                  ${isCompleted 
-                    ? "bg-green-500 border-green-500 text-white" 
-                    : isActive 
-                      ? "bg-primary border-primary text-primary-foreground" 
+                  ${isCompleted
+                    ? "bg-green-500 border-green-500 text-white"
+                    : isActive
+                      ? "bg-primary border-primary text-primary-foreground"
                       : isAccessible
                         ? "bg-background border-muted-foreground text-muted-foreground hover:border-primary hover:text-primary"
                         : "bg-muted border-muted text-muted-foreground cursor-not-allowed"
@@ -527,7 +545,7 @@ export const NewContractForm = ({
                 </div>
               </div>
             </div>
-            
+
             {index < steps.length - 1 && (
               <div className={`hidden sm:block flex-1 h-0.5 mx-2 sm:mx-4 ${isCompleted ? "bg-green-500" : "bg-muted"}`} />
             )}
@@ -578,6 +596,8 @@ export const NewContractForm = ({
             collaboratorRole={selectedCollaborator?.role}
             contractName={formData.name}
             editRestrictions={mode === "edit" ? editRestrictions : undefined}
+            numberOfDeliverables={formData.deliverableIds?.length || 0}
+            selectedDeliverables={formData.selectedDeliverables}
           />
         );
       case 4:
@@ -703,18 +723,25 @@ export const NewContractForm = ({
                   <span className="font-medium text-muted-foreground block">Fecha de Inicio</span>
                   <span className="text-lg">{formData.startDate ? formatDate(formData.startDate) : '-'}</span>
                 </div>
-                <div className="space-y-1">
-                  <span className="font-medium text-muted-foreground block">Fecha de Fin</span>
-                  <span className="text-lg">{formData.endDate ? formatDate(formData.endDate) : '-'}</span>
-                </div>
+                {formData.paymentType !== "deliverables" && (
+                  <div className="space-y-1">
+                    <span className="font-medium text-muted-foreground block">Fecha de Fin</span>
+                    <span className="text-lg">{formData.endDate ? formatDate(formData.endDate) : '-'}</span>
+                  </div>
+                )}
               </div>
-              
+
               <hr />
-              
+
               <div className="flex items-center justify-between">
                 <span className="font-medium text-muted-foreground">Modalidad de Pago:</span>
                 <Badge variant={formData.paymentType === "cash" ? "default" : "secondary"}>
-                  {formData.paymentType === "cash" ? "Pago al Contado" : `${formData.installments?.length || 0} Cuotas`}
+                  {formData.paymentType === "cash"
+                    ? "Pago al Contado"
+                    : formData.paymentType === "deliverables"
+                      ? `Por Entregables (${formData.installments?.length || 0})`
+                      : `${formData.installments?.length || 0} Cuotas`
+                  }
                 </Badge>
               </div>
             </div>
@@ -723,12 +750,12 @@ export const NewContractForm = ({
       </div>
 
       {/* Cronograma de Cuotas */}
-      {formData.paymentType === "installments" && formData.installments && (
+      {(formData.paymentType === "installments" || formData.paymentType === "deliverables") && formData.installments && (
         <Card>
           <CardContent className="p-6">
             <h3 className="font-semibold mb-6 flex items-center gap-2 text-lg">
               <CreditCard className="h-5 w-5 text-primary" />
-              Cronograma de Cuotas
+              {formData.paymentType === "deliverables" ? "Pagos por Entregables" : "Cronograma de Cuotas"}
             </h3>
             <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {formData.installments.map((installment, index) => (
@@ -743,7 +770,7 @@ export const NewContractForm = ({
                       {installment.amount.toFixed(2)} {formData.currency}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Vence: {formatDate(installment.dueDate)}
+                      {formData.paymentType === "deliverables" ? "Fecha:" : "Vence:"} {formatDate(installment.dueDate)}
                     </div>
                   </div>
                 </div>
@@ -771,7 +798,7 @@ export const NewContractForm = ({
         >
           Anterior: Fechas y Pagos
         </Button>
-        
+
         <Button
           onClick={handleFinalSubmit}
           disabled={createContractMutation.isPending || updateContractMutation.isPending}
@@ -801,7 +828,7 @@ export const NewContractForm = ({
   if (open !== undefined && onOpenChange) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent 
+        <DialogContent
           className="max-w-6xl max-h-[90vh] overflow-y-auto"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}

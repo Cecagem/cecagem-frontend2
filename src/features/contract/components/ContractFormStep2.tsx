@@ -21,7 +21,11 @@ const step2Schema = z.object({
   deliverableIds: z.array(z.string()).min(1, "Debe seleccionar al menos un entregable"),
 });
 
-export type Step2FormData = z.infer<typeof step2Schema>;
+// ✅ MODIFICADO: Cambiar de type a interface y agregar selectedDeliverables
+export interface Step2FormData {
+  deliverableIds: string[];
+  selectedDeliverables?: Array<{ id: string; name: string }>;
+}
 
 interface ContractFormStep2Props {
   serviceId: string;
@@ -38,7 +42,7 @@ export const ContractFormStep2 = ({ serviceId, initialData, onNext, onBack, edit
       deliverableIds: initialData?.deliverableIds || [],
     },
   });
-
+  
   // Obtener entregables del servicio seleccionado
   const { data: deliverablesData, isLoading } = useDeliverablesByService(serviceId);
 
@@ -76,8 +80,20 @@ export const ContractFormStep2 = ({ serviceId, initialData, onNext, onBack, edit
     }
   }, [deliverables, selectedIds, form, editRestrictions?.lockedDeliverableIds]);
 
+  // ✅ MODIFICADO: Pasar los nombres de los entregables al siguiente paso
   const handleSubmit = (data: Step2FormData) => {
-    onNext(data);
+    // Obtener los datos completos de los entregables seleccionados
+    const selectedDeliverablesData = deliverables
+      .filter(d => data.deliverableIds.includes(d.id))
+      .map(d => ({ id: d.id, name: d.name }));
+
+    console.log("✅ [Step2] Entregables seleccionados con nombres:", selectedDeliverablesData);
+
+    // Pasar tanto los IDs como los datos completos
+    onNext({
+      deliverableIds: data.deliverableIds,
+      selectedDeliverables: selectedDeliverablesData,
+    });
   };
 
   const allSelected = deliverables.length > 0 && deliverables.every(d => selectedIds.includes(d.id));
