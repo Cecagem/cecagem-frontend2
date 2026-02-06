@@ -33,7 +33,7 @@ const collaboratorPaymentSchema = z.object({
 const step3Schema = z.object({
   costTotal: z.number().min(1, "El costo total debe ser mayor a 0"),
   currency: z.enum(["PEN", "USD"]),
-  contractType: z.enum(["CUOTA", "CONTADO", "ENTREGABLE"]).optional(),
+  contractType: z.enum(["NORMAL", "SEGUIMIENTO"]).optional(),
   startDate: z.date(),
   endDate: z.date().optional(),
   paymentType: z.enum(["cash", "installments", "deliverables"]),
@@ -63,7 +63,7 @@ interface ContractFormStep3Props {
   contractName?: string;
   editRestrictions?: EditRestrictions;
   numberOfDeliverables?: number;
-  selectedDeliverables?: Array<{ id: string; name: string }>; // ✅ PROP AGREGADA
+  selectedDeliverables?: Array<{ id: string; name: string }>;
 }
 
 export const ContractFormStep3 = ({
@@ -75,9 +75,9 @@ export const ContractFormStep3 = ({
   contractName,
   editRestrictions,
   numberOfDeliverables = 0,
-  selectedDeliverables = [], // ✅ PROP AGREGADA CON DEFAULT
+  selectedDeliverables = [],
 }: ContractFormStep3Props) => {
-  // ✅ AGREGAR CONSOLE LOG PARA DEBUG
+  // Debug logging
   console.log("🔍 [Step3] Props recibidas:", {
     numberOfDeliverables,
     selectedDeliverables,
@@ -109,7 +109,7 @@ export const ContractFormStep3 = ({
     defaultValues: {
       costTotal: initialData?.costTotal || 0,
       currency: initialData?.currency || "PEN",
-      contractType: initialData?.contractType || "CUOTA",
+      contractType: initialData?.contractType || "NORMAL",
       startDate: initialData?.startDate ? new Date(initialData.startDate.getTime()) : new Date(),
       endDate: initialData?.endDate ? new Date(initialData.endDate.getTime()) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       paymentType: initialData?.paymentType || "cash",
@@ -148,7 +148,7 @@ export const ContractFormStep3 = ({
     }
   }, [isExternalCollaborator, collaboratorId, contractName, watchedEndDate, form]);
 
-  // ✅ MODIFICADO: Usar los nombres de los entregables
+  // Calcular pagos por entregables usando los nombres de los entregables
   const calculateDeliverablesInstallments = useCallback(() => {
     console.log("🔍 [calculateDeliverablesInstallments] Iniciando cálculo...");
     console.log("🔍 numberOfDeliverables:", numberOfDeliverables);
@@ -172,11 +172,11 @@ export const ContractFormStep3 = ({
         // La última cuota incluye el remainder para cuadrar el total exacto
         const amount = i === numberOfDeliverables - 1 ? baseAmount + remainder : baseAmount;
 
-        // ✅ USAR EL NOMBRE DEL ENTREGABLE SI ESTÁ DISPONIBLE
+        // Usar el nombre del entregable si está disponible
         const deliverableName = selectedDeliverables[i]?.name || `Entregable ${i + 1}`;
 
         newInstallments.push({
-          description: deliverableName, // ✅ CAMBIO PRINCIPAL
+          description: deliverableName,
           amount: amount,
           dueDate: dueDate,
         });
@@ -190,7 +190,7 @@ export const ContractFormStep3 = ({
     }
   }, [watchedPaymentType, watchedStartDate, watchedCostTotal, numberOfDeliverables, selectedDeliverables, form]);
 
-  // ✅ FUNCIÓN EXISTENTE: Calcular cuotas mensuales desde la fecha de inicio
+  // Calcular cuotas mensuales desde la fecha de inicio
   const calculateInstallments = useCallback(() => {
     if (watchedPaymentType === "installments" && watchedStartDate && watchedCostTotal > 0 && numberOfInstallments > 0) {
       // Calcular monto base y residuo
@@ -254,12 +254,13 @@ export const ContractFormStep3 = ({
 
   // Sincronizar contractType con paymentType
   useEffect(() => {
-    if (watchedPaymentType === "cash") {
-      form.setValue("contractType", "CONTADO");
-    } else if (watchedPaymentType === "installments") {
-      form.setValue("contractType", "CUOTA");
+    if (watchedPaymentType === "cash" || watchedPaymentType === "installments") {
+      // Pago al contado y pago en cuotas son contratos NORMAL
+      form.setValue("contractType", "NORMAL");
     } else if (watchedPaymentType === "deliverables") {
-      form.setValue("contractType", "ENTREGABLE");
+      // Pago por entregables es un contrato de SEGUIMIENTO
+      form.setValue("contractType", "SEGUIMIENTO");
+      
       // Para tipo ENTREGABLE, endDate = startDate
       if (watchedStartDate) {
         form.setValue("endDate", new Date(watchedStartDate.getTime()));
@@ -713,7 +714,7 @@ export const ContractFormStep3 = ({
                         <div className="flex items-center justify-between mb-3">
                           <h5 className="font-medium">
                             {watchedPaymentType === "deliverables"
-                              ? `Pago ${index + 1}: ${selectedDeliverables[index]?.name || `Entregable ${index + 1}`}` // ✅ MOSTRAR NOMBRE
+                              ? `Pago ${index + 1}: ${selectedDeliverables[index]?.name || `Entregable ${index + 1}`}`
                               : `Cuota ${index + 1}`
                             }
                           </h5>
