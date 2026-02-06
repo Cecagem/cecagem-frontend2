@@ -14,9 +14,7 @@ import type {
   ITransaction, 
   ICreateTransactionDto, 
   IUpdateTransactionDto,
-  TransactionStatus,
-  TransactionType
-} from "../types/account.types";
+  TransactionStatus} from "../types/account.types";
 import { 
   TransactionType as TType, 
   TransactionStatus as TStatus
@@ -40,7 +38,7 @@ const getStatusLabel = (status: TransactionStatus): string => {
 };
 
 const transactionSchema = z.object({
-  tipo: z.string().min(1, "Seleccione un tipo de transacción"),
+  tipo: z.enum([TType.INCOME, TType.EXPENSE]),
   categoria: z.string().min(1, "La categoría es requerida").max(50, "La categoría no puede exceder 50 caracteres"),
   currency: z.string().min(1, "Seleccione una moneda"),
   monto: z.string().min(1, "El monto es requerido").refine((val) => {
@@ -49,7 +47,7 @@ const transactionSchema = z.object({
   }, "El monto debe ser un número positivo"),
   descripcion: z.string().min(1, "La descripción es requerida").max(200, "La descripción no puede exceder 200 caracteres"),
   fecha: z.string().min(1, "La fecha es requerida"),
-  estado: z.string().min(1, "Seleccione un estado"),
+  estado: z.enum([TStatus.PENDING, TStatus.COMPLETED, TStatus.CANCELED]),
   isRecurrent: z.boolean(),
 });
 
@@ -68,7 +66,7 @@ export const AccountForm = ({
       tipo: transaction?.tipo || TType.INCOME,
       categoria: transaction?.categoria || "",
       currency: transaction?.currency || "PEN",
-      monto: transaction?.monto || "",
+      monto: transaction?.monto?.toString() || "",
       descripcion: transaction?.descripcion || "",
       fecha: transaction?.fecha ? new Date(transaction.fecha).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       estado: transaction?.estado || TStatus.COMPLETED,
@@ -93,16 +91,20 @@ export const AccountForm = ({
   }, [transaction, form]);
 
   const handleSubmit = (data: TransactionFormData) => {
+    console.log("📝 Datos del formulario antes de enviar:", data);
+    
     const submitData = {
-      tipo: data.tipo as TransactionType,
+      tipo: data.tipo,
       categoria: data.categoria,
       currency: data.currency,
       monto: data.monto,
       descripcion: data.descripcion,
       fecha: data.fecha,
-      estado: data.estado as TransactionStatus,
+      estado: data.estado,
       isRecurrent: data.isRecurrent,
     };
+    
+    console.log("✅ Datos a enviar:", submitData);
     onSubmit(submitData);
   };
 
@@ -127,7 +129,10 @@ export const AccountForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Tipo *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Seleccione un tipo" />
@@ -171,7 +176,10 @@ export const AccountForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Moneda *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Seleccione una moneda" />
@@ -257,7 +265,10 @@ export const AccountForm = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-medium">Estado *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccione un estado" />
