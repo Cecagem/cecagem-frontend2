@@ -83,78 +83,79 @@ export const NewContractForm = ({
   // ============================================================================
 
   // Calcular las restricciones de edición basadas en el estado del contrato
-  const calculateEditRestrictions = (contract: IContract | undefined): EditRestrictions => {
-    if (!contract) {
-      return {
-        canChangeService: true,
-        canChangeCollaborator: true,
-        canEditInstallments: true,
-        canEditCollaboratorPayments: true,
-        hasCompletedDeliverables: false,
-        hasCompletedProjectPayments: false,
-        hasCompletedCollaboratorPayments: false,
-        lockedDeliverableIds: [],
-      };
-    }
 
-    // Verificar si hay entregables completados o aprobados
-    const hasCompletedDeliverables = contract.contractDeliverables.some(
-      cd => cd.isCompleted || cd.isAproved
-    );
-
-    // Obtener IDs de entregables que están completados/aprobados (bloqueados)
-    const lockedDeliverableIds = contract.contractDeliverables
-      .filter(cd => cd.isCompleted || cd.isAproved)
-      .map(cd => cd.deliverableId);
-
-    // Verificar si hay pagos completados en las cuotas del proyecto
-    const hasCompletedProjectPayments = contract.installments.some(
-      inst => inst.payments.some(p => p.status === "COMPLETED")
-    );
-
-    // Obtener el colaborador actual
-    const currentCollaborator = contract.contractUsers.find(
-      cu => cu.user.role === "COLLABORATOR_INTERNAL" || cu.user.role === "COLLABORATOR_EXTERNAL"
-    );
-
-    // Verificar si el colaborador externo tiene pagos completados
-    const isExternalCollaborator = currentCollaborator?.user.role === "COLLABORATOR_EXTERNAL";
-    const hasCompletedCollaboratorPayments = isExternalCollaborator &&
-      (currentCollaborator?.installments?.some(
-        inst => inst.payments.some(p => p.status === "COMPLETED")
-      ) || false);
-
+const calculateEditRestrictions = (contract: IContract | undefined): EditRestrictions => {
+  if (!contract) {
     return {
-      // No se puede cambiar servicio si hay entregables completados/aprobados
-      canChangeService: !hasCompletedDeliverables,
-      serviceChangeReason: hasCompletedDeliverables
-        ? "No se puede cambiar el servicio porque hay entregables completados o aprobados"
-        : undefined,
-
-      // No se puede cambiar colaborador si es externo y tiene pagos completados
-      canChangeCollaborator: !hasCompletedCollaboratorPayments,
-      collaboratorChangeReason: hasCompletedCollaboratorPayments
-        ? "No se puede cambiar el colaborador porque ya tiene pagos completados"
-        : undefined,
-
-      // No se pueden editar cuotas si hay pagos completados
-      canEditInstallments: !hasCompletedProjectPayments,
-      installmentsChangeReason: hasCompletedProjectPayments
-        ? "No se pueden modificar las cuotas porque ya existen pagos completados"
-        : undefined,
-
-      // No se pueden editar pagos de colaborador si ya hay pagos completados
-      canEditCollaboratorPayments: !hasCompletedCollaboratorPayments,
-      collaboratorPaymentsChangeReason: hasCompletedCollaboratorPayments
-        ? "No se pueden modificar los pagos del colaborador porque ya tiene pagos completados"
-        : undefined,
-
-      hasCompletedDeliverables,
-      hasCompletedProjectPayments,
-      hasCompletedCollaboratorPayments,
-      lockedDeliverableIds,
+      canChangeService: true,
+      canChangeCollaborator: true,
+      canEditInstallments: true,
+      canEditCollaboratorPayments: true,
+      hasCompletedDeliverables: false,
+      hasCompletedProjectPayments: false,
+      hasCompletedCollaboratorPayments: false,
+      lockedDeliverableIds: [],
     };
+  }
+
+  // Verificar si hay entregables completados o aprobados
+  const hasCompletedDeliverables = contract.contractDeliverables.some(
+    cd => cd.isCompleted || cd.isAproved
+  );
+
+  // Obtener IDs de entregables que están completados/aprobados (bloqueados)
+  const lockedDeliverableIds = contract.contractDeliverables
+    .filter(cd => cd.isCompleted || cd.isAproved)
+    .map(cd => cd.deliverableId);
+
+  // Verificar si hay pagos completados en las cuotas del proyecto
+  const hasCompletedProjectPayments = contract.installments.some(
+    inst => inst.payments.some(p => p.status === "COMPLETED")
+  );
+
+  // Obtener el colaborador actual
+  const currentCollaborator = contract.contractUsers.find(
+    cu => cu.user.role === "COLLABORATOR_INTERNAL" || cu.user.role === "COLLABORATOR_EXTERNAL"
+  );
+
+  // Verificar si el colaborador externo tiene pagos completados
+  const isExternalCollaborator = currentCollaborator?.user.role === "COLLABORATOR_EXTERNAL";
+  const hasCompletedCollaboratorPayments = isExternalCollaborator &&
+    (currentCollaborator?.installments?.some(
+      inst => inst.payments.some(p => p.status === "COMPLETED")
+    ) || false);
+
+  return {
+    // No se puede cambiar servicio si hay entregables completados/aprobados
+    canChangeService: !hasCompletedDeliverables,
+    serviceChangeReason: hasCompletedDeliverables
+      ? "No se puede cambiar el servicio porque hay entregables completados o aprobados"
+      : undefined,
+
+    // ✅ CORRECCIÓN: No se puede cambiar colaborador SOLO si es externo Y tiene pagos completados
+    canChangeCollaborator: !hasCompletedCollaboratorPayments,
+    collaboratorChangeReason: hasCompletedCollaboratorPayments
+      ? "No se puede cambiar el colaborador externo porque ya tiene pagos completados"
+      : undefined,
+
+    // No se pueden editar cuotas si hay pagos completados
+    canEditInstallments: !hasCompletedProjectPayments,
+    installmentsChangeReason: hasCompletedProjectPayments
+      ? "No se pueden modificar las cuotas porque ya existen pagos completados"
+      : undefined,
+
+    // No se pueden editar pagos de colaborador si ya hay pagos completados
+    canEditCollaboratorPayments: !hasCompletedCollaboratorPayments,
+    collaboratorPaymentsChangeReason: hasCompletedCollaboratorPayments
+      ? "No se pueden modificar los pagos del colaborador porque ya tiene pagos completados"
+      : undefined,
+
+    hasCompletedDeliverables,
+    hasCompletedProjectPayments,
+    hasCompletedCollaboratorPayments,
+    lockedDeliverableIds,
   };
+};
 
   // Calcular restricciones
   const editRestrictions = useMemo(() =>

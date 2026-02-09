@@ -60,7 +60,7 @@ type AnyUserResponse = UserLikeResponse | WrappedUserResponse | any;
 // Helper para extraer usuario de la respuesta (puede venir envuelto en {data: User} o directamente)
 const getUserFromResponse = (response: AnyUserResponse | null | undefined): UserLikeResponse | null => {
   if (!response) return null;
-  
+
   // Si tiene 'data' como wrapper, extraerlo
   if ('data' in response && response.data && typeof response.data === 'object') {
     const data = response.data;
@@ -68,17 +68,17 @@ const getUserFromResponse = (response: AnyUserResponse | null | undefined): User
       return data as UserLikeResponse;
     }
   }
-  
+
   // La API retorna el usuario directamente
   if ('id' in response && 'profile' in response && response.profile) {
     return response as UserLikeResponse;
   }
-  
+
   // Caso especial: puede ser que profile esté anidado de otra manera
   // Intentar extraer de cualquier estructura conocida
   if ('id' in response) {
     // Si tiene profile como objeto con los campos necesarios
-    if (response.profile && 
+    if (response.profile &&
         typeof response.profile === 'object' &&
         'documentNumber' in response.profile &&
         'firstName' in response.profile &&
@@ -86,7 +86,7 @@ const getUserFromResponse = (response: AnyUserResponse | null | undefined): User
       return response as UserLikeResponse;
     }
   }
-  
+
   return null;
 };
 
@@ -127,17 +127,17 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   const [searchCollaborator, setSearchCollaborator] = useState("");
   const [searchClient, setSearchClient] = useState("");
   const [searchService, setSearchService] = useState("");
-  
+
   // Aplicar debounce a las búsquedas
   const debouncedCollaboratorSearch = useDebounce(searchCollaborator, 300);
   const debouncedClientSearch = useDebounce(searchClient, 300);
   const debouncedServiceSearch = useDebounce(searchService, 300);
-  
+
   // Estados para guardar las opciones seleccionadas (para mantenerlas al buscar y al volver de otros pasos)
   const [selectedServiceOption, setSelectedServiceOption] = useState<SearchableSelectOption | null>(null);
   const [selectedCollaboratorOption, setSelectedCollaboratorOption] = useState<SearchableSelectOption | null>(null);
   const [selectedClientOptions, setSelectedClientOptions] = useState<MultiSelectOption[]>([]);
-  
+
   // Estados para modales de creación
   const [showUserForm, setShowUserForm] = useState(false);
   const [showClientForm, setShowClientForm] = useState(false);
@@ -159,7 +159,7 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   // En modo edición, los datos vienen directamente del contrato
   const shouldFetchService = !preselectedOptions?.service && initialData?.serviceId;
   const shouldFetchCollaborator = !preselectedOptions?.collaborator && initialData?.collaboratorId;
-  const shouldFetchClients = (!preselectedOptions?.clients || preselectedOptions.clients.length === 0) && 
+  const shouldFetchClients = (!preselectedOptions?.clients || preselectedOptions.clients.length === 0) &&
     (initialData?.researchClientIds?.length || 0) > 0;
 
   // Queries para obtener datos de items seleccionados (solo cuando no hay preselectedOptions)
@@ -169,7 +169,7 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   const { data: selectedCollaboratorData, isLoading: isLoadingSelectedCollaborator } = useUser(
     shouldFetchCollaborator ? initialData?.collaboratorId || "" : ""
   );
-  
+
   // Para clientes, usamos cada ID para obtener datos (solo si no hay preselectedOptions)
   const firstClientId = shouldFetchClients ? initialData?.researchClientIds?.[0] || "" : "";
   const { data: selectedClient1Data, isLoading: isLoadingClient1 } = useResearchClient(firstClientId);
@@ -179,7 +179,7 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   const { data: selectedClient3Data, isLoading: isLoadingClient3 } = useResearchClient(thirdClientId);
 
   // Indicador de carga de items preseleccionados (solo si estamos haciendo fetch)
-  const isLoadingPreselectedItems = 
+  const isLoadingPreselectedItems =
     (shouldFetchService && isLoadingSelectedService) ||
     (shouldFetchCollaborator && isLoadingSelectedCollaborator) ||
     (firstClientId && isLoadingClient1) ||
@@ -190,10 +190,10 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   const computedServiceOption: SearchableSelectOption | null = useMemo(() => {
     // 1. Si hay opción seleccionada por el usuario en esta sesión
     if (selectedServiceOption) return selectedServiceOption;
-    
+
     // 2. Si hay opciones preseleccionadas del contrato existente
     if (preselectedOptions?.service) return preselectedOptions.service;
-    
+
     // 3. Si hay datos de la API (fallback para modo creación)
     const service = getServiceFromResponse(selectedServiceData);
     if (service) {
@@ -208,10 +208,10 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   const computedCollaboratorOption: SearchableSelectOption | null = useMemo(() => {
     // 1. Si hay opción seleccionada por el usuario en esta sesión
     if (selectedCollaboratorOption) return selectedCollaboratorOption;
-    
+
     // 2. Si hay opciones preseleccionadas del contrato existente
     if (preselectedOptions?.collaborator) return preselectedOptions.collaborator;
-    
+
     // 3. Si hay datos de la API (fallback para modo creación)
     const collaborator = getUserFromResponse(selectedCollaboratorData);
     if (collaborator && collaborator.profile) {
@@ -226,15 +226,15 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   const computedClientOptions: MultiSelectOption[] = useMemo(() => {
     // 1. Si hay opciones seleccionadas por el usuario en esta sesión
     if (selectedClientOptions.length > 0) return selectedClientOptions;
-    
+
     // 2. Si hay opciones preseleccionadas del contrato existente
     if (preselectedOptions?.clients && preselectedOptions.clients.length > 0) {
       return preselectedOptions.clients;
     }
-    
+
     // 3. Si hay datos de la API (fallback para modo creación)
     const clients: MultiSelectOption[] = [];
-    
+
     const client1 = getUserFromResponse(selectedClient1Data);
     if (client1 && client1.profile) {
       clients.push({
@@ -242,7 +242,7 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
         label: `${client1.profile.documentNumber} - ${client1.profile.firstName} ${client1.profile.lastName}`,
       });
     }
-    
+
     const client2 = getUserFromResponse(selectedClient2Data);
     if (client2 && client2.profile) {
       clients.push({
@@ -250,7 +250,7 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
         label: `${client2.profile.documentNumber} - ${client2.profile.firstName} ${client2.profile.lastName}`,
       });
     }
-    
+
     const client3 = getUserFromResponse(selectedClient3Data);
     if (client3 && client3.profile) {
       clients.push({
@@ -258,13 +258,13 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
         label: `${client3.profile.documentNumber} - ${client3.profile.firstName} ${client3.profile.lastName}`,
       });
     }
-    
+
     return clients;
   }, [selectedClientOptions, preselectedOptions?.clients, selectedClient1Data, selectedClient2Data, selectedClient3Data]);
 
   // Obtener servicios activos con búsqueda
-  const { data: servicesData, isLoading: isLoadingServices } = useServices({ 
-    isActive: true, 
+  const { data: servicesData, isLoading: isLoadingServices } = useServices({
+    isActive: true,
     limit: 10,
     search: debouncedServiceSearch.length >= 2 ? debouncedServiceSearch : undefined,
   });
@@ -277,9 +277,9 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   });
 
   // Filtrar colaboradores internos y externos manualmente
-  const collaborators = useMemo(() => 
-    usersData?.data?.filter(user => 
-      user.role === UserRole.COLLABORATOR_INTERNAL || 
+  const collaborators = useMemo(() =>
+    usersData?.data?.filter(user =>
+      user.role === UserRole.COLLABORATOR_INTERNAL ||
       user.role === UserRole.COLLABORATOR_EXTERNAL
     ) || [],
     [usersData?.data]
@@ -290,37 +290,37 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
     limit: 10,
     search: debouncedClientSearch.length >= 2 ? debouncedClientSearch : undefined,
   });
-  
+
   // Opciones de servicios de la API
-  const apiServiceOptions: SearchableSelectOption[] = useMemo(() => 
+  const apiServiceOptions: SearchableSelectOption[] = useMemo(() =>
     servicesData?.data?.map(service => ({
       value: service.id,
       label: service.name,
-    })) || [], 
+    })) || [],
     [servicesData?.data]
   );
 
   // Combinar servicio seleccionado con las opciones de la API
   const serviceOptions: SearchableSelectOption[] = useMemo(() => {
     const combinedMap = new Map<string, SearchableSelectOption>();
-    
+
     // Agregar el seleccionado primero
     if (computedServiceOption) {
       combinedMap.set(computedServiceOption.value, computedServiceOption);
     }
-    
+
     // Luego agregar las de la API
     apiServiceOptions.forEach(opt => {
       if (!combinedMap.has(opt.value)) {
         combinedMap.set(opt.value, opt);
       }
     });
-    
+
     return Array.from(combinedMap.values());
   }, [computedServiceOption, apiServiceOptions]);
 
   // Opciones de colaboradores de la API
-  const apiCollaboratorOptions: SearchableSelectOption[] = useMemo(() => 
+  const apiCollaboratorOptions: SearchableSelectOption[] = useMemo(() =>
     collaborators.map(user => ({
       value: user.id,
       label: `${user.profile.documentNumber} - ${user.profile.firstName} ${user.profile.lastName}`,
@@ -331,24 +331,24 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   // Combinar colaborador seleccionado con las opciones de la API
   const collaboratorOptions: SearchableSelectOption[] = useMemo(() => {
     const combinedMap = new Map<string, SearchableSelectOption>();
-    
+
     // Agregar el seleccionado primero
     if (computedCollaboratorOption) {
       combinedMap.set(computedCollaboratorOption.value, computedCollaboratorOption);
     }
-    
+
     // Luego agregar las de la API
     apiCollaboratorOptions.forEach(opt => {
       if (!combinedMap.has(opt.value)) {
         combinedMap.set(opt.value, opt);
       }
     });
-    
+
     return Array.from(combinedMap.values());
   }, [computedCollaboratorOption, apiCollaboratorOptions]);
 
   // Opciones de clientes de la API
-  const apiClientOptions: MultiSelectOption[] = useMemo(() => 
+  const apiClientOptions: MultiSelectOption[] = useMemo(() =>
     researchClientsData?.data?.map(client => ({
       value: client.id,
       label: `${client.profile.documentNumber} - ${client.profile.firstName} ${client.profile.lastName}`,
@@ -359,17 +359,17 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
   // Combinar opciones seleccionadas con las de la API (sin duplicados)
   const researchClientOptions: MultiSelectOption[] = useMemo(() => {
     const combinedMap = new Map<string, MultiSelectOption>();
-    
+
     // Primero agregar las seleccionadas (tienen prioridad) - usar computed
     computedClientOptions.forEach(opt => combinedMap.set(opt.value, opt));
-    
+
     // Luego agregar las de la API
     apiClientOptions.forEach(opt => {
       if (!combinedMap.has(opt.value)) {
         combinedMap.set(opt.value, opt);
       }
     });
-    
+
     return Array.from(combinedMap.values());
   }, [computedClientOptions, apiClientOptions]);
 
@@ -411,7 +411,7 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          
+
           {/* Alertas de restricciones de edición */}
           {editRestrictions && (!editRestrictions.canChangeService || !editRestrictions.canChangeCollaborator) && (
             <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
@@ -421,13 +421,13 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
                 <ul className="list-disc list-inside mt-1 space-y-1">
                   {!editRestrictions.canChangeService && (
                     <li>
-                      <strong>🔒 Servicio bloqueado:</strong> Hay entregables completados o aprobados. 
+                      <strong>🔒 Servicio bloqueado:</strong> Hay entregables completados o aprobados.
                       No se puede cambiar a otro servicio.
                     </li>
                   )}
                   {!editRestrictions.canChangeCollaborator && (
                     <li>
-                      <strong>🔒 Colaborador bloqueado:</strong> El colaborador actual tiene pagos completados. 
+                      <strong>🔒 Colaborador bloqueado:</strong> El colaborador externo tiene pagos completados.
                       No se puede cambiar a otro colaborador.
                     </li>
                   )}
@@ -533,10 +533,10 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
                   <FormItem>
                     <FormLabel>Observaciones</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Observaciones adicionales sobre el contrato..." 
+                      <Textarea
+                        placeholder="Observaciones adicionales sobre el contrato..."
                         rows={3}
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -581,7 +581,7 @@ export const ContractFormStep1 = ({ initialData, onNext, editRestrictions, prese
                     <FormLabel className="flex items-center gap-2">
                       Colaborador *
                       {editRestrictions && !editRestrictions.canChangeCollaborator && (
-                        <span className="text-xs text-amber-600">(No modificable)</span>
+                        <span className="text-xs text-amber-600">(Tiene pagos completados)</span>
                       )}
                     </FormLabel>
                     <FormControl>
